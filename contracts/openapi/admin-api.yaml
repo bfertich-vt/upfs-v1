@@ -76,6 +76,26 @@ paths:
                 dry_run: {type: boolean}
       responses:
         '202': {description: Governed operation accepted}
+    get:
+      operationId: readOperations
+      security: [{oauth2: [admin:read]}]
+      responses: {'200': {description: Redacted operational metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}, '401': {$ref: '#/components/responses/AuthenticationRequired'}, '403': {$ref: '#/components/responses/Forbidden'}}
+  /admin/v1/releases:
+    get: {operationId: readReleases, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted release metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}}}
+  /admin/v1/incidents:
+    get: {operationId: readIncidents, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted incident metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}}}
+  /admin/v1/audit:
+    get: {operationId: readAudit, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted audit metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}}}
+  /admin/v1/data-quality:
+    get: {operationId: readDataQuality, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted data quality metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}}}
+  /admin/v1/ingestion:
+    get: {operationId: readIngestion, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted ingestion metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}}}
+  /admin/v1/workflows:
+    get: {operationId: readWorkflows, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted workflow metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}}}
+  /admin/v1/policies:
+    get: {operationId: readPolicies, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted policy metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}}}
+  /admin/v1/compliance:
+    get: {operationId: readCompliance, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted compliance metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}}}
 components:
   responses:
     BadRequest: {description: Invalid request, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}
@@ -136,6 +156,13 @@ components:
         tenant: {$ref: '#/components/schemas/TenantMetadata'}
         environments: {type: array, items: {type: object, required: [id, name, status, tenant_id, data_classification]}}
         projection: {type: object, required: [status, watermark, indexed_count, data_classification]}
+    OperationalMetadataResponse:
+      type: object
+      required: [data_classification]
+      properties:
+        data_classification: {type: string, const: operational_metadata}
+        status: {type: string}
+        observed_at: {type: [string, 'null'], format: date-time}
     MembershipCreateRequest:
       type: object
       required: [tenant_id, member_id, roles]
