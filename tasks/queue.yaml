@@ -44,9 +44,9 @@ tasks:
     dependencies: [TASK-0006]
   - id: TASK-0009
     title: Implement policy, durable workflow, and approval foundations
-    status: ready
+    status: complete
     dependencies: [TASK-0002]
   - id: TASK-0010
     title: Implement read-only admin health and tenant explorer
-    status: blocked
+    status: ready
     dependencies: [TASK-0002, TASK-0006]
