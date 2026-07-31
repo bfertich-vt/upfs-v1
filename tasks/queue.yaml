@@ -32,11 +32,11 @@ tasks:
     dependencies: [TASK-0004]
   - id: TASK-0006
     title: Implement OpenSearch projection, reconciliation, and search API
-    status: ready
+    status: complete
     dependencies: [TASK-0005]
   - id: TASK-0007
     title: Implement customer console transaction search workbench
-    status: blocked
+    status: ready
     dependencies: [TASK-0006]
   - id: TASK-0008
     title: Implement governed context and cited read-only chat
