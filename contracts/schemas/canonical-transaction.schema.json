@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://upfs.example.invalid/schemas/canonical-transaction.schema.json",
+  "title": "UPFS canonical transaction",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["transaction_id", "tenant_id", "amount", "currency", "occurred_at", "provenance"],
+  "properties": {
+    "transaction_id": {"type": "string", "minLength": 1},
+    "tenant_id": {"type": "string", "format": "uuid"},
+    "amount": {"type": "string", "pattern": "^-?[0-9]+(\\.[0-9]{1,4})?$"},
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "occurred_at": {"type": "string", "format": "date-time"},
+    "provenance": {"type": "object", "additionalProperties": false, "required": ["source", "evidence_ref"], "properties": {"source": {"type": "string", "minLength": 1}, "evidence_ref": {"type": "string", "minLength": 1}}}
+  }
+}
