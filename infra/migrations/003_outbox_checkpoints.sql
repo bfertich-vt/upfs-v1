@@ -1,7 +1,8 @@
 -- TASK-0013: durable transactional outbox and monotonic consumer checkpoints.
 CREATE TABLE IF NOT EXISTS transactional_outbox (
   id text PRIMARY KEY, tenant_id text NOT NULL REFERENCES tenants(id), aggregate_id text,
-  event_type text NOT NULL, payload jsonb NOT NULL, idempotency_key text NOT NULL,
+  event_type text NOT NULL, payload jsonb NOT NULL, payload_fingerprint text NOT NULL,
+  idempotency_key text NOT NULL, event_sequence bigint GENERATED ALWAYS AS IDENTITY,
   occurred_at timestamptz NOT NULL, status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','claimed','failed','acknowledged','dead_letter')),
   attempts integer NOT NULL DEFAULT 0 CHECK (attempts >= 0), available_at timestamptz NOT NULL DEFAULT now(),
   consumer text, lease_until timestamptz, acknowledged_at timestamptz, last_error text,

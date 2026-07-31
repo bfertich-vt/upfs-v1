@@ -22,7 +22,9 @@ export class PostgresOutboxAdapter {
     requiredTenant(tenantId); safeEvent({ type, payload });
     if (typeof idempotencyKey !== "string" || !idempotencyKey) throw new Error("idempotency key is required");
     return this.#postgres.transaction(async ({ query }) => {
-      const result = await query(`INSERT INTO transactional_outbox (id, tenant_id, aggregate_id, event_type, payload, idempotency_key, occurred_at, status, attempts) VALUES ($1,$2,$3,$4,$5,$6,$7,'pending',0) ON CONFLICT (tenant_id,idempotency_key) DO UPDATE SET idempotency_key=EXCLUDED.idempotency_key RETURNING id, tenant_id, aggregate_id, event_type, payload, idempotency_key, occurred_at, status, attempts, available_at`, [eventId, tenantId, aggregateId, type, payload, idempotencyKey, occurredAt]);
+      const fingerprint = eventFingerprint({ tenant_id: tenantId, id: eventId, aggregate_id: aggregateId, event_type: type, type, payload, idempotency_key: idempotencyKey });
+      const result = await query(`INSERT INTO transactional_outbox (id, tenant_id, aggregate_id, event_type, payload, payload_fingerprint, idempotency_key, occurred_at, status, attempts) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pending',0) ON CONFLICT (tenant_id,idempotency_key) DO UPDATE SET idempotency_key=EXCLUDED.idempotency_key WHERE transactional_outbox.payload_fingerprint=EXCLUDED.payload_fingerprint RETURNING id, tenant_id, aggregate_id, event_type, payload, payload_fingerprint, idempotency_key, occurred_at, event_sequence, status, attempts, available_at`, [eventId, tenantId, aggregateId, type, payload, fingerprint, idempotencyKey, occurredAt]);
+      if (!result.rows.length) throw new Error("outbox idempotency conflict");
       return clone(result.rows[0]);
     }, { tenantId });
   }
@@ -32,7 +34,7 @@ export class PostgresOutboxAdapter {
     if (!Number.isInteger(leaseMs) || leaseMs < 1) throw new Error("invalid lease duration");
     const until = new Date(this.#now().getTime() + leaseMs).toISOString();
     return this.#postgres.transaction(async ({ query }) => {
-      const result = await query(`WITH candidates AS (SELECT id FROM transactional_outbox WHERE tenant_id=$1 AND status IN ('pending','failed') AND attempts < $4 AND available_at <= NOW() AND (lease_until IS NULL OR lease_until < NOW()) ORDER BY occurred_at,id FOR UPDATE SKIP LOCKED LIMIT $2) UPDATE transactional_outbox o SET status='claimed', consumer=$3, lease_until=$5, attempts=o.attempts+1 WHERE o.id IN (SELECT id FROM candidates) RETURNING o.id, o.tenant_id, o.aggregate_id, o.event_type, o.payload, o.idempotency_key, o.occurred_at, o.status, o.attempts, o.lease_until`, [tenantId, limit, consumer, this.#maxAttempts, until]);
+      const result = await query(`WITH candidates AS (SELECT id FROM transactional_outbox WHERE tenant_id=$1 AND status IN ('pending','failed') AND attempts < $4 AND available_at <= NOW() AND (lease_until IS NULL OR lease_until < NOW()) ORDER BY event_sequence FOR UPDATE SKIP LOCKED LIMIT $2) UPDATE transactional_outbox o SET status='claimed', consumer=$3, lease_until=$5, attempts=o.attempts+1 WHERE o.id IN (SELECT id FROM candidates) RETURNING o.id, o.tenant_id, o.aggregate_id, o.event_type, o.payload, o.payload_fingerprint, o.idempotency_key, o.occurred_at, o.event_sequence, o.status, o.attempts, o.lease_until`, [tenantId, limit, consumer, this.#maxAttempts, until]);
       return result.rows.map(clone);
     }, { tenantId });
   }
@@ -62,11 +64,13 @@ export async function recoverOutbox({ outbox, checkpoint, tenantId, consumer, ha
   const checkpointBefore = await checkpoint.load({ tenantId, consumer });
   const results = [];
   for (const event of claimed) {
-    const sequence = Number(event.sequence ?? event.attempts ?? checkpointBefore.sequence + 1);
+    const sequence = Number(event.event_sequence ?? event.sequence);
+    if (!Number.isSafeInteger(sequence) || sequence < 1) { await outbox.fail({ tenantId, eventId: event.id, consumer, error: "invalid_event_sequence" }); results.push({ id: event.id, status: "failed" }); continue; }
+    if (sequence <= Number(checkpointBefore.sequence ?? 0)) { await outbox.acknowledge({ tenantId, eventId: event.id, consumer }); results.push({ id: event.id, status: "ignored", reason: "out_of_order" }); continue; }
     try { const result = await handle(clone(event)); await outbox.acknowledge({ tenantId, eventId: event.id, consumer }); await checkpoint.save({ tenantId, consumer, sequence: Math.max(checkpointBefore.sequence, sequence) }); results.push({ id: event.id, status: "acknowledged", result: clone(result) }); }
     catch (error) { await outbox.fail({ tenantId, eventId: event.id, consumer, error: error?.message ?? "consumer_failure" }); results.push({ id: event.id, status: "failed" }); }
   }
   return { claimed: claimed.length, results, checkpoint: await checkpoint.load({ tenantId, consumer }) };
 }
 
-export const eventFingerprint = (event) => sha256({ tenant_id: event.tenant_id, id: event.id, type: event.event_type, payload: event.payload, idempotency_key: event.idempotency_key });
+export const eventFingerprint = (event) => sha256({ tenant_id: event.tenant_id, id: event.id, aggregate_id: event.aggregate_id ?? null, type: event.event_type ?? event.type, payload: event.payload, idempotency_key: event.idempotency_key });
