@@ -47,10 +47,14 @@ export class CanonicalTransactionService {
 
 export function validateTransaction(t) {
   if (!t || typeof t !== 'object') return 'invalid_transaction';
+  const allowed = new Set(['id','tenant_id','account_id','amount','currency','posted_at','schema_version','evidence_refs','description','version','provenance']);
+  if (Object.keys(t).some((key) => !allowed.has(key))) return 'invalid_transaction';
   for (const key of ['id','tenant_id','account_id','amount','currency','posted_at','schema_version','evidence_refs']) if (t[key] === undefined || t[key] === null || t[key] === '') return `required_${key}`;
   const scalarStrings = ['id','tenant_id','account_id','amount','currency','posted_at','schema_version'];
   if (scalarStrings.some((key) => typeof t[key] !== 'string')) return 'invalid_transaction';
+  if (t.description !== undefined && (typeof t.description !== 'string' || t.description.length > 2048)) return 'invalid_transaction';
   const dateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;
   if (!/^-?[0-9]+(?:\.[0-9]{1,4})?$/.test(t.amount) || !/^[A-Z]{3}$/.test(t.currency) || !dateTime.test(t.posted_at) || Number.isNaN(Date.parse(t.posted_at)) || !Array.isArray(t.evidence_refs) || !t.evidence_refs.length || t.evidence_refs.some((ref) => typeof ref !== 'string' || ref.length === 0) || new Set(t.evidence_refs).size !== t.evidence_refs.length) return 'invalid_transaction';
+  if (t.provenance !== undefined && (!Array.isArray(t.provenance) || t.provenance.some((entry) => !entry || typeof entry.kind !== 'string' || typeof entry.actor !== 'string' || typeof entry.at !== 'string'))) return 'invalid_transaction';
   return null;
 }
