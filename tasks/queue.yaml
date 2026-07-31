@@ -141,7 +141,7 @@ tasks:
       - Privileged operations remain approval-gated and no unsupported production authorization is claimed
   - id: TASK-0023
     title: Implement approval-gated administrative operation workflows
-    status: ready
+    status: complete
     dependencies: [TASK-0022]
     acceptance:
       - Administrative operations expose documented API-backed dry-run and approval lifecycle views/actions
