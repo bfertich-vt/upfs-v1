@@ -104,14 +104,14 @@ tasks:
       - Missing tools/targets fail closed; no production or customer data is used
   - id: TASK-0018
     title: Integrate managed signing, secrets, and deployment environment controls
-    status: ready
+    status: complete
     dependencies: [TASK-0017]
     acceptance:
       - Managed signing/secrets references, rotation, configuration validation, and protected environment gates are verified
       - No secrets are committed or exposed; deployment remains approval-gated
   - id: TASK-0019
     title: Rehearse canary cell rollout, observability, and incident response
-    status: blocked
+    status: ready
     dependencies: [TASK-0018]
     acceptance:
       - Canary promotion/rollback, SLO health gates, tenant-aware telemetry, alerting, backup recovery, and incident drills produce evidence
