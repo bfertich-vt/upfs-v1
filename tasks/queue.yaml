@@ -68,14 +68,14 @@ tasks:
       - Synthetic fixtures only; missing database/configuration fails closed
   - id: TASK-0013
     title: Implement transactional outbox, durable checkpoints, and recovery workers
-    status: ready
+    status: complete
     dependencies: [TASK-0012]
     acceptance:
       - Outbox append/claim/ack/fail, retry ownership, idempotency, monotonic checkpoints, replay, and reconciliation are durable
       - Recovery and failure-injection tests prove no dual-write loss or cross-tenant leakage
   - id: TASK-0014
     title: Execute real migration, security, recovery, and load rehearsals
-    status: blocked
+    status: ready
     dependencies: [TASK-0013]
     acceptance:
       - Disposable PostgreSQL migration expand/contract, restore/recovery, tenant-isolation, vulnerability, and environment-sized load/soak evidence passes
