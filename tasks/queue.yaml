@@ -170,7 +170,7 @@ tasks:
       - Synthetic fixtures and negative authorization tests cover the new pages; no production data or unsupported claims are introduced
   - id: TASK-0026
     title: Establish public documentation and SDK contract synchronization
-    status: ready
+    status: complete
     dependencies: [TASK-0025]
     inputs:
       - docs/MASTER_PLAN.md
@@ -183,3 +183,16 @@ tasks:
       - Versioned public documentation and generated SDK artifacts are produced from contracts/registries
       - Validation fails closed for undocumented endpoints, schema/events/permission/error drift, broken examples, and SDK/version mismatch
       - Synthetic sandbox examples contain no production secrets or customer data
+  - id: TASK-0027
+    title: Reconcile admin control-plane modules with normative operations
+    status: ready
+    dependencies: [TASK-0026]
+    inputs:
+      - docs/MASTER_PLAN.md
+      - specs/14_admin_control_plane/admin_control_plane.md
+      - specs/05_apis/api_standards.md
+    source: Stage 8 Platform UX; internal admin control-plane module and controlled-remediation requirements
+    acceptance:
+      - Admin modules explicitly cover platform health, support access broker, connector/ingestion fleet, canonical quality, search projections, Redis health, AI operations, workflow executions, policy simulation, security, compliance, releases, and incidents
+      - Each module uses documented admin APIs, redacted operational metadata, authorization-derived scope, and truthful unavailable states where infrastructure is absent
+      - Meaningful changes remain durable, policy-approved administrative operations with audit and rollback evidence
