@@ -1,0 +1,9 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { PostgresPersistenceAdapter } from './postgres-persistence.mjs';
+
+function fakePool() { const calls = []; const client = { query: async (...args) => { calls.push(args); if (String(args[0]).startsWith('SELECT 1')) return { rows: [{ ok: 1 }] }; if (String(args[0]).includes('SELECT 42')) return { rows: [{ value: 42 }] }; return { rows: [{ id: 7 }] }; }, release: () => calls.push(['release']) }; return { calls, connect: async () => client, query: client.query }; }
+test('adapter fails closed without a pg-compatible pool', () => assert.throws(() => new PostgresPersistenceAdapter(), /postgres pool is required/));
+test('transaction sets tenant context and commits', async () => { const pool = fakePool(); const db = new PostgresPersistenceAdapter({ pool }); const result = await db.transaction(({ query }) => query('SELECT 42 AS value').then((r) => r.rows[0]), { tenantId: 'tenant-a' }); assert.equal(result.value, 42); assert.ok(pool.calls.some(([sql]) => sql === 'BEGIN')); assert.ok(pool.calls.some(([sql]) => sql.includes('set_config'))); assert.ok(pool.calls.some(([sql]) => sql === 'COMMIT')); });
+test('transaction rolls back on failure and never commits', async () => { const pool = fakePool(); const db = new PostgresPersistenceAdapter({ pool }); await assert.rejects(() => db.transaction(() => { throw new Error('synthetic failure'); }, { tenantId: 'tenant-a' }), /synthetic failure/); assert.ok(pool.calls.some(([sql]) => sql === 'ROLLBACK')); assert.equal(pool.calls.some(([sql]) => sql === 'COMMIT'), false); });
+test('audit insert is tenant-scoped', async () => { const pool = fakePool(); const db = new PostgresPersistenceAdapter({ pool }); const row = await db.insertAudit({ actor: 'issuer|subject', action: 'test', tenantId: 'tenant-a' }); assert.equal(row.id, 7); assert.ok(pool.calls.some(([sql]) => String(sql).includes('INSERT INTO audit_events'))); });
