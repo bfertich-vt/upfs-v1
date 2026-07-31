@@ -1,0 +1,3 @@
+import test from 'node:test'; import assert from 'node:assert/strict'; import { spawnSync } from 'node:child_process'; import fs from 'node:fs';
+test('TASK-0018 controls evidence is synthetic and approval gated', () => { const r = spawnSync(process.execPath, ['scripts/task-0018-controls-evidence.mjs'], { encoding: 'utf8' }); assert.equal(r.status, 0, `${r.stdout}\n${r.stderr}`); const report = JSON.parse(fs.readFileSync('artifacts/task-0018-controls-report.json')); assert.equal(report.status, 'passed'); assert.equal(report.synthetic_only, true); assert.equal(report.external_deployment, 'not-performed'); });
+

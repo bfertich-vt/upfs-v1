@@ -1,0 +1,11 @@
+{
+  "schema_version": "upfs.deployment-environment.v1",
+  "environments": {
+    "test": { "managed": false, "provider": "synthetic-test-only", "promotion": "local" },
+    "pilot": { "managed": true, "provider": "external-managed-secret-and-config", "protected": true, "approval_required": true, "signing_key_reference_required": true, "rollback": "corrective-forward" },
+    "production": { "managed": true, "provider": "external-managed-secret-and-config", "protected": true, "approval_required": true, "signing_key_reference_required": true, "rollback": "corrective-forward" }
+  },
+  "required_references": ["UPFS_MANAGED_SECRET_REF", "UPFS_CONFIG_REF", "UPFS_RELEASE_SIGNING_KEY_REF"],
+  "prohibited": ["committed secrets", "synthetic provider in pilot/production", "unapproved promotion", "real customer data in rehearsal"]
+}
+
