@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createProductionBoundaries } from "./production-boundaries.mjs";
+import { createProductionRuntime } from "./production-runtime.mjs";
 
 const adapter = (methods) => Object.fromEntries(methods.map((method) => [method, () => undefined]));
 
@@ -25,4 +26,17 @@ test("production boundaries preserve injected durable implementations", () => {
   assert.equal(boundaries.postgres, postgres);
   assert.equal(boundaries.outbox, outbox);
   assert.equal(boundaries.checkpoint, checkpoint);
+});
+
+test("production composition requires and preserves injected runtime services", () => {
+  const durable = {
+    postgres: adapter(["transaction", "health"]),
+    outbox: adapter(["append", "claim", "acknowledge", "fail"]),
+    checkpoint: adapter(["load", "save"]),
+  };
+  assert.throws(() => createProductionRuntime(durable), /production services are required/);
+  const services = { evidence: {}, transactions: {}, projection: {}, workflow: {} };
+  const runtime = createProductionRuntime({ ...durable, services });
+  assert.equal(runtime.services, services);
+  assert.throws(() => createProductionRuntime({ ...durable, services: { evidence: {} } }), /must be injected/);
 });
