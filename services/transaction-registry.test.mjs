@@ -12,6 +12,9 @@ test('enforces strict scalar types and amount precision', () => {
 });
 test('enforces strict RFC3339 date-time and evidence references', () => {
   assert.equal(validateTransaction({ ...tx, posted_at: '2026-01-01' }), 'invalid_transaction');
+  assert.equal(validateTransaction({ ...tx, posted_at: '2026-02-30T00:00:00Z' }), 'invalid_transaction');
+  assert.equal(validateTransaction({ ...tx, posted_at: '2024-02-29T00:00:00Z' }), null);
+  assert.equal(validateTransaction({ ...tx, provenance: [{ kind: 'source', actor: 'import', at: '2026-04-31T00:00:00Z' }] }), 'invalid_transaction');
   assert.equal(validateTransaction({ ...tx, evidence_refs: ['ev1', 'ev1'] }), 'invalid_transaction');
   assert.equal(validateTransaction({ ...tx, evidence_refs: [''] }), 'invalid_transaction');
   assert.equal(validateTransaction({ ...tx, evidence_refs: [1] }), 'invalid_transaction');

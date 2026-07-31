@@ -53,8 +53,16 @@ export function validateTransaction(t) {
   const scalarStrings = ['id','tenant_id','account_id','amount','currency','posted_at','schema_version'];
   if (scalarStrings.some((key) => typeof t[key] !== 'string')) return 'invalid_transaction';
   if (t.description !== undefined && (typeof t.description !== 'string' || t.description.length > 2048)) return 'invalid_transaction';
-  const dateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;
-  if (!/^-?[0-9]+(?:\.[0-9]{1,4})?$/.test(t.amount) || !/^[A-Z]{3}$/.test(t.currency) || !dateTime.test(t.posted_at) || Number.isNaN(Date.parse(t.posted_at)) || !Array.isArray(t.evidence_refs) || !t.evidence_refs.length || t.evidence_refs.some((ref) => typeof ref !== 'string' || ref.length === 0) || new Set(t.evidence_refs).size !== t.evidence_refs.length) return 'invalid_transaction';
-  if (t.provenance !== undefined && (!Array.isArray(t.provenance) || t.provenance.some((entry) => !entry || typeof entry.kind !== 'string' || typeof entry.actor !== 'string' || typeof entry.at !== 'string' || !entry.kind || !entry.actor || !dateTime.test(entry.at) || Number.isNaN(Date.parse(entry.at))))) return 'invalid_transaction';
+  if (!/^-?[0-9]+(?:\.[0-9]{1,4})?$/.test(t.amount) || !/^[A-Z]{3}$/.test(t.currency) || !isValidDateTime(t.posted_at) || !Array.isArray(t.evidence_refs) || !t.evidence_refs.length || t.evidence_refs.some((ref) => typeof ref !== 'string' || ref.length === 0) || new Set(t.evidence_refs).size !== t.evidence_refs.length) return 'invalid_transaction';
+  if (t.provenance !== undefined && (!Array.isArray(t.provenance) || t.provenance.some((entry) => !entry || typeof entry.kind !== 'string' || typeof entry.actor !== 'string' || typeof entry.at !== 'string' || !entry.kind || !entry.actor || !isValidDateTime(entry.at)))) return 'invalid_transaction';
   return null;
+}
+
+function isValidDateTime(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.exec(value);
+  if (!match || Number.isNaN(Date.parse(value))) return false;
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText] = match;
+  const year = Number(yearText); const month = Number(monthText); const day = Number(dayText);
+  return month >= 1 && month <= 12 && day >= 1 && day <= new Date(Date.UTC(year, month, 0)).getUTCDate()
+    && Number(hourText) <= 23 && Number(minuteText) <= 59 && Number(secondText) <= 59;
 }
