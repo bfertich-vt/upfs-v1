@@ -118,7 +118,7 @@ tasks:
       - Corrective-forward behavior is verified without irreversible production mutation
   - id: TASK-0020
     title: Assemble formal controlled-pilot go/no-go authorization package
-    status: ready
+    status: complete
     dependencies: [TASK-0019]
     acceptance:
       - Pilot scope, owners, approvals, risks, SLOs, controls, evidence index, rollback plan, and explicit go/no-go decision are complete
