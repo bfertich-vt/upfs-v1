@@ -16,11 +16,11 @@ tasks:
       - CI produces an evidence summary and fails closed
   - id: TASK-0002
     title: Implement identity, organization, tenant, and environment foundation
-    status: ready
+    status: complete
     dependencies: [TASK-0001]
   - id: TASK-0003
     title: Implement registry generator and canonical transaction contract
-    status: blocked
+    status: ready
     dependencies: [TASK-0001, TASK-0002]
   - id: TASK-0004
     title: Implement raw evidence intake and quarantine
