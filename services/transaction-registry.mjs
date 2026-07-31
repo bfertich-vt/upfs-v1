@@ -9,7 +9,7 @@ export function generateRegistry({ schemaDir, output }) {
     const schema = JSON.parse(raw);
     return { name: path.basename(file, '.schema.json'), id: schema.$id, version: schema.properties?.schema_version?.const ?? '1.0.0', sha256: crypto.createHash('sha256').update(raw).digest('hex'), file: `contracts/schemas/${file}` };
   });
-  const registry = { registry_version: '1.0.0', generated_at: new Date().toISOString(), schemas };
+  const registry = { registry_version: '1.0.0', schemas };
   fs.mkdirSync(path.dirname(output), { recursive: true });
   fs.writeFileSync(output, `${JSON.stringify(registry, null, 2)}\n`);
   return registry;
@@ -24,7 +24,11 @@ export class CanonicalTransactionService {
     if (!this.authorize(actor, tenantId)) return this.#error(403, 'forbidden');
     if (!idempotencyKey || idempotencyKey.length < 16) return this.#error(400, 'idempotency_key_required');
     const idem = `${actor.issuer}|${actor.subject}|${tenantId}|${idempotencyKey}`;
-    if (this.#idempotency.has(idem)) return this.#idempotency.get(idem);
+    if (this.#idempotency.has(idem)) {
+      const prior = this.#idempotency.get(idem);
+      if (prior.payload_hash !== crypto.createHash('sha256').update(JSON.stringify(transaction)).digest('hex')) return this.#error(409, 'idempotency_conflict');
+      return prior.result;
+    }
     const validation = validateTransaction(transaction);
     if (validation) return this.#error(400, validation);
     const prior = this.#records.get(transaction.id);
@@ -33,7 +37,7 @@ export class CanonicalTransactionService {
     const record = { ...transaction, version, provenance: [...(transaction.provenance ?? []), { kind: 'canonicalized', actor: `${actor.issuer}|${actor.subject}`, at: this.now().toISOString() }] };
     this.#records.set(transaction.id, record);
     const result = { status: prior ? 200 : 201, body: { ...record }, headers: { etag: `"${version}"` } };
-    this.#idempotency.set(idem, result); this.#audit.push({ action: 'transaction.upsert', tenant_id: tenantId, resource_id: transaction.id, actor: `${actor.issuer}|${actor.subject}`, version });
+    this.#idempotency.set(idem, { payload_hash: crypto.createHash('sha256').update(JSON.stringify(transaction)).digest('hex'), result }); this.#audit.push({ action: 'transaction.upsert', tenant_id: tenantId, resource_id: transaction.id, actor: `${actor.issuer}|${actor.subject}`, version });
     return result;
   }
   get({ actor, tenantId, id }) { if (!actor?.subject || !actor.issuer) return this.#error(401, 'authentication_required'); if (!this.authorize(actor, tenantId)) return this.#error(403, 'forbidden'); const r = this.#records.get(id); if (!r || r.tenant_id !== tenantId) return this.#error(404, 'resource_not_found'); return { status: 200, body: { ...r } }; }

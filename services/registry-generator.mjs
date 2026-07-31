@@ -11,7 +11,7 @@ export function generateRegistry({ version, entities }) {
 }
 
 export function canonicalTransaction(input) {
-  if (!input?.transaction_id || !input.tenant_id || !input.amount || !input.currency || !input.occurred_at) throw new Error('invalid_transaction');
-  if (!input.provenance?.source || !input.provenance?.evidence_ref) throw new Error('provenance_required');
-  return { transaction_id: input.transaction_id, tenant_id: input.tenant_id, amount: input.amount, currency: input.currency, occurred_at: input.occurred_at, provenance: { ...input.provenance } };
+  if (!input?.id || !input.tenant_id || !input.amount || !input.currency || !input.posted_at) throw new Error('invalid_transaction');
+  if (!Array.isArray(input.evidence_refs) || input.evidence_refs.length === 0) throw new Error('provenance_required');
+  return { id: input.id, tenant_id: input.tenant_id, account_id: input.account_id, amount: input.amount, currency: input.currency, posted_at: input.posted_at, schema_version: input.schema_version ?? '1.0.0', evidence_refs: [...input.evidence_refs] };
 }
