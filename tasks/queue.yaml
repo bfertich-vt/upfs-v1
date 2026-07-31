@@ -75,14 +75,14 @@ tasks:
       - Recovery and failure-injection tests prove no dual-write loss or cross-tenant leakage
   - id: TASK-0014
     title: Execute real migration, security, recovery, and load rehearsals
-    status: ready
+    status: complete
     dependencies: [TASK-0013]
     acceptance:
       - Disposable PostgreSQL migration expand/contract, restore/recovery, tenant-isolation, vulnerability, and environment-sized load/soak evidence passes
       - Results are reproducible, synthetic-only, and fail closed on missing prerequisites
   - id: TASK-0015
     title: Build immutable release, deployment, configuration, and rollback evidence
-    status: blocked
+    status: ready
     dependencies: [TASK-0014]
     acceptance:
       - Signed immutable artifact manifest, SBOM/provenance, managed-secret/config checks, canary gates, rollback, and corrective-forward procedures are verified
