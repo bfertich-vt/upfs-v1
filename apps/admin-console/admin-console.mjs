@@ -23,9 +23,9 @@ export function createAdminApi({ fetchImpl = globalThis.fetch, baseUrl = '', sup
     managedIntegrations: ({ tenantId, environmentId }) => request(`/admin/v1/managed-integrations?tenant_id=${encodeURIComponent(tenantId)}&environment_id=${encodeURIComponent(environmentId)}`),
     operations: ({ tenantId, environmentId } = {}) => request(`/admin/v1/operations?tenant_id=${encodeURIComponent(tenantId)}${environmentId ? `&environment_id=${encodeURIComponent(environmentId)}` : ''}`),
     createOperation: ({ tenantId, environmentId, type, reason, dryRun = true, changeTicket, idempotencyKey }) => request('/admin/v1/operations', { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ tenant_id: tenantId, environment_id: environmentId, type, reason, dry_run: dryRun, change_ticket: changeTicket }) }),
-    approveOperation: ({ operationId, reason, dualControl = false }) => request(`/admin/v1/operations/${encodeURIComponent(operationId)}/approve`, { method: 'POST', body: JSON.stringify({ reason, dual_control: dualControl }) }),
+    approveOperation: ({ operationId, reason, dualControl = false, idempotencyKey }) => request(`/admin/v1/operations/${encodeURIComponent(operationId)}/approve`, { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ reason, dual_control: dualControl }) }),
     executeOperation: ({ operationId, idempotencyKey }) => request(`/admin/v1/operations/${encodeURIComponent(operationId)}/execute`, { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey } }),
-    rollbackOperation: ({ operationId, evidence }) => request(`/admin/v1/operations/${encodeURIComponent(operationId)}/rollback`, { method: 'POST', body: JSON.stringify({ evidence }) }),
+    rollbackOperation: ({ operationId, evidence, idempotencyKey }) => request(`/admin/v1/operations/${encodeURIComponent(operationId)}/rollback`, { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ evidence }) }),
     module: (name) => { const allowed = new Set(['operations','releases','incidents','audit','data-quality','ingestion','workflows','policies','compliance']); if (!allowed.has(name)) throw Object.assign(new Error('unsupported_admin_module'), { code: 'unsupported_admin_module', status: 400 }); return request(`/admin/v1/${name}`); }
   };
 }
