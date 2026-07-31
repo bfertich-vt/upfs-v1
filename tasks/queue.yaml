@@ -133,7 +133,7 @@ tasks:
       - No production data, credentials, or privileged mutation is introduced
   - id: TASK-0022
     title: Complete operational admin modules and managed integration visibility
-    status: ready
+    status: complete
     dependencies: [TASK-0021]
     acceptance:
       - Admin console covers operations, releases, incidents, audit, data quality, ingestion, workflows, policies, and compliance visibility
