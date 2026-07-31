@@ -82,14 +82,14 @@ tasks:
       - Results are reproducible, synthetic-only, and fail closed on missing prerequisites
   - id: TASK-0015
     title: Build immutable release, deployment, configuration, and rollback evidence
-    status: ready
+    status: complete
     dependencies: [TASK-0014]
     acceptance:
       - Signed immutable artifact manifest, SBOM/provenance, managed-secret/config checks, canary gates, rollback, and corrective-forward procedures are verified
       - No deployment occurs without explicit external approval and credentials
   - id: TASK-0016
     title: Produce controlled pilot authorization and SOC 2 readiness evidence
-    status: blocked
+    status: ready
     dependencies: [TASK-0015]
     acceptance:
       - Control library, access/change/recovery/security evidence, pilot runbook, SLOs, incident process, and go/no-go record are complete
