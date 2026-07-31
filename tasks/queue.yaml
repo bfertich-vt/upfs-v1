@@ -212,7 +212,7 @@ tasks:
       - No deployment or production mutation occurs; missing managed infrastructure fails closed
   - id: TASK-0029
     title: Produce environment-sized load, soak, and chaos evidence
-    status: ready
+    status: complete
     dependencies: [TASK-0028]
     inputs:
       - docs/MASTER_PLAN.md
@@ -224,3 +224,18 @@ tasks:
       - Versioned synthetic load/soak/chaos scenarios cover tenant isolation, backpressure, projection lag, dependency failure, restore, and corrective-forward behavior
       - Results enforce SLO/RPO/RTO thresholds, bounded resource/tenant dimensions, and immutable evidence references
       - Missing managed targets fail closed; no production deployment or customer data is used
+  - id: TASK-0030
+    title: Assemble final master-plan conformance and acceptance evidence
+    status: ready
+    dependencies: [TASK-0029]
+    inputs:
+      - docs/MASTER_PLAN.md
+      - specs/00_constitution/engineering_constitution.md
+      - specs/09_cicd/delivery_pipeline.md
+      - specs/12_testing/test_strategy.md
+      - docs/compliance/pilot-go-no-go.md
+    source: Master-plan v1 acceptance themes and Stage 9 readiness assessment/pilot requirements
+    acceptance:
+      - Evidence index maps every master-plan acceptance theme to current artifacts, tests, controls, and known external prerequisites
+      - Final readiness assessment is reproducible, synthetic-only, truthful about NO-GO prerequisites, and verifies no unsupported certification or production claim
+      - Queue, handoffs, generated artifacts, validation, security, contract, recovery, and documentation gates are all reconciled and clean
