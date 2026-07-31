@@ -35,13 +35,16 @@ ALTER TABLE environments FORCE ROW LEVEL SECURITY;
 -- NULL or unset settings never match, so the default is deny.
 DROP POLICY IF EXISTS organizations_scope ON organizations;
 CREATE POLICY organizations_scope ON organizations
-  USING (id::text = current_setting('app.organization_id', true));
+  USING (id::text = current_setting('app.organization_id', true))
+  WITH CHECK (id::text = current_setting('app.organization_id', true));
 
 DROP POLICY IF EXISTS tenants_scope ON tenants;
 CREATE POLICY tenants_scope ON tenants
   USING (id::text = current_setting('app.tenant_id', true)
-         AND organization_id::text = current_setting('app.organization_id', true));
+         AND organization_id::text = current_setting('app.organization_id', true))
+  WITH CHECK (organization_id::text = current_setting('app.organization_id', true));
 
 DROP POLICY IF EXISTS environments_scope ON environments;
 CREATE POLICY environments_scope ON environments
-  USING (tenant_id::text = current_setting('app.tenant_id', true));
+  USING (tenant_id::text = current_setting('app.tenant_id', true))
+  WITH CHECK (tenant_id::text = current_setting('app.tenant_id', true));

@@ -23,6 +23,13 @@ export class PostgresPersistenceAdapter {
   }
   async insertAudit({ actor, action, tenantId, resourceId = null, metadata = {} }) {
     if (!actor || !action || !tenantId) throw new Error('audit actor, action, and tenant scope are required');
+    const allowed = new Set(['request_id', 'status', 'version', 'content_hash', 'schema_version', 'environment_id']);
+    const sensitive = /content|prompt|credential|secret|token|password|financial|amount|account|raw/i;
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) throw new Error('audit metadata must be an object');
+    for (const [key, value] of Object.entries(metadata)) {
+      if (!allowed.has(key) || sensitive.test(key) || (typeof value === 'string' && sensitive.test(value))) throw new Error('audit metadata contains prohibited content');
+      if (value !== null && !['string', 'number', 'boolean'].includes(typeof value)) throw new Error('audit metadata values must be scalar');
+    }
     return this.transaction(({ query }) => query('INSERT INTO audit_events (tenant_id, actor, action, resource_id, metadata) VALUES ($1,$2,$3,$4,$5) RETURNING id', [tenantId, actor, action, resourceId, metadata]).then((r) => r.rows[0]), { tenantId });
   }
 }

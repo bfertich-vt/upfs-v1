@@ -36,7 +36,16 @@ test("production composition requires and preserves injected runtime services", 
   };
   assert.throws(() => createProductionRuntime(durable), /production services are required/);
   const services = { evidence: {}, transactions: {}, projection: {}, workflow: {} };
-  const runtime = createProductionRuntime({ ...durable, services });
+  const runtime = createProductionRuntime({ ...durable, mode: "reference-test", services });
   assert.equal(runtime.services, services);
   assert.throws(() => createProductionRuntime({ ...durable, services: { evidence: {} } }), /must be injected/);
+});
+
+test("production runtime rejects map-backed services without repository wiring", () => {
+  const postgres = adapter(["transaction", "health"]);
+  const durable = { postgres, outbox: adapter(["append", "claim", "acknowledge", "fail"]), checkpoint: adapter(["load", "save"]) };
+  const services = { evidence: {}, transactions: {}, projection: {}, workflow: {} };
+  assert.throws(() => createProductionRuntime({ ...durable, services }), /wired to the injected postgres repository/);
+  const wired = Object.fromEntries(Object.keys(services).map((name) => [name, { repository: postgres }]));
+  assert.equal(createProductionRuntime({ ...durable, services: wired }).services, wired);
 });

@@ -71,7 +71,7 @@ async function main() {
     outbox: adapter(["append", "claim", "acknowledge", "fail"]),
     checkpoint: adapter(["load", "save"]),
   };
-  const runtime = createProductionRuntime({ ...durable, services: { evidence: {}, transactions: {}, projection: {}, workflow: {} } });
+  const runtime = createProductionRuntime({ ...durable, mode: "reference-test", services: { evidence: {}, transactions: {}, projection: {}, workflow: {} } });
   check("production-composition-invocation", runtime.boundaries.postgres === durable.postgres, "composition root invoked with injected durable adapters");
   check("durable-boundary-contract", Object.values(productionAdapterContract).flat().length === 8, "all durable adapter methods are required");
   securityGate();
