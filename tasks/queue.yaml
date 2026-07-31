@@ -198,7 +198,7 @@ tasks:
       - Meaningful changes remain durable, policy-approved administrative operations with audit and rollback evidence
   - id: TASK-0028
     title: Define cells, regions, and disaster-recovery control plane
-    status: ready
+    status: complete
     dependencies: [TASK-0027]
     inputs:
       - docs/MASTER_PLAN.md
@@ -210,3 +210,17 @@ tasks:
       - Versioned, policy-checked infrastructure/control-plane contracts define cells, regions, tenant routing, evacuation, backup targets, restore points, and failover ownership
       - Disaster recovery and corrective-forward procedures are reproducible with synthetic fixtures and explicit RPO/RTO evidence
       - No deployment or production mutation occurs; missing managed infrastructure fails closed
+  - id: TASK-0029
+    title: Produce environment-sized load, soak, and chaos evidence
+    status: ready
+    dependencies: [TASK-0028]
+    inputs:
+      - docs/MASTER_PLAN.md
+      - specs/09_cicd/delivery_pipeline.md
+      - specs/12_testing/test_strategy.md
+      - docs/runbooks/controlled-pilot-runbook.md
+    source: Stage 9 Enterprise readiness; load/soak/chaos, SLO, recovery, and evidence-retention requirements
+    acceptance:
+      - Versioned synthetic load/soak/chaos scenarios cover tenant isolation, backpressure, projection lag, dependency failure, restore, and corrective-forward behavior
+      - Results enforce SLO/RPO/RTO thresholds, bounded resource/tenant dimensions, and immutable evidence references
+      - Missing managed targets fail closed; no production deployment or customer data is used
