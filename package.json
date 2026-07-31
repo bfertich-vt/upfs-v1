@@ -1,0 +1,10 @@
+{
+  "name": "upfs-repository-baseline",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Pinned repository validation tooling for UPFS.",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "yaml": "2.8.1"
+  }
+}
