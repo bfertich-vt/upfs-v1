@@ -11,6 +11,7 @@
   "secrets_signing": { "provider": "external-managed-secret-and-config", "secret_ref": "${UPFS_MANAGED_SECRET_REF}", "config_ref": "${UPFS_CONFIG_REF}", "signing_key_ref": "${UPFS_RELEASE_SIGNING_KEY_REF}", "rotation_required": true },
   "observability": { "provider": "external-managed-observability", "metrics": true, "logs": true, "traces": true, "alerts": true },
   "backup": { "provider": "external-managed-object-storage", "encrypted": true, "retention_days": 35, "restore_verification_required": true },
+  "cells_regions": { "regions_required": 2, "cells_per_region_required": 1, "routing_managed": true, "failover_managed": true, "failover_target": "production-us-west-2" },
   "rollout": { "strategy": "canary", "approval_required": true, "rollback": "corrective-forward", "health_gate_required": true },
   "prohibited": ["committed secrets", "synthetic provider in pilot/production", "unapproved promotion", "real customer data in rehearsal"]
 }
