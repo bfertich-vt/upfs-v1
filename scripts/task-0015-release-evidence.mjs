@@ -17,15 +17,20 @@ function managedConfiguration() {
   const production = /^(production|pilot)$/i.test(process.env.UPFS_ENVIRONMENT || "");
   const supplied = Boolean(process.env.UPFS_MANAGED_SECRET_REF && process.env.UPFS_CONFIG_REF);
   if (production && !supplied) fail("managed-configuration", "pilot/production requires managed secret and configuration references");
+  const signingKey = process.env.UPFS_RELEASE_SIGNING_KEY;
+  const signingKeyRef = process.env.UPFS_RELEASE_SIGNING_KEY_REF;
+  if (production && !signingKey) fail("release-signing", "pilot/production requires UPFS_RELEASE_SIGNING_KEY from the managed secret provider");
+  if (production && !signingKeyRef) fail("release-signing", "pilot/production requires UPFS_RELEASE_SIGNING_KEY_REF");
   if (production && fs.existsSync(path.join(root, ".env"))) fail("managed-configuration", "local .env must not be part of a pilot/production release workspace");
-  pass("managed-configuration", production ? "managed references supplied" : "non-production rehearsal is fail-closed and uses no credentials");
+  pass("managed-configuration", production ? "managed configuration and signing references supplied" : "non-production rehearsal is fail-closed and uses no credentials");
 }
 function manifest() {
   const entries = Object.fromEntries(files.map((file) => [file, { sha256: sha256(read(file)), bytes: read(file).byteLength }]));
   const body = { schema_version: "upfs.release.v1", release_id: `synthetic-${sha256(JSON.stringify(entries)).slice(0, 16)}`, commit: process.env.GIT_COMMIT || "unknown-local-commit", artifact: { entries }, migrations: [{ file: "infra/migrations/001_identity_tenant_rls.sql", sha256: entries["infra/migrations/001_identity_tenant_rls.sql"].sha256 }], provenance: { builder: "upfs-task-0015", synthetic_only: true, sbom: "package-lock.json", source_date_epoch: 0 }, deployment: { strategy: "canary-cell", rollback: "corrective-forward", approval_required: true } };
   const canonical = JSON.stringify(body);
+  const production = /^(production|pilot)$/i.test(process.env.UPFS_ENVIRONMENT || "");
   const key = process.env.UPFS_RELEASE_SIGNING_KEY || "synthetic-release-key";
-  const result = { ...body, manifest_sha256: sha256(canonical), signature: { algorithm: "HMAC-SHA256", value: crypto.createHmac("sha256", key).update(canonical).digest("hex"), key_ref: process.env.UPFS_RELEASE_SIGNING_KEY ? "managed-secret-ref" : "synthetic-test-only" } };
+  const result = { ...body, manifest_sha256: sha256(canonical), signature: { algorithm: "HMAC-SHA256", value: crypto.createHmac("sha256", key).update(canonical).digest("hex"), key_ref: production ? process.env.UPFS_RELEASE_SIGNING_KEY_REF : "synthetic-test-only", rehearsal_only: !production } };
   fs.mkdirSync(artifactDir, { recursive: true });
   fs.writeFileSync(manifestPath, `${JSON.stringify(result, null, 2)}\n`);
   pass("immutable-manifest", `hashed ${files.length} release inputs with signed manifest`);

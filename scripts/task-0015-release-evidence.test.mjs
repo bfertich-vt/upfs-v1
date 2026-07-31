@@ -21,3 +21,13 @@ test("production configuration fails closed without managed references", () => {
   const report = JSON.parse(fs.readFileSync("artifacts/task-0015-release-report.json"));
   assert.match(report.error, /managed-configuration/);
 });
+
+test("pilot signing fails closed without a managed signing key and key reference", () => {
+  const result = spawnSync(process.execPath, ["scripts/task-0015-release-evidence.mjs"], {
+    encoding: "utf8",
+    env: { ...process.env, UPFS_ENVIRONMENT: "pilot", UPFS_MANAGED_SECRET_REF: "secret://upfs/pilot", UPFS_CONFIG_REF: "config://upfs/pilot", UPFS_RELEASE_SIGNING_KEY: "", UPFS_RELEASE_SIGNING_KEY_REF: "" }
+  });
+  assert.notEqual(result.status, 0);
+  const report = JSON.parse(fs.readFileSync("artifacts/task-0015-release-report.json"));
+  assert.match(report.error, /release-signing/);
+});
