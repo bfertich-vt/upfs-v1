@@ -239,3 +239,63 @@ tasks:
       - Evidence index maps every master-plan acceptance theme to current artifacts, tests, controls, and known external prerequisites
       - Final readiness assessment is reproducible, synthetic-only, truthful about NO-GO prerequisites, and verifies no unsupported certification or production claim
       - Queue, handoffs, generated artifacts, validation, security, contract, recovery, and documentation gates are all reconciled and clean
+  - id: TASK-0031
+    title: Implement external-readiness integration contract
+    status: complete
+    dependencies: [TASK-0030]
+    source: Stage 9 protected infrastructure requirements; infra/deployment-environment.json and specs/09_cicd/delivery_pipeline.md
+    acceptance: [Managed integration requirements and fail-closed readiness evidence are versioned]
+  - id: TASK-0032
+    title: Implement policy-checked infrastructure and deployment manifests
+    status: complete
+    dependencies: [TASK-0031]
+    source: Stage 9 infrastructure-as-code requirements; infra/README.md and specs/03_architecture/system_architecture.md
+    acceptance: [Protected environment manifests and policy/drift checks are versioned and fail closed]
+  - id: TASK-0033
+    title: Harden managed-integration adapter contracts for protected environments
+    status: ready
+    dependencies: [TASK-0032]
+    source: Stage 9 managed provider requirements; specs/09_cicd/delivery_pipeline.md
+    acceptance: [Provider identity, environment binding, rotation, health, and drift contracts are versioned and fail closed]
+  - id: TASK-0034
+    title: Produce protected deployment promotion and rollback evidence
+    status: pending
+    dependencies: [TASK-0033]
+    source: Stage 9 immutable promotion and rollback requirements; specs/09_cicd/delivery_pipeline.md
+    acceptance: [Canary/cell promotion, approval, verification, rollback, and corrective-forward evidence is reproducible]
+  - id: TASK-0035
+    title: Complete observability, alerting, and incident operations evidence
+    status: pending
+    dependencies: [TASK-0034]
+    source: Stage 9 operational readiness and incident requirements; specs/12_testing/test_strategy.md
+    acceptance: [Tenant-safe telemetry, SLO alerts, incident detection/pause/abort/recovery, and audit evidence are verified]
+  - id: TASK-0036
+    title: Complete native backup/restore and disaster-recovery evidence binding
+    status: pending
+    dependencies: [TASK-0035]
+    source: Stage 9 DR and recovery requirements; specs/03_architecture/system_architecture.md
+    acceptance: [Backup integrity, restore references, RPO/RTO, failover, and corrective-forward evidence are bound and fail closed]
+  - id: TASK-0037
+    title: Execute bounded environment-sized resilience rehearsal
+    status: pending
+    dependencies: [TASK-0036]
+    source: Stage 9 load/soak/chaos requirements; specs/12_testing/test_strategy.md
+    acceptance: [Synthetic load, soak, dependency failure, projection lag, isolation, and recovery scenarios produce immutable evidence]
+  - id: TASK-0038
+    title: Synchronize public release, documentation, SDK, and migration evidence
+    status: pending
+    dependencies: [TASK-0037]
+    source: Stage 8/9 public documentation and release synchronization; specs/13_docs/documentation_platform.md
+    acceptance: [Contracts, generated docs/SDK, release notes, examples, migration guidance, and versions pass drift checks]
+  - id: TASK-0039
+    title: Complete final security, compliance, and readiness assessment
+    status: pending
+    dependencies: [TASK-0038]
+    source: v1 acceptance themes; specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
+    acceptance: [Security, tenant isolation, control evidence, vulnerabilities, and unsupported-claim checks are complete]
+  - id: TASK-0040
+    title: Assemble formal controlled-pilot go/no-go handoff
+    status: pending
+    dependencies: [TASK-0039]
+    source: Stage 9 pilot and measured-rollout requirements; docs/compliance/pilot-go-no-go.md
+    acceptance: [All evidence is indexed, external prerequisites are explicit, and final decision is truthful with no deployment or certification claim]
