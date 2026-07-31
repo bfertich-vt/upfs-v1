@@ -111,6 +111,20 @@ paths:
     get: {operationId: readDataQuality, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted data quality metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}}}
   /admin/v1/ingestion:
     get: {operationId: readIngestion, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted ingestion metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}}}
+  /admin/v1/support-access:
+    get: {operationId: readSupportAccess, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted support-session metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /admin/v1/canonical-quality:
+    get: {operationId: readCanonicalQuality, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted canonical quality metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /admin/v1/search-projections:
+    get: {operationId: readSearchProjections, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted search projection metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /admin/v1/redis:
+    get: {operationId: readRedisHealth, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted Redis health metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /admin/v1/ai-ops:
+    get: {operationId: readAiOperations, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted AI operations metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /admin/v1/security:
+    get: {operationId: readSecurity, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted security metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /admin/v1/policy-simulator:
+    get: {operationId: readPolicySimulator, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted policy simulation metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}, '403': {$ref: '#/components/responses/Forbidden'}}}
   /admin/v1/workflows:
     get: {operationId: readWorkflows, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted workflow metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}}}
   /admin/v1/policies:

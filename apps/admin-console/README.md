@@ -1,3 +1,5 @@
-# UPFS Admin Console vertical slice
+# UPFS Admin Console
 
-This bounded internal-console slice provides accessible Dashboard, Tenants, and Platform health views. It uses only the documented `/admin/v1` API contract and redacted operational metadata; it never accesses databases or financial data directly. `createAdminApi` is the production seam, while tests use synthetic fixtures only. Mutating administrative operations are intentionally not exposed here and remain governed by the service workflow.
+The internal console provides accessible Dashboard, Tenants, Platform health, and normative operations views (support access, ingestion, canonical quality, search projections, Redis, AI operations, workflows, policy simulation, security, compliance, releases, incidents, audit, and operations). It uses only documented `/admin/v1` APIs and redacted operational metadata; it never accesses databases or financial data directly. Missing managed providers render an explicit unavailable state.
+
+Administrative changes are exposed only through the durable operation lifecycle: synthetic dry-run creation, independent approval with dual control, execution only when managed credentials and external approval are present, and evidence-backed rollback. The UI does not bypass policy, scope, audit, or production fail-closed boundaries. Tests use synthetic fixtures only.

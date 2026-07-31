@@ -132,6 +132,62 @@ Undescribed operation.
 - Responses: `200`
 - Example: synthetic only
 
+### GET /admin/v1/support-access
+
+Undescribed operation.
+- Operation: `readSupportAccess`
+- Permission: `admin:read`
+- Responses: `200, 403`
+- Example: synthetic only
+
+### GET /admin/v1/canonical-quality
+
+Undescribed operation.
+- Operation: `readCanonicalQuality`
+- Permission: `admin:read`
+- Responses: `200, 403`
+- Example: synthetic only
+
+### GET /admin/v1/search-projections
+
+Undescribed operation.
+- Operation: `readSearchProjections`
+- Permission: `admin:read`
+- Responses: `200, 403`
+- Example: synthetic only
+
+### GET /admin/v1/redis
+
+Undescribed operation.
+- Operation: `readRedisHealth`
+- Permission: `admin:read`
+- Responses: `200, 403`
+- Example: synthetic only
+
+### GET /admin/v1/ai-ops
+
+Undescribed operation.
+- Operation: `readAiOperations`
+- Permission: `admin:read`
+- Responses: `200, 403`
+- Example: synthetic only
+
+### GET /admin/v1/security
+
+Undescribed operation.
+- Operation: `readSecurity`
+- Permission: `admin:read`
+- Responses: `200, 403`
+- Example: synthetic only
+
+### GET /admin/v1/policy-simulator
+
+Undescribed operation.
+- Operation: `readPolicySimulator`
+- Permission: `admin:read`
+- Responses: `200, 403`
+- Example: synthetic only
+
 ### GET /admin/v1/workflows
 
 Undescribed operation.
