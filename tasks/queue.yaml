@@ -149,7 +149,7 @@ tasks:
       - Production mutation remains unavailable without managed credentials and explicit external approval
   - id: TASK-0024
     title: Expose approval-gated operation workflows in the admin console
-    status: ready
+    status: complete
     dependencies: [TASK-0023]
     acceptance:
       - Operators can inspect operations and initiate bounded dry-run, approve, execute, and rollback flows through API-backed UI controls
