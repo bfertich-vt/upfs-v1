@@ -155,3 +155,16 @@ tasks:
       - Operators can inspect operations and initiate bounded dry-run, approve, execute, and rollback flows through API-backed UI controls
       - UI requires explicit reason, idempotency key, scope, and dual-control context and displays audit/rollback outcomes
       - UI never enables production mutation when managed credentials or external approval are unavailable
+  - id: TASK-0025
+    title: Expand customer console from search slice to documented page-contract foundation
+    status: ready
+    dependencies: [TASK-0007]
+    inputs:
+      - docs/MASTER_PLAN.md
+      - specs/02_ui/console_experience.md
+      - specs/05_apis/api_standards.md
+    source: Stage 8 Platform UX; customer-console priority pages and page contract
+    acceptance:
+      - Customer console navigation and page shell implement documented purpose, permissions, classification, states, accessibility, API mapping, audit, and acceptance metadata
+      - At least the next dependency-complete Platform UX pages beyond transaction search are API-backed and tenant-scoped without privileged shortcuts
+      - Synthetic fixtures and negative authorization tests cover the new pages; no production data or unsupported claims are introduced
