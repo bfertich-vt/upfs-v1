@@ -96,7 +96,7 @@ tasks:
       - Pilot readiness is documented without claiming production launch, certification, or attestation
   - id: TASK-0017
     title: Complete native PostgreSQL backup, restore, and pilot evidence run
-    status: ready
+    status: complete
     dependencies: [TASK-0016]
     acceptance:
       - Native pg_dump/pg_restore or an approved equivalent executes against disposable PostgreSQL targets
@@ -104,7 +104,7 @@ tasks:
       - Missing tools/targets fail closed; no production or customer data is used
   - id: TASK-0018
     title: Integrate managed signing, secrets, and deployment environment controls
-    status: blocked
+    status: ready
     dependencies: [TASK-0017]
     acceptance:
       - Managed signing/secrets references, rotation, configuration validation, and protected environment gates are verified
