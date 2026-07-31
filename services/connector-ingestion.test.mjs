@@ -20,3 +20,11 @@ test('rejects forged signatures, stale timestamps, replay, and idempotency confl
 test('enforces authenticated actor and connector-derived tenant/environment scope', async () => { const { service } = make(); assert.equal((await service.ingest(args(service, { actor: undefined, nonce: 'nonce-auth-012345' }))).status, 401); assert.equal((await service.ingest({ ...args(service, { nonce: 'nonce-forbid-012345' }), actor: { issuer: actor.issuer, subject: 'other' } })).status, 403); });
 test('quarantines scanner failures or suspicious evidence without canonical write', async () => { const { service, canonical } = make(async () => ({ content: 'clear', malware: 'blocked', prompt_injection: 'clear' })); const result = await service.ingest(args(service)); assert.equal(result.status, 422); assert.equal(result.body.code, 'evidence_quarantined'); assert.deepEqual(canonical.audit(), []); });
 test('rejects malformed provider payload before evidence intake', async () => { assert.equal(normalizeProviderTransaction({ ...payload, posted_at: '2026-99-99T00:00:00Z' }).error, 'invalid_provider_field'); const { service, evidence } = make(); const result = await service.ingest(args(service, { nonce: 'nonce-invalid-012345', payload: { ...payload, amount: 'not-money' } })); assert.equal(result.status, 400); assert.deepEqual(evidence.audit(), []); });
+test('applies provider schema bounds and preserves strict category handling', () => {
+  assert.equal(normalizeProviderTransaction({ ...payload, provider_transaction_id: 'x'.repeat(301) }).error, 'invalid_provider_field');
+  assert.equal(normalizeProviderTransaction({ ...payload, account_id: 'x'.repeat(301) }).error, 'invalid_provider_field');
+  assert.equal(normalizeProviderTransaction({ ...payload, category: 'x'.repeat(301) }).error, 'invalid_provider_field');
+  assert.equal(normalizeProviderTransaction({ ...payload, category: 42 }).error, 'invalid_provider_field');
+  assert.equal(normalizeProviderTransaction({ ...payload, posted_at: '2024-02-29T00:00:00Z' }).value.posted_at, '2024-02-29T00:00:00Z');
+  assert.equal(normalizeProviderTransaction({ ...payload, posted_at: '2026-02-30T00:00:00Z' }).error, 'invalid_provider_field');
+});

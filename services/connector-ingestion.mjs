@@ -65,9 +65,20 @@ export function normalizeProviderTransaction(payload) {
   const allowed = new Set(['provider_transaction_id', 'account_id', 'amount', 'currency', 'posted_at', 'description', 'category']);
   if (Object.keys(payload).some((key) => !allowed.has(key))) return { error: 'invalid_provider_payload' };
   for (const key of ['provider_transaction_id', 'account_id', 'amount', 'currency', 'posted_at']) if (typeof payload[key] !== 'string' || !payload[key]) return { error: 'required_provider_field' };
-  if (!/^-?[0-9]+(?:\.[0-9]{1,4})?$/.test(payload.amount) || !/^[A-Z]{3}$/.test(payload.currency) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(payload.posted_at) || Number.isNaN(Date.parse(payload.posted_at))) return { error: 'invalid_provider_field' };
+  if (payload.provider_transaction_id.length > 300 || payload.account_id.length > 300 || !/^-?[0-9]+(?:\.[0-9]{1,4})?$/.test(payload.amount) || !/^[A-Z]{3}$/.test(payload.currency) || !isValidProviderDateTime(payload.posted_at)) return { error: 'invalid_provider_field' };
   if (payload.description !== undefined && (typeof payload.description !== 'string' || payload.description.length > 2048)) return { error: 'invalid_provider_field' };
+  if (payload.category !== undefined && (typeof payload.category !== 'string' || payload.category.length > 300)) return { error: 'invalid_provider_field' };
   return { value: { provider_transaction_id: payload.provider_transaction_id, account_id: payload.account_id, amount: payload.amount, currency: payload.currency, posted_at: payload.posted_at, ...(payload.description !== undefined ? { description: payload.description } : {}) } };
+}
+
+function isValidProviderDateTime(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,9})?(Z|[+-]\d{2}:\d{2})$/.exec(value);
+  if (!match) return false;
+  const [, year, month, day, hour, minute, second, zone] = match;
+  const y = Number(year), mo = Number(month), d = Number(day), h = Number(hour), mi = Number(minute), s = Number(second);
+  if (mo < 1 || mo > 12 || d < 1 || d > new Date(Date.UTC(y, mo, 0)).getUTCDate() || h > 23 || mi > 59 || s > 59) return false;
+  if (zone !== 'Z') { const [zh, zm] = zone.slice(1).split(':').map(Number); if (zh > 23 || zm > 59) return false; }
+  return !Number.isNaN(Date.parse(value));
 }
 
 export function signProviderPayload({ secret, timestamp, nonce, payload }) { return crypto.createHmac('sha256', secret).update(`${timestamp}.${nonce}.${bodyBytes(payload)}`, 'utf8').digest('hex'); }
