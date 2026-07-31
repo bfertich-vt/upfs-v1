@@ -1,0 +1,7 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { PAGE_CONTRACTS, createConsoleApi } from './console-shell.mjs';
+
+test('page contracts cover required fields and remain read-only', () => { for (const page of Object.values(PAGE_CONTRACTS)) { for (const key of ['purpose', 'personas', 'permission', 'data_classification', 'kpis', 'widgets', 'states', 'api', 'audit', 'accessibility', 'non_goals']) assert.ok(page[key], `${key} missing`); assert.match(page.api, /^GET /); assert.equal(page.bulk_limit, 0); } });
+test('console API uses authenticated tenant-scoped read endpoints', async () => { const calls = []; const api = createConsoleApi({ baseUrl: 'https://api.test', fetchImpl: async (url, options) => { calls.push({ url, options }); return { ok: true, status: 200, json: async () => ({ tenant_id: 'tenant-synthetic', data: [] }) }; } }); await api.dashboard(); await api.data(); assert.deepEqual(calls.map((c) => c.url), ['https://api.test/v1/console/dashboard', 'https://api.test/v1/console/data']); assert.equal(calls.every((c) => c.options.credentials === 'include'), true); });
+test('forbidden API response is surfaced without response payload', async () => { const api = createConsoleApi({ fetchImpl: async () => ({ ok: false, status: 403, json: async () => ({ code: 'forbidden', secret: 'must-not-leak' }) }) }); await assert.rejects(api.dashboard(), (error) => error.status === 403 && error.code === 'forbidden' && !error.message.includes('must-not-leak')); });
