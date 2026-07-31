@@ -48,5 +48,5 @@ tasks:
     dependencies: [TASK-0002]
   - id: TASK-0010
     title: Implement read-only admin health and tenant explorer
-    status: ready
+    status: complete
     dependencies: [TASK-0002, TASK-0006]
