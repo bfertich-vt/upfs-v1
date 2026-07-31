@@ -89,7 +89,7 @@ tasks:
       - No deployment occurs without explicit external approval and credentials
   - id: TASK-0016
     title: Produce controlled pilot authorization and SOC 2 readiness evidence
-    status: ready
+    status: complete
     dependencies: [TASK-0015]
     acceptance:
       - Control library, access/change/recovery/security evidence, pilot runbook, SLOs, incident process, and go/no-go record are complete
