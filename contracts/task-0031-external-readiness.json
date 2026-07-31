@@ -1,0 +1,14 @@
+{
+  "schema_version": "upfs.external-readiness.v1",
+  "contract_version": "2026-07-31.1",
+  "synthetic_only": true,
+  "policy": { "checked": true, "policy_version": "external-readiness-policy.v1", "approval": "synthetic-review" },
+  "protected_environments": ["pilot", "production"],
+  "managed_postgresql": { "provider": "external-managed-postgresql", "tls_required": true, "rls_required": true, "backup_enabled": true },
+  "secrets_signing": { "provider": "external-managed-secret-and-config", "secret_ref_required": true, "config_ref_required": true, "signing_key_ref_required": true, "rotation_required": true },
+  "observability": { "provider": "external-managed-observability", "metrics": true, "logs": true, "traces": true, "alerts": true },
+  "backup_targets": { "provider": "external-managed-object-storage", "encrypted": true, "retention_days": 35, "restore_verification_required": true },
+  "cells_regions": { "regions_required": 2, "cells_per_region_required": 1, "routing_managed": true, "failover_managed": true, "corrective_forward": true },
+  "required_references": ["UPFS_MANAGED_SECRET_REF", "UPFS_CONFIG_REF", "UPFS_RELEASE_SIGNING_KEY_REF"],
+  "prohibited": ["committed secrets", "synthetic provider in pilot/production", "unapproved promotion", "real customer data in rehearsal"]
+}

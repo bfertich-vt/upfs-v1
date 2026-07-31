@@ -1,0 +1,8 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { evaluateExternalReadiness, syntheticContract } from './task-0031-external-readiness.mjs';
+const ready = { managed_postgresql: true, managed_secrets: true, managed_observability: true, managed_backup: true, managed_cells_regions: true, evidence: { synthetic_only: true, deployment: 'not-performed', references_bound: false } };
+test('complete contract passes only with all managed integrations', () => { const r = evaluateExternalReadiness({ infrastructure: ready }); assert.equal(r.status, 'passed'); assert.equal(r.decision, 'READY_FOR_EXTERNAL_APPROVAL'); });
+test('missing managed integrations fail closed', () => { const r = evaluateExternalReadiness(); assert.equal(r.decision, 'NO-GO_EXTERNAL_PREREQUISITES'); assert.ok(r.checks.some((x) => x.name === 'managed-infrastructure' && x.status === 'failed')); });
+test('policy, provider, and required references are strict', () => { const c = structuredClone(syntheticContract); c.policy.checked = false; c.managed_postgresql.provider = 'synthetic'; c.required_references.push('secret-value'); const r = evaluateExternalReadiness({ contract: c, infrastructure: ready }); assert.equal(r.status, 'failed'); for (const n of ['policy-checked', 'managed-postgresql', 'required-references']) assert.ok(r.checks.some((x) => x.name === n && x.status === 'failed')); });
+test('deployment or real-data evidence cannot pass', () => { const r = evaluateExternalReadiness({ infrastructure: { ...ready, evidence: { synthetic_only: false, deployment: 'performed', references_bound: true } } }); assert.equal(r.decision, 'NO-GO_EXTERNAL_PREREQUISITES'); assert.ok(r.checks.some((x) => x.name === 'evidence-boundary' && x.status === 'failed')); });
