@@ -123,3 +123,19 @@ tasks:
     acceptance:
       - Pilot scope, owners, approvals, risks, SLOs, controls, evidence index, rollback plan, and explicit go/no-go decision are complete
       - No production launch, certification, or attestation is claimed without external approval
+  - id: TASK-0021
+    title: Build API-backed admin console foundation
+    status: complete
+    dependencies: [TASK-0020]
+    acceptance:
+      - Accessible dashboard, tenant explorer, and platform health views use documented admin APIs only
+      - Support-session, authorization, redaction, and fail-closed error behavior are covered by synthetic tests
+      - No production data, credentials, or privileged mutation is introduced
+  - id: TASK-0022
+    title: Complete operational admin modules and managed integration visibility
+    status: ready
+    dependencies: [TASK-0021]
+    acceptance:
+      - Admin console covers operations, releases, incidents, audit, data quality, ingestion, workflows, policies, and compliance visibility
+      - Managed observability, deployment, and backup/recovery status is API-backed, redacted, tenant/environment scoped, and fail-closed
+      - Privileged operations remain approval-gated and no unsupported production authorization is claimed
