@@ -2,7 +2,7 @@ version: 1
 tasks:
   - id: TASK-0001
     title: Establish repository baseline and specification CI
-    status: ready
+    status: complete
     dependencies: []
     inputs:
       - AGENTS.md
@@ -16,7 +16,7 @@ tasks:
       - CI produces an evidence summary and fails closed
   - id: TASK-0002
     title: Implement identity, organization, tenant, and environment foundation
-    status: blocked
+    status: ready
     dependencies: [TASK-0001]
   - id: TASK-0003
     title: Implement registry generator and canonical transaction contract
