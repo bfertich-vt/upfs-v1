@@ -25,43 +25,6 @@ paths:
         - {in: header, name: Idempotency-Key, required: true, schema: {type: string, minLength: 16}}
       requestBody: {required: true, content: {application/json: {schema: {type: object, required: [tenant_id], properties: {tenant_id: {type: string, format: uuid}, name: {type: string, minLength: 1}}}}}}
       responses: {'201': {description: Environment created}, '401': {description: Authentication required}, '403': {description: Forbidden}}
-  /admin/v1/memberships:
-    post:
-      operationId: createMembership
-      security: [{oauth2: [memberships.write]}]
-      parameters:
-        - {in: header, name: Idempotency-Key, required: true, schema: {type: string, minLength: 16}}
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MembershipCreateRequest'
-      responses:
-        '201': {description: Membership created, content: {application/json: {schema: {$ref: '#/components/schemas/Membership'}}}}
-        '401': {description: Authentication required}
-        '403': {description: Forbidden}
-    get:
-      operationId: listMemberships
-      security: [{oauth2: [memberships.read]}]
-      parameters:
-        - {in: query, name: tenant_id, required: true, schema: {type: string, format: uuid}}
-      responses:
-        '200': {description: Memberships, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Membership'}}}}}
-  /admin/v1/memberships:
-    post:
-      operationId: createMembership
-      security: [{oauth2: [memberships.write]}]
-      parameters:
-        - {in: header, name: Idempotency-Key, required: true, schema: {type: string, minLength: 16}}
-      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [tenant_id, subject, role], properties: {tenant_id: {type: string, format: uuid}, subject: {type: string, minLength: 1}, role: {type: string, minLength: 1}}}}}}
-      responses: {'201': {description: Membership created}, '401': {description: Authentication required}, '403': {description: Forbidden}}
-    get:
-      operationId: listMemberships
-      security: [{oauth2: [memberships.read]}]
-      parameters:
-        - {in: query, name: tenant_id, required: true, schema: {type: string, format: uuid}}
-      responses: {'200': {description: Memberships listed}, '401': {description: Authentication required}, '403': {description: Forbidden}}
   /admin/v1/operations:
     post:
       operationId: createAdministrativeOperation
