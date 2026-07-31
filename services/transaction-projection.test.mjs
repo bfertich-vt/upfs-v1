@@ -20,6 +20,13 @@ test('same event id with changed payload is rejected', () => {
   assert.equal(p.consume({ actor, eventId: 'event-1', transaction: { ...tx('txn-1'), amount: '99.00' } }).body.code, 'projection_event_conflict');
 });
 
+test('consume enforces tenant authorization and same-version conflicts', () => {
+  const p = service();
+  assert.equal(p.consume({ actor, eventId: 'cross', transaction: tx('x', 'tenant-b') }).body.code, 'forbidden');
+  p.consume({ actor, eventId: 'v1', transaction: tx('x') });
+  assert.equal(p.consume({ actor, eventId: 'v2', transaction: { ...tx('x'), amount: '99.00' } }).body.code, 'projection_version_conflict');
+});
+
 test('search is tenant scoped, cursor stable, bounded, and redacts projection internals', () => {
   const p = service();
   p.consume({ actor, eventId: 'a', transaction: { ...tx('txn-1'), description: 'Coffee shop' } });
@@ -31,6 +38,7 @@ test('search is tenant scoped, cursor stable, bounded, and redacts projection in
   assert.equal(second.body.data.length, 1); assert.notEqual(first.body.data[0].id, second.body.data[0].id);
   assert.equal(p.search({ actor, tenantId: 'tenant-a', query: 'coffee', limit: 101 }).body.code, 'invalid_limit');
   assert.equal(p.search({ actor, tenantId: 'tenant-a', query: 'coffee', limit: 1, cursor: 'bad' }).body.code, 'invalid_cursor');
+  assert.equal(p.search({ actor, tenantId: 'tenant-a', query: '   ' }).body.code, 'invalid_query');
 });
 
 test('reconciliation detects drift and rebuild restores deterministic parity', () => {
@@ -48,4 +56,16 @@ test('authentication and authorization are deny by default', () => {
   assert.equal(p.consume({ actor: null, eventId: 'a', transaction: tx('x') }).status, 401);
   assert.equal(p.rebuild({ actor, tenantId: 'tenant-b', canonicalTransactions: [] }).status, 403);
   assert.equal(p.search({ actor, tenantId: 'tenant-a', query: '' }).status, 400);
+});
+
+test('cursor tampering and invalid watermarks are rejected; rebuild clears stale event idempotency', () => {
+  const p = service(); const records = [tx('a'), tx('b')];
+  p.consume({ actor, eventId: 'old', transaction: records[0] }); p.consume({ actor, eventId: 'old-b', transaction: records[1] });
+  const first = p.search({ actor, tenantId: 'tenant-a', query: 'USD', limit: 1 });
+  const raw = JSON.parse(Buffer.from(first.body.page.next_cursor, 'base64url').toString()); raw.offset += 1;
+  assert.equal(p.search({ actor, tenantId: 'tenant-a', query: 'USD', limit: 1, cursor: Buffer.from(JSON.stringify(raw)).toString('base64url') }).body.code, 'invalid_cursor');
+  assert.equal(p.reconcile({ actor, tenantId: 'tenant-a', canonicalTransactions: records, watermark: 3 }).body.code, 'watermark_unavailable');
+  p.rebuild({ actor, tenantId: 'tenant-a', canonicalTransactions: records, watermark: 2 });
+  assert.equal(p.rebuild({ actor, tenantId: 'tenant-a', canonicalTransactions: records, watermark: 1 }).body.code, 'invalid_rebuild_watermark');
+  assert.equal(p.consume({ actor, eventId: 'old', transaction: tx('a', 'tenant-a', 2), sourceVersion: 2 }).body.applied, true);
 });
