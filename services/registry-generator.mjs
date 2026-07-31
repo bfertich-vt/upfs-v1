@@ -11,7 +11,10 @@ export function generateRegistry({ version, entities }) {
 }
 
 export function canonicalTransaction(input) {
-  if (!input?.id || !input.tenant_id || !input.amount || !input.currency || !input.posted_at) throw new Error('invalid_transaction');
+  if (!input || typeof input !== 'object' || ['id','tenant_id','amount','currency','posted_at'].some((k) => typeof input[k] !== 'string' || input[k].length === 0)) throw new Error('invalid_transaction');
   if (!Array.isArray(input.evidence_refs) || input.evidence_refs.length === 0) throw new Error('provenance_required');
+  if (typeof input.account_id !== 'string' || input.account_id.length === 0) throw new Error('invalid_transaction');
+  if (input.evidence_refs.some((ref) => typeof ref !== 'string' || ref.length === 0) || new Set(input.evidence_refs).size !== input.evidence_refs.length) throw new Error('invalid_transaction');
+  if (!/^-?[0-9]+(?:\.[0-9]{1,4})?$/.test(input.amount)) throw new Error('invalid_transaction');
   return { id: input.id, tenant_id: input.tenant_id, account_id: input.account_id, amount: input.amount, currency: input.currency, posted_at: input.posted_at, schema_version: input.schema_version ?? '1.0.0', evidence_refs: [...input.evidence_refs] };
 }
