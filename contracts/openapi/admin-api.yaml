@@ -1,5 +1,5 @@
 openapi: 3.1.0
-info: {title: UPFS Administrative API, version: 1.0.0}
+info: {title: UPFS Administrative API, version: 1.0.0, x-upfs-documentation-defaults: {authentication: oauth2, classification: operational-metadata, rate_limits: bounded, request_response_schemas: true, errors: structured-envelope, audit_events: required, idempotency: required-for-writes, consistency: read-after-write, sdk_behavior: generated}}
 paths:
   /admin/v1/health:
     get:

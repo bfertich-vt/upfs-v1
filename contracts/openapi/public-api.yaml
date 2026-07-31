@@ -1,5 +1,5 @@
 openapi: 3.1.0
-info: {title: UPFS Public API, version: 1.0.0}
+info: {title: UPFS Public API, version: 1.0.0, x-upfs-documentation-defaults: {authentication: oauth2, classification: canonical-financial-data, rate_limits: bounded, request_response_schemas: true, errors: structured-envelope, audit_events: required, idempotency: required-for-writes, consistency: read-after-write, sdk_behavior: generated}}
 servers: [{url: https://api.example.invalid/v1}]
 paths:
   /transactions/search:

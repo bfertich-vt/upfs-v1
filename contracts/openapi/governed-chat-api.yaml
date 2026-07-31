@@ -2,6 +2,7 @@ openapi: 3.1.0
 info:
   title: UPFS Governed Read-only Chat API
   version: 1.1.0
+  x-upfs-documentation-defaults: {authentication: oauth2, classification: derived-citations, rate_limits: bounded, request_response_schemas: true, errors: structured-envelope, audit_events: required, idempotency: not-applicable-read-only, consistency: read-after-write, sdk_behavior: generated}
   description: Tenant-scoped, evidence-cited read path. This operation has no tools, writes, or action side effects.
 servers: [{url: https://api.example.invalid}
 ]
