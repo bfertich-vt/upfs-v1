@@ -23,3 +23,19 @@ test('returns resources only within the authorized tenant', () => {
   service.seed({ id: 'resource-a', tenantId: 'tenant-a' });
   assert.equal(service.get({ actor, tenantId: 'tenant-a', id: 'resource-a' }).status, 200);
 });
+
+test('creates and lists tenant-scoped memberships with idempotent audit', () => {
+  const service = new TenantDomainService({ authorize: () => true });
+  const actor = { issuer: 'https://issuer.example', subject: 'admin' };
+  const first = service.createMembership({ actor, tenantId: 'tenant-a', subject: 'user-a', role: 'viewer', idempotencyKey: 'membership-key-001' });
+  const replay = service.createMembership({ actor, tenantId: 'tenant-a', subject: 'user-a', role: 'viewer', idempotencyKey: 'membership-key-001' });
+  assert.deepEqual(replay, first);
+  assert.equal(service.listMemberships({ actor, tenantId: 'tenant-a' }).body.length, 1);
+  assert.equal(service.audit().length, 1);
+});
+
+test('denies cross-tenant membership listing', () => {
+  const service = new TenantDomainService({ authorize: (_actor, tenantId) => tenantId === 'tenant-a' });
+  const actor = { issuer: 'https://issuer.example', subject: 'admin' };
+  assert.equal(service.listMemberships({ actor, tenantId: 'tenant-b' }).status, 403);
+});
