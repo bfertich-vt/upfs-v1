@@ -55,6 +55,6 @@ export function validateTransaction(t) {
   if (t.description !== undefined && (typeof t.description !== 'string' || t.description.length > 2048)) return 'invalid_transaction';
   const dateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;
   if (!/^-?[0-9]+(?:\.[0-9]{1,4})?$/.test(t.amount) || !/^[A-Z]{3}$/.test(t.currency) || !dateTime.test(t.posted_at) || Number.isNaN(Date.parse(t.posted_at)) || !Array.isArray(t.evidence_refs) || !t.evidence_refs.length || t.evidence_refs.some((ref) => typeof ref !== 'string' || ref.length === 0) || new Set(t.evidence_refs).size !== t.evidence_refs.length) return 'invalid_transaction';
-  if (t.provenance !== undefined && (!Array.isArray(t.provenance) || t.provenance.some((entry) => !entry || typeof entry.kind !== 'string' || typeof entry.actor !== 'string' || typeof entry.at !== 'string' || !entry.kind || !entry.actor || !dateTime.test(entry.at)))) return 'invalid_transaction';
+  if (t.provenance !== undefined && (!Array.isArray(t.provenance) || t.provenance.some((entry) => !entry || typeof entry.kind !== 'string' || typeof entry.actor !== 'string' || typeof entry.at !== 'string' || !entry.kind || !entry.actor || !dateTime.test(entry.at) || Number.isNaN(Date.parse(entry.at))))) return 'invalid_transaction';
   return null;
 }
