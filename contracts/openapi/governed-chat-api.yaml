@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info: {title: UPFS Governed Read-only Chat API, version: 1.0.0}
+paths:
+  /chat:
+    post:
+      operationId: governedReadOnlyChat
+      summary: Answer a tenant-scoped question from approved cited records
+      security: [{oauth2: [chat.read]}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {type: object, required: [question], additionalProperties: false, properties: {question: {type: string, minLength: 1, maxLength: 2000}, limit: {type: integer, minimum: 1, maximum: 20}}}}}
+      responses: {'200': {description: Cited answer or deterministic refusal}, '401': {description: Authentication required}, '403': {description: Tenant authorization denied}, '429': {description: Rate limit exceeded}, '502': {description: Model unavailable}}
+components:
+  securitySchemes: {oauth2: {type: oauth2, flows: {clientCredentials: {tokenUrl: https://auth.example.invalid/oauth/token, scopes: {chat.read: Read-only governed chat}}}}}
