@@ -1,0 +1,39 @@
+openapi: 3.1.0
+info: {title: UPFS Projection Search API, version: 1.0.0}
+servers: [{url: https://api.example.invalid/v1}]
+paths:
+  /transactions/search:
+    post:
+      operationId: searchTransactionsProjection
+      summary: Search tenant-authorized transaction projection
+      description: OpenSearch is an eventually consistent, rebuildable projection; PostgreSQL canonical state remains authoritative.
+      security: [{oauth2: [transactions.search]}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              additionalProperties: false
+              properties:
+                query: {type: string, minLength: 1, maxLength: 500}
+                limit: {type: integer, minimum: 1, maximum: 100, default: 25}
+                cursor: {type: [string, 'null']}
+      responses:
+        '200':
+          description: Stable eventually consistent projection envelope
+          content:
+            application/json:
+              schema: {$ref: ../schemas/transaction-search-response.schema.json}
+        '400': {description: Invalid query, limit, or cursor}
+        '401': {description: Authentication required}
+        '403': {description: Authorization denied}
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.invalid/oauth/token
+          scopes: {transactions.search: Search transactions}
