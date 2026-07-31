@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { nativePlan, main, safeDetails } from './task-0017-native-postgres.mjs';
+import { nativePlan, main, safeDetails, distinctTargets } from './task-0017-native-postgres.mjs';
 
 test('TASK-0017 fails closed when native PostgreSQL prerequisites are missing', async () => {
   const result = await main({ UPFS_DATABASE_URL: '', UPFS_RESTORE_DATABASE_URL: '' });
@@ -18,4 +18,12 @@ test('TASK-0017 native plan uses separate source and restore targets', () => {
 
 test('TASK-0017 does not retain connection URLs in details', () => {
   assert.equal(safeDetails('failed postgres://user:secret@host/db'), 'failed postgres://[redacted]');
+});
+
+test('TASK-0017 rejects equivalent source and restore targets after normalization', () => {
+  assert.throws(() => distinctTargets('postgres://alice:one@HOST/db', 'postgresql://bob:two@host:5432/db'), /distinct/);
+});
+
+test('TASK-0017 rejects malformed database targets', () => {
+  assert.throws(() => distinctTargets('not-a-url', 'postgres://host/db'), /PostgreSQL URL/);
 });

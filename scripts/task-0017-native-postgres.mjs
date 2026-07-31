@@ -14,8 +14,24 @@ const require = createRequire(import.meta.url);
 export const migrationFiles = () => fs.readdirSync(path.join(root, 'infra', 'migrations'))
   .filter((name) => /^\d+_.+\.sql$/.test(name)).sort();
 export const safeDetails = (value) => String(value).replace(/postgres(?:ql)?:\/\/[^\s]+/gi, 'postgres://[redacted]');
+const normalizeTarget = (value) => {
+  let parsed;
+  try { parsed = new URL(value); } catch { throw new Error('database target must be a PostgreSQL URL'); }
+  if (!['postgres:', 'postgresql:'].includes(parsed.protocol) || !parsed.hostname) throw new Error('database target must be a PostgreSQL URL');
+  parsed.protocol = 'postgres:';
+  parsed.username = '';
+  parsed.password = '';
+  if (!parsed.port) parsed.port = '5432';
+  parsed.search = '';
+  parsed.hash = '';
+  return parsed.toString().replace(/\/$/, '').toLowerCase();
+};
+export const distinctTargets = (sourceUrl, restoreUrl) => {
+  if (!sourceUrl || !restoreUrl) throw new Error('source and restore database URLs are required');
+  if (normalizeTarget(sourceUrl) === normalizeTarget(restoreUrl)) throw new Error('source and restore database targets must be distinct');
+};
 export const nativePlan = ({ sourceUrl, restoreUrl, archivePath, psql, pgDump, pgRestore }) => ({
-  migrations: migrationFiles().map((file) => ({ command: psql, args: ['--no-psqlrc', '--set', 'ON_ERROR_STOP=1', '--single-transaction', '--file', path.join(root, 'infra', 'migrations', file), sourceUrl, file] })),
+  migrations: migrationFiles().map((file) => ({ name: file, command: psql, args: ['--no-psqlrc', '--set', 'ON_ERROR_STOP=1', '--single-transaction', '--file', path.join(root, 'infra', 'migrations', file), sourceUrl] })),
   dump: { command: pgDump, args: ['--no-password', '--format=custom', '--file', archivePath, sourceUrl] },
   restore: { command: pgRestore, args: ['--no-password', '--exit-on-error', '--clean', '--if-exists', '--dbname', restoreUrl, archivePath] },
 });
@@ -39,8 +55,9 @@ function clientCommands() {
 }
 function run(spec, timeout = 120000) {
   const result = spawnSync(spec.command, spec.args, { encoding: 'utf8', windowsHide: true, timeout });
-  return { status: result.status === 0 ? 'passed' : 'failed', code: result.status, timedOut: result.error?.code === 'ETIMEDOUT' };
+  return { status: result.status === 0 ? 'passed' : 'failed', code: result.status, timedOut: result.error?.code === 'ETIMEDOUT', stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
 }
+function psqlSpec(psql, url, sql) { return { command: psql, args: ['--no-psqlrc', '--set', 'ON_ERROR_STOP=1', '--tuples-only', '--command', sql, url] }; }
 function check(checks, name, status, details) { checks.push({ name, status, details: safeDetails(details) }); }
 function synthetic(checks) {
   const migrationText = migrationFiles().map((file) => fs.readFileSync(path.join(root, 'infra', 'migrations', file), 'utf8')).join('\n');
@@ -55,6 +72,11 @@ export async function main(env = process.env) {
   synthetic(checks);
   const sourceUrl = env.UPFS_DATABASE_URL;
   const restoreUrl = env.UPFS_RESTORE_DATABASE_URL;
+  if (sourceUrl && restoreUrl) {
+    try { distinctTargets(sourceUrl, restoreUrl); }
+    catch (error) { check(checks, 'distinct-targets', 'failed', error.message); return { task: 'TASK-0017', status: 'failed', native_evidence: false, checks }; }
+    check(checks, 'distinct-targets', 'passed', 'normalized source and restore targets are distinct');
+  }
   const clients = clientCommands();
   const missing = !sourceUrl || !restoreUrl || !clients.psql || !clients.pg_dump || !clients.pg_restore;
   if (missing) {
@@ -67,7 +89,7 @@ export async function main(env = process.env) {
   try {
     for (const migration of plan.migrations) {
       const result = run(migration, 120000);
-      check(checks, `migration-${path.basename(migration.args.at(-1))}`, result.status, result.status === 'passed' ? 'migration applied to disposable source' : 'migration failed; stderr was not persisted');
+      check(checks, `migration-${migration.name}`, result.status, result.status === 'passed' ? 'migration applied to disposable source' : 'migration failed; stderr was not persisted');
       if (result.status === 'failed') return { task: 'TASK-0017', status: 'failed', native_evidence: false, checks };
     }
     const dump = run(plan.dump);
@@ -76,8 +98,18 @@ export async function main(env = process.env) {
     const restore = run(plan.restore);
     check(checks, 'native-pg-restore', restore.status, restore.status === 'passed' ? 'backup restored to separate disposable target' : 'pg_restore failed; stderr was not persisted');
     if (restore.status === 'failed') return { task: 'TASK-0017', status: 'failed', native_evidence: false, checks };
-    const probe = run({ command: clients.psql, args: ['--no-psqlrc', '--set', 'ON_ERROR_STOP=1', '--tuples-only', '--command', "SELECT current_setting('server_version'), (SELECT count(*) FROM pg_tables WHERE schemaname='public');", restoreUrl] }, 30000);
-    check(checks, 'restored-schema-probe', probe.status, probe.status === 'passed' ? 'restored target accepted schema probe' : 'restored schema probe failed; output was not persisted');
+    const probeSql = "BEGIN; SET LOCAL app.organization_id='00000000-0000-0000-0000-000000000001'; SET LOCAL app.tenant_id='00000000-0000-0000-0000-000000000001'; SELECT current_setting('server_version'); SELECT count(*) FROM transactional_outbox WHERE tenant_id='00000000-0000-0000-0000-000000000001'; SELECT count(*) FROM durable_checkpoints WHERE tenant_id='00000000-0000-0000-0000-000000000001'; ROLLBACK;";
+    const probe = run(psqlSpec(clients.psql, restoreUrl, probeSql), 30000);
+    check(checks, 'restored-schema-probe', probe.status, probe.status === 'passed' ? 'restored target accepted tenant-scoped schema probe' : 'restored schema probe failed; output was not persisted');
+    const rlsProbe = run(psqlSpec(clients.psql, restoreUrl, "SELECT (SELECT relforcerowsecurity FROM pg_class WHERE oid='transactional_outbox'::regclass), (SELECT relforcerowsecurity FROM pg_class WHERE oid='durable_checkpoints'::regclass), (SELECT NOT rolsuper FROM pg_roles WHERE rolname=current_user);"), 30000);
+    const nonSuperuserRls = /t\s*\|\s*t\s*\|\s*t/.test(rlsProbe.stdout);
+    check(checks, 'non-superuser-force-rls-probe', rlsProbe.status === 'passed' && nonSuperuserRls ? 'passed' : 'failed', rlsProbe.status === 'passed' && nonSuperuserRls ? 'restored outbox/checkpoint tables retain FORCE RLS under a non-superuser probe' : 'RLS/non-superuser probe failed; output was not persisted');
+    const replayProbe = run(psqlSpec(clients.psql, restoreUrl, "BEGIN; SET LOCAL app.tenant_id='00000000-0000-0000-0000-000000000001'; SELECT count(*) FROM transactional_outbox WHERE status IN ('pending','claimed','failed'); SELECT max(sequence) FROM durable_checkpoints WHERE consumer='native-probe'; ROLLBACK;"), 30000);
+    check(checks, 'outbox-checkpoint-recovery-probe', replayProbe.status, replayProbe.status === 'passed' ? 'outbox and checkpoint rows are queryable for replay/recovery' : 'recovery probe failed; output was not persisted');
+    const loadRows = Math.max(10, Math.min(500, Number(env.UPFS_NATIVE_LOAD_ROWS || 50)));
+    const loadSql = `BEGIN; SET LOCAL app.tenant_id='00000000-0000-0000-0000-000000000001'; INSERT INTO durable_checkpoints (tenant_id,consumer,sequence) SELECT '00000000-0000-0000-0000-000000000001','native-load-'||g,g FROM generate_series(1,${loadRows}) g ON CONFLICT DO NOTHING; SELECT count(*) FROM durable_checkpoints WHERE tenant_id='00000000-0000-0000-0000-000000000001'; ROLLBACK;`;
+    const load = run(psqlSpec(clients.psql, restoreUrl, loadSql), 60000);
+    check(checks, 'bounded-db-load-soak', load.status, load.status === 'passed' ? `bounded ${loadRows}-row insert/query completed and rolled back` : 'bounded load failed; output was not persisted');
     check(checks, 'native-evidence-run', checks.every((c) => c.status === 'passed') ? 'passed' : 'failed', 'native backup/restore run completed without persisted sensitive output');
     return { task: 'TASK-0017', status: checks.some((c) => c.status === 'failed') ? 'failed' : 'passed', native_evidence: true, checks };
   } finally { try { fs.rmSync(archivePath, { force: true }); } catch { /* best effort */ } }
