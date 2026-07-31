@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PAGE_CONTRACTS, createConsoleApi } from './console-shell.mjs';
+import { PAGE_CONTRACTS, NAVIGATION, createConsoleApi } from './console-shell.mjs';
+
+test('navigation follows the documented console groups', () => { assert.deepEqual(NAVIGATION.map(([group]) => group), ['Overview', 'Platform', 'Data', 'Search', 'AI', 'Workflows', 'Governance', 'Developers', 'Operations']); });
 
 test('page contracts cover required fields and remain read-only', () => { for (const page of Object.values(PAGE_CONTRACTS)) { for (const key of ['purpose', 'personas', 'permission', 'data_classification', 'kpis', 'widgets', 'states', 'api', 'audit', 'accessibility', 'non_goals']) assert.ok(page[key], `${key} missing`); assert.match(page.api, /^GET /); assert.equal(page.bulk_limit, 0); } });
 test('console API uses authenticated tenant-scoped read endpoints', async () => { const calls = []; const api = createConsoleApi({ baseUrl: 'https://api.test', fetchImpl: async (url, options) => { calls.push({ url, options }); return { ok: true, status: 200, json: async () => ({ tenant_id: 'tenant-synthetic', data: [] }) }; } }); await api.dashboard(); await api.data(); assert.deepEqual(calls.map((c) => c.url), ['https://api.test/v1/console/dashboard', 'https://api.test/v1/console/data']); assert.equal(calls.every((c) => c.options.credentials === 'include'), true); });
