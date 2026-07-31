@@ -37,9 +37,9 @@ export class AdminControlPlaneService {
   }
   tenantList({ actor, limit = 25, cursor = null, supportSession }) {
     const [request_id, failure] = this.#begin(actor, 'admin.tenants.list', undefined, supportSession); if (failure) return failure;
-    if (!Number.isInteger(limit) || limit < 1 || limit > 100) return error(400, 'invalid_limit', request_id);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) { this.#recordDenied('admin.tenants.list', actor, undefined, request_id, 'invalid_limit'); return error(400, 'invalid_limit', request_id); }
     const offset = cursor === null ? 0 : this.#decodeCursor(cursor, 'admin.tenants.list');
-    if (offset === null) return error(400, 'invalid_cursor', request_id);
+    if (offset === null) { this.#recordDenied('admin.tenants.list', actor, undefined, request_id, 'invalid_cursor'); return error(400, 'invalid_cursor', request_id); }
     const data = this.tenants.slice(offset, offset + limit).map((t) => ({ id: t.id, name: t.name, status: t.status ?? 'active', organization_id: t.organization_id, data_classification: 'tenant_metadata' }));
     return { status: 200, body: { request_id, data, page: { limit, next_cursor: offset + data.length < this.tenants.length ? this.#cursor('admin.tenants.list', offset + data.length) : null } } };
   }
