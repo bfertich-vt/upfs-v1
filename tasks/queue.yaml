@@ -94,3 +94,32 @@ tasks:
     acceptance:
       - Control library, access/change/recovery/security evidence, pilot runbook, SLOs, incident process, and go/no-go record are complete
       - Pilot readiness is documented without claiming production launch, certification, or attestation
+  - id: TASK-0017
+    title: Complete native PostgreSQL backup, restore, and pilot evidence run
+    status: ready
+    dependencies: [TASK-0016]
+    acceptance:
+      - Native pg_dump/pg_restore or an approved equivalent executes against disposable PostgreSQL targets
+      - Migration, RLS, backup/restore, outbox replay, recovery, and environment-sized load evidence is retained and reproducible
+      - Missing tools/targets fail closed; no production or customer data is used
+  - id: TASK-0018
+    title: Integrate managed signing, secrets, and deployment environment controls
+    status: blocked
+    dependencies: [TASK-0017]
+    acceptance:
+      - Managed signing/secrets references, rotation, configuration validation, and protected environment gates are verified
+      - No secrets are committed or exposed; deployment remains approval-gated
+  - id: TASK-0019
+    title: Rehearse canary cell rollout, observability, and incident response
+    status: blocked
+    dependencies: [TASK-0018]
+    acceptance:
+      - Canary promotion/rollback, SLO health gates, tenant-aware telemetry, alerting, backup recovery, and incident drills produce evidence
+      - Corrective-forward behavior is verified without irreversible production mutation
+  - id: TASK-0020
+    title: Assemble formal controlled-pilot go/no-go authorization package
+    status: blocked
+    dependencies: [TASK-0019]
+    acceptance:
+      - Pilot scope, owners, approvals, risks, SLOs, controls, evidence index, rollback plan, and explicit go/no-go decision are complete
+      - No production launch, certification, or attestation is claimed without external approval
