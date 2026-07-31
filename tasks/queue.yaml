@@ -185,7 +185,7 @@ tasks:
       - Synthetic sandbox examples contain no production secrets or customer data
   - id: TASK-0027
     title: Reconcile admin control-plane modules with normative operations
-    status: ready
+    status: complete
     dependencies: [TASK-0026]
     inputs:
       - docs/MASTER_PLAN.md
@@ -196,3 +196,17 @@ tasks:
       - Admin modules explicitly cover platform health, support access broker, connector/ingestion fleet, canonical quality, search projections, Redis health, AI operations, workflow executions, policy simulation, security, compliance, releases, and incidents
       - Each module uses documented admin APIs, redacted operational metadata, authorization-derived scope, and truthful unavailable states where infrastructure is absent
       - Meaningful changes remain durable, policy-approved administrative operations with audit and rollback evidence
+  - id: TASK-0028
+    title: Define cells, regions, and disaster-recovery control plane
+    status: ready
+    dependencies: [TASK-0027]
+    inputs:
+      - docs/MASTER_PLAN.md
+      - specs/03_architecture/system_architecture.md
+      - specs/09_cicd/delivery_pipeline.md
+      - infra/README.md
+    source: Stage 9 Enterprise readiness; cell/region routing, evacuation, DR, and protected-environment requirements
+    acceptance:
+      - Versioned, policy-checked infrastructure/control-plane contracts define cells, regions, tenant routing, evacuation, backup targets, restore points, and failover ownership
+      - Disaster recovery and corrective-forward procedures are reproducible with synthetic fixtures and explicit RPO/RTO evidence
+      - No deployment or production mutation occurs; missing managed infrastructure fails closed
