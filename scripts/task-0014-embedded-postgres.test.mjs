@@ -11,4 +11,5 @@ test('embedded PostgreSQL rehearsal is opt-in and truthful when runtime is unava
   assert.notEqual(result.status, 'failed', JSON.stringify(result));
   assert.ok(result.checks.some((check) => check.name === 'embedded-runtime' && check.status === 'passed'), JSON.stringify(result));
   assert.ok(result.checks.some((check) => check.name === 'embedded-tenant-isolation' && check.status === 'passed'), JSON.stringify(result));
+  assert.ok(result.checks.some((check) => check.name === 'embedded-load-soak' && check.status === 'passed'), JSON.stringify(result));
 });

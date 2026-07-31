@@ -23,6 +23,19 @@ function portFor(offset) {
   return 54000 + ((process.pid + offset * 997) % 1000);
 }
 
+async function boundedClose(client, timeoutMs = 5000) {
+  if (!client) return;
+  let timer;
+  await Promise.race([client.end().catch(() => {}), new Promise((resolve) => { timer = setTimeout(resolve, timeoutMs); timer.unref?.(); })]);
+  if (timer) clearTimeout(timer);
+}
+
+async function boundedStop(cluster, timeoutMs = 10000) {
+  let timer;
+  await Promise.race([Promise.resolve().then(() => cluster.stop()).catch(() => {}), new Promise((resolve) => { timer = setTimeout(resolve, timeoutMs); timer.unref?.(); })]);
+  if (timer) clearTimeout(timer);
+}
+
 async function main() {
   let EmbeddedPostgres;
   try {
@@ -58,6 +71,8 @@ async function main() {
     record('embedded-runtime', 'passed', 'two isolated temporary PostgreSQL clusters started');
     const source = clusters[0].getPgClient();
     const restore = clusters[1].getPgClient();
+    let restoredApp;
+    let app;
     const { Client } = await import('pg');
     await source.connect();
     await restore.connect();
@@ -99,7 +114,7 @@ async function main() {
       await restore.query("CREATE ROLE upfs_app LOGIN NOSUPERUSER PASSWORD 'upfs-app-test-only'");
       await restore.query('GRANT USAGE ON SCHEMA public TO upfs_app');
       await restore.query('GRANT SELECT ON canonical_transactions, transactional_outbox, durable_checkpoints TO upfs_app');
-      const restoredApp = new Client({ user: 'upfs_app', password: 'upfs-app-test-only', port: portFor(1), host: 'localhost', database: 'postgres' });
+      restoredApp = new Client({ user: 'upfs_app', password: 'upfs-app-test-only', port: portFor(1), host: 'localhost', database: 'postgres' });
       await restoredApp.connect();
       await restoredApp.query('BEGIN');
       await restoredApp.query('SELECT set_config($1,$2,true)', ['app.tenant_id', tenantA]);
@@ -112,20 +127,44 @@ async function main() {
       const afterFailure = await restore.query('SELECT count(*) FROM canonical_transactions');
       if (Number(afterFailure.rows[0].count) !== 2) throw new Error('failed restore row was not rolled back');
       record('embedded-restore-failure-injection', 'passed', 'invalid tenant restore row rolled back without altering restored state');
-      await restoredApp.end();
       await source.query("CREATE ROLE upfs_app LOGIN NOSUPERUSER PASSWORD 'upfs-app-test-only'");
       await source.query('GRANT USAGE ON SCHEMA public TO upfs_app');
       await source.query('GRANT SELECT ON canonical_transactions TO upfs_app');
-      const app = new Client({ user: 'upfs_app', password: 'upfs-app-test-only', port: portFor(0), host: 'localhost', database: 'postgres' });
+      app = new Client({ user: 'upfs_app', password: 'upfs-app-test-only', port: portFor(0), host: 'localhost', database: 'postgres' });
       await app.connect();
       await app.query('BEGIN');
       await app.query('SELECT set_config($1, $2, true)', ['app.tenant_id', tenantA]);
       const visible = await app.query('SELECT id FROM canonical_transactions ORDER BY id');
       await app.query('COMMIT');
-      await app.end();
       const rows = visible.rows;
       if (rows.length !== 1 || rows[0].id !== 'a') throw new Error('RLS returned a cross-tenant row or hid the scoped row');
       record('embedded-tenant-isolation', 'passed', 'FORCE RLS exposed only tenant-a data under an authorized tenant setting');
+
+      const loadCount = 200;
+      const loadStarted = performance.now();
+      await source.query('BEGIN');
+      try {
+        for (let index = 0; index < loadCount; index += 1) {
+          const tenant = index % 2 === 0 ? tenantA : tenantB;
+          await source.query('INSERT INTO canonical_transactions (id,tenant_id,account_id,amount,currency,posted_at,schema_version) VALUES ($1,$2,$3,$4,$5,now(),$6)', [`load-${index}`, tenant, 'load-account', 1, 'USD', '1.0.0']);
+        }
+        await source.query('COMMIT');
+        await app.query('BEGIN');
+        await app.query('SELECT set_config($1, $2, true)', ['app.tenant_id', tenantA]);
+        const scopedLoad = await app.query("SELECT count(*) FROM canonical_transactions WHERE id LIKE 'load-%'");
+        await app.query('COMMIT');
+        if (Number(scopedLoad.rows[0].count) !== loadCount / 2) throw new Error('load query crossed tenant boundary');
+        await source.query('BEGIN');
+        await source.query("DELETE FROM canonical_transactions WHERE id LIKE 'load-%'");
+        await source.query('COMMIT');
+      } catch (error) {
+        await source.query('ROLLBACK').catch(() => {});
+        throw error;
+      }
+      const loadDurationMs = Math.round(performance.now() - loadStarted);
+      const loadThresholdMs = 10000;
+      if (loadDurationMs > loadThresholdMs) throw new Error(`bounded load exceeded ${loadThresholdMs}ms (${loadDurationMs}ms)`);
+      record('embedded-load-soak', 'passed', `${loadCount} synthetic inserts and tenant-scoped query completed in ${loadDurationMs}ms (threshold ${loadThresholdMs}ms); committed synthetic rows were deleted during bounded cleanup`);
       const platformPackage = process.platform === 'win32' ? '@embedded-postgres/windows-x64' : `@embedded-postgres/${process.platform}-${process.arch}`;
       const binDir = path.resolve(path.dirname(require.resolve(platformPackage)), '..');
       const packageBin = path.join(binDir, 'native', 'bin');
@@ -133,15 +172,17 @@ async function main() {
       const restoreAvailable = await fs.access(path.join(packageBin, process.platform === 'win32' ? 'pg_restore.exe' : 'pg_restore')).then(() => true).catch(() => false);
       record('embedded-backup-restore', 'skipped', dumpAvailable && restoreAvailable ? 'external pg_dump/pg_restore check remains separate; logical client restore is recorded independently' : 'embedded-postgres package does not ship pg_dump/pg_restore; external client evidence remains required');
     } finally {
-      await source.end();
-      await restore.end();
+      await boundedClose(app);
+      await boundedClose(restoredApp);
+      await boundedClose(source);
+      await boundedClose(restore);
     }
     result.status = result.checks.some((check) => check.status === 'failed') ? 'failed' : 'passed';
   } catch (error) {
     record('embedded-execution', 'failed', error instanceof Error ? error.message : String(error));
   } finally {
     for (const cluster of clusters.reverse()) {
-      try { await cluster.stop(); } catch { /* best effort shutdown */ }
+      await boundedStop(cluster);
     }
     for (const directory of directories) {
       try { await fs.rm(directory, { recursive: true, force: true }); } catch { /* best effort cleanup */ }
