@@ -189,12 +189,12 @@ function validateWorkflowPins() {
   assert(validateWorkflow.includes("node-version: '24.16.0'"), "validate workflow must pin the Node.js version.");
   assert(validateWorkflow.includes("npm ci --ignore-scripts"), "validate workflow must install pinned validator dependencies.");
   assert(packageJson.dependencies?.yaml === "2.8.1", "package.json must pin yaml 2.8.1.");
-  assert(securityWorkflow.includes("aquasecurity/trivy-action@0.28.0"), "security workflow must pin Trivy.");
+  assert(securityWorkflow.includes("aquasecurity/trivy-action@v0.36.0"), "security workflow must pin Trivy.");
   assert(securityWorkflow.includes("version: v0.65.0"), "security workflow must pin the Trivy tool version.");
   recordCheck("workflow-pins", {
     validate_node: "24.16.0",
     yaml_parser: packageJson.dependencies.yaml,
-    trivy_action: "0.28.0",
+    trivy_action: "0.36.0",
     trivy_version: "0.65.0",
   });
 }
