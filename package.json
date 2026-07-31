@@ -11,6 +11,7 @@
     "embedded-postgres": "18.4.0-beta.17"
   },
   "scripts": {
+    "test": "node --test scripts/*.test.mjs services/*.test.mjs",
     "rehearsal:postgres:embedded": "node scripts/task-0014-embedded-postgres.mjs"
   }
 }
