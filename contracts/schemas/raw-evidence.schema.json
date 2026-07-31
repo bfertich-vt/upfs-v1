@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/upfs/raw-evidence/1.0.0",
+  "title": "RawEvidenceObservation",
+  "type": "object", "additionalProperties": false,
+  "required": ["id", "tenant_id", "environment_id", "source", "media_type", "content", "content_hash", "observed_at"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 200}, "tenant_id": {"type": "string", "minLength": 1}, "environment_id": {"type": "string", "minLength": 1}, "source": {"type": "string", "minLength": 1, "maxLength": 200}, "media_type": {"type": "string", "minLength": 1, "maxLength": 200}, "content": {"type": "string", "maxLength": 10000000}, "content_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "observed_at": {"type": "string", "format": "date-time"}
+  }
+}
