@@ -1,6 +1,28 @@
 openapi: 3.1.0
 info: {title: UPFS Administrative API, version: 1.0.0}
 paths:
+  /admin/v1/organizations:
+    post:
+      operationId: createOrganization
+      security: [{oauth2: [organizations.write]}]
+      parameters:
+        - {in: header, name: Idempotency-Key, required: true, schema: {type: string, minLength: 16}}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: ../schemas/identity-foundation.schema.json}}}}
+      responses: {'201': {description: Organization created}, '401': {description: Authentication required}, '403': {description: Forbidden}, '409': {description: Idempotency conflict}}
+  /admin/v1/tenants:
+    post:
+      operationId: createTenant
+      security: [{oauth2: [tenants.write]}]
+      parameters:
+        - {in: header, name: Idempotency-Key, required: true, schema: {type: string, minLength: 16}}
+      responses: {'201': {description: Tenant created}, '401': {description: Authentication required}, '403': {description: Forbidden}}
+  /admin/v1/environments:
+    post:
+      operationId: createEnvironment
+      security: [{oauth2: [environments.write]}]
+      parameters:
+        - {in: header, name: Idempotency-Key, required: true, schema: {type: string, minLength: 16}}
+      responses: {'201': {description: Environment created}, '401': {description: Authentication required}, '403': {description: Forbidden}}
   /admin/v1/operations:
     post:
       operationId: createAdministrativeOperation
