@@ -40,11 +40,11 @@ tasks:
     dependencies: [TASK-0006]
   - id: TASK-0008
     title: Implement governed context and cited read-only chat
-    status: ready
+    status: complete
     dependencies: [TASK-0006]
   - id: TASK-0009
     title: Implement policy, durable workflow, and approval foundations
-    status: blocked
+    status: ready
     dependencies: [TASK-0002]
   - id: TASK-0010
     title: Implement read-only admin health and tenant explorer
