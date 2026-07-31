@@ -226,7 +226,7 @@ tasks:
       - Missing managed targets fail closed; no production deployment or customer data is used
   - id: TASK-0030
     title: Assemble final master-plan conformance and acceptance evidence
-    status: ready
+    status: complete
     dependencies: [TASK-0029]
     inputs:
       - docs/MASTER_PLAN.md
