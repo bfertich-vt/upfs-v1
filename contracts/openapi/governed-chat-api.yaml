@@ -1,14 +1,61 @@
 openapi: 3.1.0
-info: {title: UPFS Governed Read-only Chat API, version: 1.0.0}
+info:
+  title: UPFS Governed Read-only Chat API
+  version: 1.1.0
+  description: Tenant-scoped, evidence-cited read path. This operation has no tools, writes, or action side effects.
+servers: [{url: https://api.example.invalid}
+]
 paths:
   /chat:
     post:
       operationId: governedReadOnlyChat
       summary: Answer a tenant-scoped question from approved cited records
       security: [{oauth2: [chat.read]}]
+      parameters:
+        - {$ref: '#/components/parameters/RequestId'}
       requestBody:
         required: true
-        content: {application/json: {schema: {type: object, required: [question], additionalProperties: false, properties: {question: {type: string, minLength: 1, maxLength: 2000}, limit: {type: integer, minimum: 1, maximum: 20}}}}}
-      responses: {'200': {description: Cited answer or deterministic refusal}, '401': {description: Authentication required}, '403': {description: Tenant authorization denied}, '429': {description: Rate limit exceeded}, '502': {description: Model unavailable}}
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ChatRequest'}
+      responses:
+        '200': {description: Cited answer or deterministic refusal, content: {application/json: {schema: {$ref: '#/components/schemas/ChatResponse'}}}}
+        '400': {description: Invalid request, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401': {description: Authentication required, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '403': {description: Tenant authorization denied, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '429': {description: Rate limit exceeded, headers: {Retry-After: {schema: {type: integer}}}, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '500': {description: Async-only dependency used through synchronous adapter, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '502': {description: Model unavailable or invalid output, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '503': {description: Retrieval unavailable, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '504': {description: Retrieval or model timeout, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
 components:
+  parameters:
+    RequestId: {name: X-Request-Id, in: header, required: false, schema: {type: string, maxLength: 128}}
   securitySchemes: {oauth2: {type: oauth2, flows: {clientCredentials: {tokenUrl: https://auth.example.invalid/oauth/token, scopes: {chat.read: Read-only governed chat}}}}}
+  schemas:
+    ChatRequest:
+      type: object
+      required: [question]
+      additionalProperties: false
+      properties:
+        question: {type: string, minLength: 1, maxLength: 2000}
+        limit: {type: integer, minimum: 1, maximum: 20, default: 20}
+    Citation:
+      type: object
+      required: [record_id, evidence_ref]
+      additionalProperties: false
+      properties: {record_id: {type: string}, evidence_ref: {type: string}}
+    ChatResponse:
+      type: object
+      required: [request_id, answer, citations, refusal]
+      additionalProperties: false
+      properties:
+        request_id: {type: string}
+        answer: {type: string}
+        citations: {type: array, items: {$ref: '#/components/schemas/Citation'}}
+        refusal: {type: [string, 'null'], enum: [insufficient_cited_evidence, citation_required, null]}
+    Error:
+      type: object
+      required: [code]
+      additionalProperties: false
+      properties: {code: {type: string, enum: [invalid_question, invalid_context_limit, authentication_required, forbidden, rate_limited, async_dependency_requires_chatAsync, model_unavailable, invalid_model_output, retrieval_unavailable, retrieval_timeout, model_timeout]}}
