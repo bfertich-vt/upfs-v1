@@ -157,7 +157,7 @@ tasks:
       - UI never enables production mutation when managed credentials or external approval are unavailable
   - id: TASK-0025
     title: Expand customer console from search slice to documented page-contract foundation
-    status: ready
+    status: complete
     dependencies: [TASK-0007]
     inputs:
       - docs/MASTER_PLAN.md
@@ -168,3 +168,18 @@ tasks:
       - Customer console navigation and page shell implement documented purpose, permissions, classification, states, accessibility, API mapping, audit, and acceptance metadata
       - At least the next dependency-complete Platform UX pages beyond transaction search are API-backed and tenant-scoped without privileged shortcuts
       - Synthetic fixtures and negative authorization tests cover the new pages; no production data or unsupported claims are introduced
+  - id: TASK-0026
+    title: Establish public documentation and SDK contract synchronization
+    status: ready
+    dependencies: [TASK-0025]
+    inputs:
+      - docs/MASTER_PLAN.md
+      - specs/13_docs/documentation_platform.md
+      - specs/05_apis/api_standards.md
+      - contracts/openapi/public-api.yaml
+      - contracts/asyncapi/platform-events.yaml
+    source: Stage 8 Platform UX; public APIs/docs/SDKs synchronization acceptance theme
+    acceptance:
+      - Versioned public documentation and generated SDK artifacts are produced from contracts/registries
+      - Validation fails closed for undocumented endpoints, schema/events/permission/error drift, broken examples, and SDK/version mismatch
+      - Synthetic sandbox examples contain no production secrets or customer data
