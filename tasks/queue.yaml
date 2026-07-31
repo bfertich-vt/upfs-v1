@@ -139,3 +139,11 @@ tasks:
       - Admin console covers operations, releases, incidents, audit, data quality, ingestion, workflows, policies, and compliance visibility
       - Managed observability, deployment, and backup/recovery status is API-backed, redacted, tenant/environment scoped, and fail-closed
       - Privileged operations remain approval-gated and no unsupported production authorization is claimed
+  - id: TASK-0023
+    title: Implement approval-gated administrative operation workflows
+    status: ready
+    dependencies: [TASK-0022]
+    acceptance:
+      - Administrative operations expose documented API-backed dry-run and approval lifecycle views/actions
+      - Authenticated actor, tenant/environment scope, idempotency, policy approval, dual control, audit, and rollback evidence are enforced
+      - Production mutation remains unavailable without managed credentials and explicit external approval
