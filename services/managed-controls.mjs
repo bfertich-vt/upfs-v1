@@ -68,6 +68,11 @@ export async function loadManagedEnvironment({ environment, secretRef, configRef
   if (!secretProvider || !configProvider || !signingKeyProvider) fail('provider_not_configured', 'managed providers are required');
   const [secret, config, signingKey] = await Promise.all([secretProvider.getSecret(secretRef), configProvider.getConfig(configRef), signingKeyProvider.getSigningKey(signingKeyRef)]);
   if (secret.synthetic_only || config.synthetic_only || signingKey.synthetic_only) fail('synthetic_provider_forbidden', 'synthetic providers cannot be used by pilot/production');
+  // A provider response is authoritative only when it binds every resolved value
+  // to the request. Never allow a provider to silently return another cell's key.
+  if (secret?.reference !== secretRef || config?.reference !== configRef || signingKey?.reference !== signingKeyRef) fail('provider_reference_mismatch', 'managed provider returned a reference different from the requested reference');
+  if (secret?.environment !== environment || config?.environment !== environment || signingKey?.environment !== environment) fail('provider_environment_mismatch', 'managed provider responses must be bound to the requested environment');
+  if ([secret, config, signingKey].some((entry) => typeof entry?.provider !== 'string' || !entry.provider.trim())) fail('provider_identity_required', 'managed provider identity is required');
   if (typeof secret.value !== 'string' || secret.value.length < 32) fail('secret_invalid', 'managed signing secret is missing or too short');
   if (!validDate(secret.expires_at) || (secret.expires_at && new Date(secret.expires_at) <= now)) fail('secret_expired', 'managed signing secret is expired');
   if (secret.rotated_at && !validDate(secret.rotated_at)) fail('secret_metadata_invalid', 'managed secret rotation metadata is invalid');
@@ -77,25 +82,29 @@ export async function loadManagedEnvironment({ environment, secretRef, configRef
   if (!validDate(signingKey.expires_at) || (signingKey.expires_at && new Date(signingKey.expires_at) <= now)) fail('signing_key_expired', 'managed signing key is expired');
   if (!signingKey.version || typeof signingKey.version !== 'string') fail('signing_key_version_required', 'managed signing key version is required for rotation tracking');
   validateConfig(config.config);
-  return { environment, managed: true, synthetic_only: false, secret_reference: secretRef, config_reference: configRef, signing_key_reference: signingKeyRef, secret_version: secret.version, config_version: config.version, signing_key_version: signingKey.version, config: config.config, signing_material: Object.freeze({ value: signingKey.value, reference: signingKeyRef, version: signingKey.version, provider: 'managed' }) };
+  return { environment, managed: true, synthetic_only: false, secret_reference: secretRef, config_reference: configRef, signing_key_reference: signingKeyRef, secret_version: secret.version, config_version: config.version, signing_key_version: signingKey.version, config: config.config, signing_material: Object.freeze({ value: signingKey.value, reference: signingKeyRef, version: signingKey.version, provider: signingKey.provider, environment, secret_reference: secretRef, config_reference: configRef }) };
 }
 
 export function signReleaseManifest(canonicalManifest, material) {
-  if (typeof canonicalManifest !== 'string' || material?.provider !== 'managed' || typeof material?.value !== 'string' || !material.reference || !material.version) fail('signing_input_invalid', 'manifest and provider-resolved managed signing material are required');
-  return crypto.createHmac('sha256', material.value).update(canonicalManifest).digest('hex');
+  if (typeof canonicalManifest !== 'string' || material?.provider == null || typeof material?.provider !== 'string' || typeof material?.value !== 'string' || !validRef(material.reference, 'key') || !material.version || !environments.has(material.environment) || !material.secret_reference || !material.config_reference) fail('signing_input_invalid', 'manifest and environment-bound managed signing material are required');
+  const metadata = { environment: material.environment, signing_key_reference: material.reference, signing_key_version: material.version, provider: material.provider, secret_reference: material.secret_reference, config_reference: material.config_reference };
+  const signedPayload = `${JSON.stringify(metadata)}\n${canonicalManifest}`;
+  return Object.freeze({ signature: crypto.createHmac('sha256', material.value).update(signedPayload).digest('hex'), metadata });
 }
 
-export function verifyReleaseManifest(canonicalManifest, signature, secret) {
-  if (!/^[a-f0-9]{64}$/.test(signature ?? '')) return false;
-  const expected = signReleaseManifest(canonicalManifest, secret);
-  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+export function verifyReleaseManifest(canonicalManifest, signed, material) {
+  if (!signed || typeof signed !== 'object' || !/^[a-f0-9]{64}$/.test(signed.signature ?? '')) return false;
+  let expected;
+  try { expected = signReleaseManifest(canonicalManifest, material); } catch { return false; }
+  if (JSON.stringify(signed.metadata) !== JSON.stringify(expected.metadata)) return false;
+  return crypto.timingSafeEqual(Buffer.from(expected.signature), Buffer.from(signed.signature));
 }
 
-export function protectedPromotionGate({ environment, approval, artifact, health, reconciliation } = {}) {
+export function protectedPromotionGate({ environment, approval, artifact, health, reconciliation, managed } = {}) {
   if (!environments.has(environment) || (environment !== 'pilot' && environment !== 'production')) return { allowed: false, reason: 'unknown or unprotected environment' };
   if (!approval || approval.approved !== true || typeof approval.approver !== 'string' || !approval.approver.trim() || typeof approval.evidence !== 'string' || !approval.evidence.trim() || !validDate(approval.expires_at) || new Date(approval.expires_at) <= new Date()) return { allowed: false, reason: 'nonempty, unexpired approval evidence and approver are required' };
   if (environment === 'production' && approval.dual_control !== true) return { allowed: false, reason: 'dual control is required for production' };
-  if (artifact?.immutable !== true || artifact?.signature_verified !== true || typeof artifact?.signing_key_reference !== 'string' || !validRef(artifact.signing_key_reference, 'key')) return { allowed: false, reason: 'immutable managed-key signature verification is required' };
+  if (artifact?.immutable !== true || artifact?.signature_verified !== true || typeof artifact?.signing_key_reference !== 'string' || !validRef(artifact.signing_key_reference, 'key') || !managed?.managed || artifact.signing_key_reference !== managed.signing_key_reference || artifact.signing_key_version !== managed.signing_key_version || artifact.signature_provider !== managed.signing_material?.provider || artifact.signature_environment !== environment) return { allowed: false, reason: 'artifact signature metadata does not match the target managed environment' };
   if (health?.passed !== true || reconciliation?.zero_drift !== true) return { allowed: false, reason: 'health and reconciliation gates must pass' };
   return { allowed: true, reason: 'protected promotion gates passed' };
 }
