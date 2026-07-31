@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-export function generateRegistry({ schemaDir, output }) {
+export function generateRegistry({ schemaDir, output, generatedAt = null }) {
   const files = fs.readdirSync(schemaDir).filter((f) => f.endsWith('.json')).sort();
   const schemas = files.map((file) => {
     const raw = fs.readFileSync(path.join(schemaDir, file), 'utf8');
