@@ -52,7 +52,7 @@ tasks:
     dependencies: [TASK-0002, TASK-0006]
   - id: TASK-0011
     title: Execute production hardening and v1 release rehearsal
-    status: ready
+    status: complete
     dependencies: [TASK-0001, TASK-0002, TASK-0003, TASK-0004, TASK-0005, TASK-0006, TASK-0007, TASK-0008, TASK-0009, TASK-0010]
     acceptance:
       - Replace in-memory reference seams with PostgreSQL, outbox, and durable checkpoint adapters

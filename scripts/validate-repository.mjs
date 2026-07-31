@@ -177,8 +177,10 @@ function validateYamlContracts() {
 function validateQueueBaseline() {
   const queue = readUtf8("tasks/queue.yaml");
   assert(queue.includes("id: TASK-0001"), "Task queue must include TASK-0001.");
-  assert(queue.includes("status: ready"), "Task queue baseline must keep at least one ready task.");
-  recordCheck("task-queue", { ready_task: "TASK-0001" });
+  const hasReady = queue.includes("status: ready");
+  const terminal = !hasReady && !queue.includes("status: blocked") && [...queue.matchAll(/status:\s+(\w+)/g)].every((match) => match[1] === "complete");
+  assert(hasReady || terminal, "Task queue must have a ready task or be explicitly terminal with every task complete.");
+  recordCheck("task-queue", { state: terminal ? "terminal" : "active" });
 }
 
 function validateWorkflowPins() {
