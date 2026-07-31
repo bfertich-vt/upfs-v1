@@ -96,6 +96,19 @@ paths:
     get: {operationId: readPolicies, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted policy metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}}}
   /admin/v1/compliance:
     get: {operationId: readCompliance, security: [{oauth2: [admin:read]}], responses: {'200': {description: Redacted compliance metadata, content: {application/json: {schema: {$ref: '#/components/schemas/OperationalMetadataResponse'}}}}}}
+  /admin/v1/managed-integrations:
+    get:
+      operationId: readManagedIntegrations
+      security: [{oauth2: [admin:read]}]
+      parameters:
+        - {in: query, name: tenant_id, required: true, schema: {type: string}}
+        - {in: query, name: environment_id, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Redacted managed integration status, content: {application/json: {schema: {$ref: '#/components/schemas/ManagedIntegrationResponse'}}}}
+        '401': {$ref: '#/components/responses/AuthenticationRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '503': {description: Managed provider unavailable}
 components:
   responses:
     BadRequest: {description: Invalid request, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}
@@ -163,6 +176,23 @@ components:
         data_classification: {type: string, const: operational_metadata}
         status: {type: string}
         observed_at: {type: [string, 'null'], format: date-time}
+    ManagedIntegrationResponse:
+      type: object
+      required: [tenant_id, environment_id, data_classification, observability, deployment, backup]
+      properties:
+        tenant_id: {type: string}
+        environment_id: {type: string}
+        data_classification: {type: string, const: operational_metadata}
+        observability: {$ref: '#/components/schemas/IntegrationStatus'}
+        deployment: {$ref: '#/components/schemas/IntegrationStatus'}
+        backup: {$ref: '#/components/schemas/IntegrationStatus'}
+    IntegrationStatus:
+      type: object
+      required: [status, observed_at, data_classification]
+      properties:
+        status: {type: string}
+        observed_at: {type: [string, 'null'], format: date-time}
+        data_classification: {type: string, const: operational_metadata}
     MembershipCreateRequest:
       type: object
       required: [tenant_id, member_id, roles]

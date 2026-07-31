@@ -7,3 +7,5 @@ The console now also exposes read-only operational module views for operations, 
 Validation: `node --test apps/admin-console/admin-console.test.mjs` (4 passing).
 
 TASK-0022 remediation: managed integration cards now render redacted observability, deployment, and backup status (or an explicit unavailable state). Operational module reads are allowlisted in the client and documented as explicit GET routes in `contracts/openapi/admin-api.yaml`; no undocumented path construction or mutation is used.
+
+Final contract remediation adds explicit `GET /admin/v1/managed-integrations` query parameters and redacted response schemas (`ManagedIntegrationResponse`, `IntegrationStatus`) matching the UI and managed integration service seam.
