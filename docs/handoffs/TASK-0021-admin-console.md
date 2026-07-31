@@ -5,3 +5,5 @@ Implemented `apps/admin-console/admin-console.mjs` with API-backed Dashboard, te
 The console now also exposes read-only operational module views for operations, releases, incidents, audit, data quality, ingestion, workflows, policies, and compliance. These use a generic API seam and redact secret-like fields in rendering. Tenant detail can load redacted managed observability/deployment/backup status through the `managedIntegrations` seam; unavailable providers remain non-fatal and visibly unavailable.
 
 Validation: `node --test apps/admin-console/admin-console.test.mjs` (4 passing).
+
+TASK-0022 remediation: managed integration cards now render redacted observability, deployment, and backup status (or an explicit unavailable state). Operational module reads are allowlisted in the client and documented as explicit GET routes in `contracts/openapi/admin-api.yaml`; no undocumented path construction or mutation is used.
