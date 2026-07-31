@@ -8,8 +8,8 @@ const RFC3339 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2
 /** Read-only admin control-plane reference. Production adapters must sit behind a private control-plane boundary. */
 export class AdminControlPlaneService {
   #audit = [];
-  constructor({ health = {}, tenants = [], environments = [], projection = {}, now = () => new Date(), requestId = () => `req-${crypto.randomUUID()}`, cursorSecret = 'upfs-admin-cursor-secret' } = {}) {
-    this.health = health; this.tenants = tenants.map(clone); this.environments = environments.map(clone); this.projection = projection; this.now = now; this.requestId = requestId; this.cursorSecret = cursorSecret;
+  constructor({ health = {}, tenants = [], environments = [], projection = {}, now = () => new Date(), requestId = () => `req-${crypto.randomUUID()}`, cursorSecret = 'upfs-admin-cursor-secret', managedCredentials = false, policy = () => true } = {}) {
+    this.health = health; this.tenants = tenants.map(clone); this.environments = environments.map(clone); this.projection = projection; this.now = now; this.requestId = requestId; this.cursorSecret = cursorSecret; this.managedCredentials = managedCredentials; this.policy = policy; this.operations = new Map(); this.idempotency = new Map();
   }
   #cursor(endpoint, offset) { const payload = Buffer.from(JSON.stringify({ endpoint, offset })).toString('base64url'); const mac = crypto.createHmac('sha256', this.cursorSecret).update(payload).digest('base64url'); return `${payload}.${mac}`; }
   #decodeCursor(token, endpoint) { try { const [payload, mac] = String(token).split('.'); if (!payload || !mac) return null; const expected = crypto.createHmac('sha256', this.cursorSecret).update(payload).digest('base64url'); if (mac.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(mac), Buffer.from(expected))) return null; const value = JSON.parse(Buffer.from(payload, 'base64url').toString()); return value.endpoint === endpoint && Number.isInteger(value.offset) && value.offset >= 0 ? value.offset : null; } catch { return null; } }
@@ -50,5 +50,32 @@ export class AdminControlPlaneService {
     const p = this.projection[tenantId] ?? {};
     return { status: 200, body: { request_id, tenant: { id: tenant.id, name: tenant.name, status: tenant.status ?? 'active', organization_id: tenant.organization_id, data_classification: 'tenant_metadata' }, environments: envs, projection: { status: ['healthy', 'degraded', 'unavailable'].includes(p.status) ? p.status : 'unknown', watermark: Number.isInteger(p.watermark) ? p.watermark : 0, indexed_count: Number.isInteger(p.indexed_count) ? p.indexed_count : 0, data_classification: 'operational_metadata' } } };
   }
+  #writeBegin(actor, tenantId, environmentId, action) {
+    const request_id = this.requestId();
+    if (!id(actor)) return [request_id, error(401, 'authentication_required', request_id)];
+    const scopes = new Set(Array.isArray(actor.admin_scopes) ? actor.admin_scopes : []);
+    if (!scopes.has('admin:write')) return [request_id, error(403, 'admin_write_scope_required', request_id)];
+    if (typeof tenantId !== 'string' || !tenantId.trim()) return [request_id, error(400, 'tenant_scope_required', request_id)];
+    const allowed = actor.tenant_ids || actor.tenants;
+    if (Array.isArray(allowed) && !allowed.includes(tenantId)) return [request_id, error(403, 'tenant_scope_required', request_id)];
+    if (environmentId !== undefined && environmentId !== null) {
+      const env = this.environments.find((e) => e.id === environmentId && e.tenant_id === tenantId);
+      if (!env) return [request_id, error(404, 'environment_not_found', request_id)];
+    }
+    try { if (this.policy({ actor, tenantId, environmentId, action }) !== true) return [request_id, error(403, 'policy_denied', request_id)]; } catch { return [request_id, error(403, 'policy_denied', request_id)]; }
+    return [request_id, null];
+  }
+  createAdministrativeOperation({ actor, tenantId, environmentId, type, reason, dryRun = true, idempotencyKey, changeTicket = null }) {
+    const [request_id, failure] = this.#writeBegin(actor, tenantId, environmentId, 'admin.operation.create'); if (failure) return failure;
+    if (typeof idempotencyKey !== 'string' || idempotencyKey.length < 16 || idempotencyKey.length > 256) return error(400, 'invalid_idempotency_key', request_id);
+    if (this.idempotency.has(idempotencyKey)) return this.idempotency.get(idempotencyKey);
+    if (typeof type !== 'string' || !type.trim() || typeof reason !== 'string' || reason.trim().length < 10 || reason.length > 1000 || typeof dryRun !== 'boolean') return error(400, 'invalid_operation', request_id);
+    const operation = { id: `op-${crypto.randomUUID()}`, type, tenant_id: tenantId, environment_id: environmentId ?? null, reason: reason.trim(), change_ticket: changeTicket ?? null, dry_run: dryRun, status: 'dry_run', created_by: id(actor), created_at: this.now().toISOString(), approvals: [], audit: [{ event: 'created', actor: id(actor), at: this.now().toISOString(), request_id }], rollback: { available: true, strategy: 'corrective-forward', evidence: null } };
+    const result = { status: 202, body: { request_id, operation: clone(operation), data_classification: 'operational_metadata' } }; this.operations.set(operation.id, operation); this.idempotency.set(idempotencyKey, result); return clone(result);
+  }
+  listAdministrativeOperations({ actor, tenantId, environmentId }) { const [request_id, failure] = this.#begin(actor, 'admin.operations.list', tenantId); if (failure) return failure; const data = [...this.operations.values()].filter((o) => o.tenant_id === tenantId && (!environmentId || o.environment_id === environmentId)).map((o) => ({ ...clone(o), reason: undefined, audit: undefined })); return { status: 200, body: { request_id, data, data_classification: 'operational_metadata' } }; }
+  approveAdministrativeOperation({ actor, operationId, reason, dualControl = false }) { const op = this.operations.get(operationId); if (!op) return error(404, 'operation_not_found', this.requestId()); const [request_id, failure] = this.#writeBegin(actor, op.tenant_id, op.environment_id, 'admin.operation.approve'); if (failure) return failure; if (op.created_by === id(actor)) return error(403, 'dual_control_required', request_id); if (typeof reason !== 'string' || reason.trim().length < 10) return error(400, 'approval_reason_required', request_id); if (dualControl !== true) return error(403, 'dual_control_required', request_id); op.approvals.push({ actor: id(actor), reason: reason.trim(), at: this.now().toISOString(), dual_control: true }); op.status = 'approved'; op.audit.push({ event: 'approved', actor: id(actor), at: this.now().toISOString(), request_id }); return { status: 200, body: { request_id, operation: clone(op), data_classification: 'operational_metadata' } }; }
+  executeAdministrativeOperation({ actor, operationId, idempotencyKey }) { const op = this.operations.get(operationId); const request_id = this.requestId(); if (!op) return error(404, 'operation_not_found', request_id); const [rid, failure] = this.#writeBegin(actor, op.tenant_id, op.environment_id, 'admin.operation.execute'); if (failure) return failure; if (typeof idempotencyKey !== 'string' || idempotencyKey.length < 16) return error(400, 'invalid_idempotency_key', rid); if (op.status !== 'approved') return error(409, 'operation_not_approved', rid); if (!this.managedCredentials || op.dry_run !== false) return error(503, 'managed_credentials_unavailable', rid); op.status = 'executed'; op.audit.push({ event: 'executed', actor: id(actor), at: this.now().toISOString(), request_id: rid }); return { status: 200, body: { request_id: rid, operation: clone(op), data_classification: 'operational_metadata' } }; }
+  rollbackAdministrativeOperation({ actor, operationId, evidence }) { const op = this.operations.get(operationId); const request_id = this.requestId(); if (!op) return error(404, 'operation_not_found', request_id); const [rid, failure] = this.#writeBegin(actor, op.tenant_id, op.environment_id, 'admin.operation.rollback'); if (failure) return failure; if (typeof evidence !== 'string' || evidence.trim().length < 10) return error(400, 'rollback_evidence_required', rid); op.status = 'rolled_back'; op.rollback.evidence = evidence.trim(); op.audit.push({ event: 'rolled_back', actor: id(actor), at: this.now().toISOString(), request_id: rid }); return { status: 200, body: { request_id: rid, operation: clone(op), data_classification: 'operational_metadata' } }; }
   audit() { return this.#audit.map(clone); }
 }
