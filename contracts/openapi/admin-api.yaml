@@ -59,6 +59,7 @@ paths:
   /admin/v1/operations:
     post:
       operationId: createAdministrativeOperation
+      security: [{oauth2: [admin:write]}]
       parameters:
         - {in: header, name: Idempotency-Key, required: true, schema: {type: string, minLength: 16}}
       requestBody:

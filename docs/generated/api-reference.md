@@ -56,7 +56,7 @@ Undescribed operation.
 
 Undescribed operation.
 - Operation: `createAdministrativeOperation`
-- Permission: `none`
+- Permission: `admin:write`
 - Responses: `202`
 - Example: synthetic only
 
