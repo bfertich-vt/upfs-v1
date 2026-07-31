@@ -147,3 +147,11 @@ tasks:
       - Administrative operations expose documented API-backed dry-run and approval lifecycle views/actions
       - Authenticated actor, tenant/environment scope, idempotency, policy approval, dual control, audit, and rollback evidence are enforced
       - Production mutation remains unavailable without managed credentials and explicit external approval
+  - id: TASK-0024
+    title: Expose approval-gated operation workflows in the admin console
+    status: ready
+    dependencies: [TASK-0023]
+    acceptance:
+      - Operators can inspect operations and initiate bounded dry-run, approve, execute, and rollback flows through API-backed UI controls
+      - UI requires explicit reason, idempotency key, scope, and dual-control context and displays audit/rollback outcomes
+      - UI never enables production mutation when managed credentials or external approval are unavailable
