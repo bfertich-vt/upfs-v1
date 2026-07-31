@@ -1,0 +1,24 @@
+asyncapi: 3.0.0
+info: {title: UPFS Platform Events, version: 1.0.0}
+channels:
+  canonicalTransactionChanged:
+    address: canonical.transaction.changed.v1
+    messages:
+      canonicalTransactionChanged:
+        $ref: '#/components/messages/CanonicalTransactionChanged'
+operations:
+  receiveCanonicalTransactionChanged:
+    action: receive
+    channel: {$ref: '#/channels/canonicalTransactionChanged'}
+components:
+  messages:
+    CanonicalTransactionChanged:
+      payload:
+        type: object
+        required: [event_id, tenant_id, occurred_at, transaction_id, version]
+        properties:
+          event_id: {type: string}
+          tenant_id: {type: string}
+          occurred_at: {type: string, format: date-time}
+          transaction_id: {type: string}
+          version: {type: integer, minimum: 1}

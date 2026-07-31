@@ -1,0 +1,52 @@
+version: 1
+tasks:
+  - id: TASK-0001
+    title: Establish repository baseline and specification CI
+    status: ready
+    dependencies: []
+    inputs:
+      - AGENTS.md
+      - specs/00_constitution/engineering_constitution.md
+      - specs/09_cicd/delivery_pipeline.md
+      - specs/12_testing/test_strategy.md
+    acceptance:
+      - Validators run locally and in pull requests
+      - Branch protection and CODEOWNERS requirements are documented
+      - Dependency, secret, contract, and documentation checks have pinned tooling
+      - CI produces an evidence summary and fails closed
+  - id: TASK-0002
+    title: Implement identity, organization, tenant, and environment foundation
+    status: blocked
+    dependencies: [TASK-0001]
+  - id: TASK-0003
+    title: Implement registry generator and canonical transaction contract
+    status: blocked
+    dependencies: [TASK-0001, TASK-0002]
+  - id: TASK-0004
+    title: Implement raw evidence intake and quarantine
+    status: blocked
+    dependencies: [TASK-0002, TASK-0003]
+  - id: TASK-0005
+    title: Implement connector-to-canonical transaction vertical slice
+    status: blocked
+    dependencies: [TASK-0004]
+  - id: TASK-0006
+    title: Implement OpenSearch projection, reconciliation, and search API
+    status: blocked
+    dependencies: [TASK-0005]
+  - id: TASK-0007
+    title: Implement customer console transaction search workbench
+    status: blocked
+    dependencies: [TASK-0006]
+  - id: TASK-0008
+    title: Implement governed context and cited read-only chat
+    status: blocked
+    dependencies: [TASK-0006]
+  - id: TASK-0009
+    title: Implement policy, durable workflow, and approval foundations
+    status: blocked
+    dependencies: [TASK-0002]
+  - id: TASK-0010
+    title: Implement read-only admin health and tenant explorer
+    status: blocked
+    dependencies: [TASK-0002, TASK-0006]

@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info: {title: UPFS Administrative API, version: 1.0.0}
+paths:
+  /admin/v1/operations:
+    post:
+      operationId: createAdministrativeOperation
+      parameters:
+        - {in: header, name: Idempotency-Key, required: true, schema: {type: string, minLength: 16}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, tenant_id, reason, dry_run]
+              properties:
+                type: {type: string}
+                tenant_id: {type: string}
+                reason: {type: string, minLength: 10}
+                change_ticket: {type: string}
+                dry_run: {type: boolean}
+      responses:
+        '202': {description: Governed operation accepted}
