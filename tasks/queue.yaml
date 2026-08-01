@@ -289,13 +289,13 @@ tasks:
     acceptance: [Contracts, generated docs/SDK, release notes, examples, migration guidance, and versions pass drift checks]
   - id: TASK-0039
     title: Complete final security, compliance, and readiness assessment
-      status: ready
+      status: complete
     dependencies: [TASK-0038]
     source: v1 acceptance themes; specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Security, tenant isolation, control evidence, vulnerabilities, and unsupported-claim checks are complete]
   - id: TASK-0040
     title: Assemble formal controlled-pilot go/no-go handoff
-    status: pending
+      status: ready
     dependencies: [TASK-0039]
     source: Stage 9 pilot and measured-rollout requirements; docs/compliance/pilot-go-no-go.md
     acceptance: [All evidence is indexed, external prerequisites are explicit, and final decision is truthful with no deployment or certification claim]
