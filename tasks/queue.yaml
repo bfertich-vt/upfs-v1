@@ -685,13 +685,13 @@ tasks:
     acceptance: [Scoped requests, approval, redaction, expiry, rate limits, abuse detection, audit, and deletion interactions fail closed]
   - id: TASK-0105
     title: Implement operational runbook drift gate
-    status: ready
+    status: complete
     dependencies: [TASK-0104]
     source: docs/runbooks/controlled-pilot-runbook.md; specs/13_docs/documentation_platform.md
     acceptance: [Runbooks reference current APIs, thresholds, owners, commands, evidence, rollback, and unavailable states]
   - id: TASK-0106
     title: Implement public documentation and example drift refresh
-    status: pending
+    status: ready
     dependencies: [TASK-0105]
     source: specs/13_docs/documentation_platform.md; specs/05_apis/api_standards.md
     acceptance: [Public docs, examples, SDKs, contracts, versions, permissions, errors, and migration guidance remain synchronized]
