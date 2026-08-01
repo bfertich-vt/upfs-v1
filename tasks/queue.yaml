@@ -481,13 +481,13 @@ tasks:
     acceptance: [Continuation, pause, or stop decision is reproducible, approval-gated, truthful, and makes no certification or production claim]
   - id: TASK-0071
     title: Establish v1.1 post-observation corrective-action register
-    status: ready
+    status: complete
     dependencies: [TASK-0070]
     source: specs/11_soc2/soc2_readiness.md; docs/compliance/pilot-go-no-go.md
     acceptance: [Residual risks, owners, due dates, evidence refs, priority, status, and closure verification are versioned]
   - id: TASK-0072
     title: Implement risk-acceptance expiry and escalation controls
-    status: pending
+    status: ready
     dependencies: [TASK-0071]
     source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Risk acceptance requires named owner, scope, compensating controls, expiry, approval, and escalation]
