@@ -463,13 +463,13 @@ tasks:
     acceptance: [Admin modules expose only API-backed, scoped, redacted, approval-gated operations with audit evidence]
   - id: TASK-0068
     title: Execute integrated controlled-pilot observation rehearsal
-    status: ready
+    status: complete
     dependencies: [TASK-0067]
     source: docs/compliance/pilot-go-no-go.md; docs/runbooks/controlled-pilot-runbook.md
     acceptance: [A bounded synthetic observation window exercises health, support, incidents, recovery, releases, and reviews]
   - id: TASK-0069
     title: Assemble v1.1 observation-period readiness assessment
-    status: pending
+    status: ready
     dependencies: [TASK-0068]
     source: specs/11_soc2/soc2_readiness.md; docs/compliance/pilot-go-no-go.md
     acceptance: [Observation evidence, exceptions, residual risk, remediation, owner sign-off fields, and external prerequisites are indexed]
