@@ -1,0 +1,1 @@
+{"schema_version":"upfs.v1_1-corrective-actions.v1","actions":[{"id":"ca-1","residual_risk":"managed-infrastructure","owner":"platform-owner","due_date":"2030-02-01","priority":"high","status":"open","evidence_ref":"evidence://corrective/ca-1","closure_verified":false}],"deployment":"not-performed","digest":"bf8e49f647178fd1576a0e4abfbc15be6833672737efbfe1314f27ea6e776d3c"}
