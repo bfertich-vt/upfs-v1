@@ -301,13 +301,13 @@ tasks:
     acceptance: [All evidence is indexed, external prerequisites are explicit, and final decision is truthful with no deployment or certification claim]
   - id: TASK-0041
     title: Close controlled-pilot external prerequisite inventory and ownership
-    status: ready
+    status: complete
     dependencies: [TASK-0040]
     source: docs/compliance/pilot-go-no-go.md; specs/09_cicd/delivery_pipeline.md
     acceptance: [Every missing managed resource, credential, approval, owner, expiry, and evidence reference is enumerated and fail-closed]
   - id: TASK-0042
     title: Implement managed provider onboarding and reference verification workflow
-    status: pending
+    status: ready
     dependencies: [TASK-0041]
     source: specs/09_cicd/delivery_pipeline.md; infra/deployment-environment.json
     acceptance: [Provider onboarding validates identity, environment binding, rotation, health, and immutable references without exposing secrets]
