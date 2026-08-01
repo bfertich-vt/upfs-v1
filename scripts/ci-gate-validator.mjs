@@ -82,6 +82,34 @@ const CLASSIFICATIONS = new Set([
   "Incomplete",
   "Unsupported completion claim",
 ]);
+const REQUIRED_SOURCE_SECTIONS = new Map([
+  [
+    "docs/MASTER_PLAN.md",
+    ["Outcome", "Delivery-stages", "V1-acceptance-themes"],
+  ],
+  [
+    "specs/01_product/vision_and_scope.md",
+    [
+      "Initial-commercial-slice",
+      "Platform-planes",
+      "Explicit-non-goals-for-v1",
+    ],
+  ],
+  [
+    "specs/03_architecture/system_architecture.md",
+    ["Data-path", "Core-services", "Multi-tenancy-and-scale", "Reliability"],
+  ],
+]);
+const REQUIRED_RECLASSIFICATIONS = Array.from(
+  { length: 110 },
+  (_, index) => `TASK-${String(index + 1).padStart(4, "0")}`,
+);
+const AUTHOR_ROLE_FILES = new Map([
+  ["Backend", "agents/BACKEND.md"],
+  ["Frontend", "agents/FRONTEND.md"],
+  ["Schema/Search/AI", "agents/SCHEMA_SEARCH_AI.md"],
+]);
+const QA_ROLE_FILE = "agents/QA_SECURITY.md";
 const ABSENT_EVIDENCE =
   /^(?:not implemented|not applicable|external prerequisite):\s+.{8,}$/i;
 const PLACEHOLDER =
@@ -306,6 +334,421 @@ function requireEvidenceField(
     );
 }
 
+function git(directory, args, encoding = "utf8") {
+  const result = spawnSync("git", ["-C", directory, ...args], {
+    encoding,
+    timeout: 10_000,
+    windowsHide: true,
+  });
+  return result.status === 0 ? result.stdout : undefined;
+}
+
+function sourceBinding(value) {
+  const match = /^([^#:]+)[#:](.+)$/.exec(value ?? "");
+  return match && { file: match[1].trim(), section: match[2].trim() };
+}
+
+function validateRequiredCoverage(rows, relative, errors) {
+  const sources = new Set();
+  const requirements = new Map();
+  for (const row of rows) {
+    const source = sourceBinding(row[0]);
+    if (source) sources.add(`${source.file}#${source.section}`);
+    const id = /^([A-Z][A-Z0-9_-]*-\d{2,})\b/.exec(row[1] ?? "")?.[1];
+    if (id) requirements.set(id, row);
+  }
+  for (const [file, sections] of REQUIRED_SOURCE_SECTIONS)
+    for (const section of sections)
+      if (!sources.has(`${file}#${section}`))
+        errors.push(
+          `${relative} lacks required normative source-section binding ${file}#${section}.`,
+        );
+  const fdx = requirements.get("FDX-01");
+  if (!fdx) errors.push(`${relative} lacks mandatory gap requirement FDX-01.`);
+  else {
+    const text = fdx.join(" ").toLowerCase();
+    for (const word of [
+      "fdx-first",
+      "legacy",
+      "security",
+      "license",
+      "compatibility",
+      "test",
+    ])
+      if (!text.includes(word))
+        errors.push(
+          `${relative} FDX-01 must explicitly bind ${word} review evidence or missing work.`,
+        );
+  }
+  for (const id of REQUIRED_RECLASSIFICATIONS)
+    if (!requirements.has(id))
+      errors.push(
+        `${relative} lacks mandatory reclassification binding ${id}.`,
+      );
+}
+
+function parseAuthorHandoff(body) {
+  const role = /^- Agent role:\s*(.+?)\s*$/im.exec(body)?.[1]?.trim();
+  const roleBinding =
+    /^- Role-file path and digest:\s*`([^`]+)`;\s*SHA-256\s*`([a-f0-9]{64})`\.?\s*$/im.exec(
+      body,
+    );
+  const thread = /^- Agent thread ID:\s*`([^`\s.]+)`\.?\s*$/im.exec(body)?.[1];
+  const worktree =
+    /^- Worktree and branch:\s*`([^`]+)`;\s*`([^`]+)`\.?\s*$/im.exec(body);
+  const candidate = /^- Commit:\s*(?:candidate\s+)?`([a-f0-9]{40})`/im.exec(
+    body,
+  )?.[1];
+  const taskInput = /^- Structured task input:\s*`([^`]+)`\.?\s*$/im.exec(
+    body,
+  )?.[1];
+  const review =
+    /^- Independent reviewer and review result:\s*`([^`]+)`;\s*PASS\.?\s*$/im.exec(
+      body,
+    )?.[1];
+  return { role, roleBinding, thread, worktree, candidate, taskInput, review };
+}
+
+function parseReview(body) {
+  return {
+    role: /^- Agent role:\s*(.+?)\s*$/im.exec(body)?.[1]?.trim(),
+    roleBinding:
+      /^- Role-file path and digest:\s*`([^`]+)`;\s*SHA-256\s*`([a-f0-9]{64})`\.?\s*$/im.exec(
+        body,
+      ),
+    thread: /^- Agent thread ID:\s*`([^`\s.]+)`\.?\s*$/im.exec(body)?.[1],
+    worktree:
+      /^- Review worktree and branch:\s*`([^`]+)`;\s*`([^`]+)`\.?\s*$/im.exec(
+        body,
+      ),
+    candidate: /^- Candidate implementation commit:\s*`([a-f0-9]{40})`/im.exec(
+      body,
+    )?.[1],
+    passed:
+      /^\*\*PASS\b/im.test(body) || /^- Result:\s*PASS\.?\s*$/im.test(body),
+  };
+}
+
+function validateWorktree(root, binding, candidate, label, rowNumber, errors) {
+  if (!binding || !candidate) {
+    errors.push(
+      `traceability row ${rowNumber} ${label} provenance requires worktree, branch, and candidate commit.`,
+    );
+    return false;
+  }
+  const [_, rawWorktree, branch] = binding;
+  if (!path.isAbsolute(rawWorktree)) {
+    errors.push(
+      `traceability row ${rowNumber} ${label} worktree must be an absolute path.`,
+    );
+    return false;
+  }
+  let worktree;
+  try {
+    worktree = fs.realpathSync.native(rawWorktree);
+  } catch {
+    errors.push(
+      `traceability row ${rowNumber} ${label} worktree does not exist: ${rawWorktree}.`,
+    );
+    return false;
+  }
+  const rootReal = fs.realpathSync.native(root);
+  const relative = path.relative(path.dirname(rootReal), worktree);
+  if (
+    !relative ||
+    relative.startsWith("..") ||
+    path.isAbsolute(relative) ||
+    !path.basename(worktree).startsWith("upfs-")
+  ) {
+    errors.push(
+      `traceability row ${rowNumber} ${label} worktree is outside the documented isolated upfs-* worktree strategy.`,
+    );
+    return false;
+  }
+  const listed = git(worktree, ["worktree", "list", "--porcelain"]);
+  const normalizedWorktree = worktree.replaceAll("\\", "/").toLowerCase();
+  if (
+    !listed ||
+    !listed
+      .split(/\r?\n/)
+      .some(
+        (line) =>
+          line.slice(9).replaceAll("\\", "/").toLowerCase() ===
+          normalizedWorktree,
+      )
+  ) {
+    errors.push(
+      `traceability row ${rowNumber} ${label} worktree is not a listed Git worktree.`,
+    );
+    return false;
+  }
+  if (git(worktree, ["branch", "--show-current"])?.trim() !== branch) {
+    errors.push(
+      `traceability row ${rowNumber} ${label} worktree does not bind declared branch ${branch}.`,
+    );
+    return false;
+  }
+  if (!git(worktree, ["show-ref", "--verify", `refs/heads/${branch}`])) {
+    errors.push(
+      `traceability row ${rowNumber} ${label} branch does not exist: ${branch}.`,
+    );
+    return false;
+  }
+  if (git(worktree, ["cat-file", "-t", candidate])?.trim() !== "commit") {
+    errors.push(
+      `traceability row ${rowNumber} ${label} candidate commit does not exist: ${candidate}.`,
+    );
+    return false;
+  }
+  if (git(worktree, ["merge-base", candidate, branch])?.trim() !== candidate) {
+    errors.push(
+      `traceability row ${rowNumber} ${label} candidate commit is not reachable from declared branch ${branch}.`,
+    );
+    return false;
+  }
+  return { worktree, branch };
+}
+
+function validateBlobDigest(
+  worktree,
+  candidate,
+  roleFile,
+  expectedFile,
+  expectedDigest,
+  label,
+  rowNumber,
+  errors,
+) {
+  if (
+    roleFile !== expectedFile ||
+    !/^[a-f0-9]{64}$/i.test(expectedDigest ?? "")
+  ) {
+    errors.push(
+      `traceability row ${rowNumber} ${label} role-file must be ${expectedFile} with a SHA-256 digest.`,
+    );
+    return;
+  }
+  const bytes = git(worktree, ["show", `${candidate}:${roleFile}`], undefined);
+  if (
+    !bytes ||
+    crypto.createHash("sha256").update(bytes).digest("hex") !==
+      expectedDigest.toLowerCase()
+  )
+    errors.push(
+      `traceability row ${rowNumber} ${label} role-file digest does not match Git blob bytes at the candidate commit.`,
+    );
+}
+
+function validGitRelativePath(value) {
+  return (
+    typeof value === "string" &&
+    value.trim().length > 0 &&
+    !path.isAbsolute(value) &&
+    !value.split(/[\\/]/).includes("..")
+  );
+}
+
+function gitBlob(worktree, commit, relative) {
+  if (!validGitRelativePath(relative) || !/^[a-f0-9]{40}$/i.test(commit ?? ""))
+    return undefined;
+  return git(worktree, ["show", `${commit}:${relative}`]);
+}
+
+function validateTaskInputEvidence(
+  worktree,
+  candidate,
+  taskInput,
+  rowNumber,
+  errors,
+) {
+  if (!validGitRelativePath(taskInput)) {
+    errors.push(
+      `traceability row ${rowNumber} provenance requires a repository-relative Structured task input.`,
+    );
+    return;
+  }
+  const taskRaw = gitBlob(worktree, candidate, taskInput);
+  if (!taskRaw) {
+    errors.push(
+      `traceability row ${rowNumber} Structured task input is not Git-resolvable at the candidate commit: ${taskInput}.`,
+    );
+    return;
+  }
+  const document = parseDocument(taskRaw);
+  const task = document.toJS({ maxAliasCount: 100 }) ?? {};
+  if (document.errors.length || !Array.isArray(task.inputs)) {
+    errors.push(
+      `traceability row ${rowNumber} Structured task input must be valid YAML with an inputs array.`,
+    );
+    return;
+  }
+  const evidence = task.evidence_inputs ?? [];
+  if (!Array.isArray(evidence)) {
+    errors.push(
+      `traceability row ${rowNumber} Structured task input evidence_inputs must be an array.`,
+    );
+    return;
+  }
+  const claimed = new Set();
+  for (const item of evidence) {
+    const evidencePath = item?.path;
+    const evidenceCommit = item?.commit;
+    if (
+      !validGitRelativePath(evidencePath) ||
+      !/^[a-f0-9]{40}$/i.test(evidenceCommit ?? "")
+    ) {
+      errors.push(
+        `traceability row ${rowNumber} task input evidence must declare a repository-relative path and immutable 40-character commit.`,
+      );
+      continue;
+    }
+    if (!gitBlob(worktree, evidenceCommit, evidencePath))
+      errors.push(
+        `traceability row ${rowNumber} task input evidence is not Git-resolvable: ${evidenceCommit}:${evidencePath}.`,
+      );
+    claimed.add(evidencePath);
+  }
+  for (const input of task.inputs) {
+    if (!validGitRelativePath(input)) {
+      errors.push(
+        `traceability row ${rowNumber} Structured task input contains an invalid input path.`,
+      );
+      continue;
+    }
+    if (!gitBlob(worktree, candidate, input) && !claimed.has(input))
+      errors.push(
+        `traceability row ${rowNumber} task input is neither candidate-resolvable nor explicitly bound as immutable evidence: ${input}.`,
+      );
+  }
+}
+
+function validateProvenance(
+  root,
+  value,
+  rowNumber,
+  classification,
+  errors,
+  cache,
+) {
+  const cacheKey = `${classification}\u0000${value ?? ""}`;
+  if (cache?.has(cacheKey)) return;
+  cache?.add(cacheKey);
+  if (ABSENT_EVIDENCE.test(value ?? "")) return;
+  const references = splitPathReferences(value ?? "");
+  if (references.length !== 1) {
+    errors.push(
+      `traceability row ${rowNumber} Agent/QA provenance must name exactly one concrete handoff artifact.`,
+    );
+    return;
+  }
+  const handoffFile = resolveContained(
+    root,
+    references[0],
+    `traceability row ${rowNumber} Agent/QA provenance`,
+    errors,
+  );
+  if (!handoffFile) return;
+  const author = parseAuthorHandoff(fs.readFileSync(handoffFile, "utf8"));
+  const expectedAuthorFile = AUTHOR_ROLE_FILES.get(author.role);
+  if (!expectedAuthorFile)
+    errors.push(
+      `traceability row ${rowNumber} provenance must name a documented specialist author role; Supervisor and QA are not implementation provenance.`,
+    );
+  if (!author.thread)
+    errors.push(
+      `traceability row ${rowNumber} provenance requires an agent thread ID.`,
+    );
+  const authorBinding = validateWorktree(
+    root,
+    author.worktree,
+    author.candidate,
+    "author",
+    rowNumber,
+    errors,
+  );
+  if (authorBinding && expectedAuthorFile)
+    validateBlobDigest(
+      authorBinding.worktree,
+      author.candidate,
+      author.roleBinding?.[1],
+      expectedAuthorFile,
+      author.roleBinding?.[2],
+      "author",
+      rowNumber,
+      errors,
+    );
+  if (authorBinding)
+    validateTaskInputEvidence(
+      authorBinding.worktree,
+      author.candidate,
+      author.taskInput,
+      rowNumber,
+      errors,
+    );
+  if (!author.review) {
+    errors.push(
+      `traceability row ${rowNumber} provenance requires a concrete independent QA/Security review artifact and PASS result.`,
+    );
+    return;
+  }
+  const reviewFile = resolveContained(
+    root,
+    author.review,
+    `traceability row ${rowNumber} independent review`,
+    errors,
+  );
+  if (!reviewFile) return;
+  const reviewer = parseReview(fs.readFileSync(reviewFile, "utf8"));
+  if (
+    reviewer.role !== "Independent QA/Security" ||
+    !reviewer.thread ||
+    !reviewer.passed ||
+    reviewer.candidate !== author.candidate
+  ) {
+    errors.push(
+      `traceability row ${rowNumber} independent review artifact must bind QA/Security role, thread, candidate commit, and PASS.`,
+    );
+    return;
+  }
+  const reviewerBinding = validateWorktree(
+    root,
+    reviewer.worktree,
+    reviewer.candidate,
+    "reviewer",
+    rowNumber,
+    errors,
+  );
+  if (reviewerBinding)
+    validateBlobDigest(
+      reviewerBinding.worktree,
+      reviewer.candidate,
+      reviewer.roleBinding?.[1],
+      QA_ROLE_FILE,
+      reviewer.roleBinding?.[2],
+      "reviewer",
+      rowNumber,
+      errors,
+    );
+  if (
+    reviewer.thread === author.thread ||
+    (reviewerBinding?.worktree &&
+      reviewerBinding.worktree === authorBinding?.worktree)
+  )
+    errors.push(
+      `traceability row ${rowNumber} independent reviewer must be distinct from the implementation author.`,
+    );
+  if (
+    [
+      "Proven production implementation",
+      "Proven reference implementation",
+    ].includes(classification) &&
+    ABSENT_EVIDENCE.test(value ?? "")
+  )
+    errors.push(
+      `traceability row ${rowNumber} cannot classify proven work without provenance.`,
+    );
+}
+
 export function validateTraceability(root = process.cwd()) {
   const relative = "docs/MASTER_PLAN_TRACEABILITY.md";
   const errors = [];
@@ -341,6 +784,7 @@ export function validateTraceability(root = process.cwd()) {
     );
   const identifiers = new Set();
   const normalizedBindings = new Set();
+  const provenanceCache = new Set();
   rows.forEach((row, index) => {
     const rowNumber = index + 1;
     if (row.length !== TRACEABILITY_COLUMNS.length) {
@@ -432,6 +876,14 @@ export function validateTraceability(root = process.cwd()) {
         errors,
       );
     }
+    validateProvenance(
+      root,
+      provenance,
+      rowNumber,
+      classification,
+      errors,
+      provenanceCache,
+    );
     for (const [value, column] of [
       [missing, "Missing work"],
       [external, "External dependency"],
@@ -443,6 +895,7 @@ export function validateTraceability(root = process.cwd()) {
         );
     }
   });
+  validateRequiredCoverage(rows, relative, errors);
   return { status: errors.length ? "failed" : "passed", errors };
 }
 

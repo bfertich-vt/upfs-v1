@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -46,41 +47,124 @@ function write(relativeRoot, relative, contents) {
 }
 
 function writeTraceabilityFixture(fixture) {
-  const rows = Array.from({ length: 10 }, (_, index) => {
-    const suffix = String(index + 1).padStart(2, "0");
+  const invoke = (directory, args) => {
+    const result = spawnSync("git", ["-C", directory, ...args], {
+      encoding: "utf8",
+    });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  };
+  const authorWorktree = path.join(
+    path.dirname(fixture),
+    `upfs-${path.basename(fixture)}-author`,
+  );
+  fs.mkdirSync(authorWorktree, { recursive: true });
+  invoke(authorWorktree, ["init", "--initial-branch=recovery/fixture"]);
+  invoke(authorWorktree, ["config", "user.email", "fixture@example.test"]);
+  invoke(authorWorktree, ["config", "user.name", "Fixture"]);
+  write(authorWorktree, "agents/BACKEND.md", "# Backend fixture\n");
+  write(authorWorktree, "agents/QA_SECURITY.md", "# QA fixture\n");
+  write(authorWorktree, "evidence.txt", "fixture evidence\n");
+  invoke(authorWorktree, ["add", "."]);
+  invoke(authorWorktree, ["commit", "-m", "fixture evidence"]);
+  const evidenceCommit = invoke(authorWorktree, ["rev-parse", "HEAD"]);
+  write(
+    authorWorktree,
+    "tasks/recovery/fixture.yaml",
+    `id: RECOVERY-FIXTURE\ninputs:\n  - agents/BACKEND.md\n  - agents/QA_SECURITY.md\n  - evidence.txt\nevidence_inputs:\n  - path: evidence.txt\n    commit: ${evidenceCommit}\n`,
+  );
+  invoke(authorWorktree, ["add", "."]);
+  invoke(authorWorktree, ["commit", "-m", "fixture candidate"]);
+  const candidate = invoke(authorWorktree, ["rev-parse", "HEAD"]);
+  const reviewerWorktree = path.join(
+    path.dirname(fixture),
+    `upfs-${path.basename(fixture)}-reviewer`,
+  );
+  invoke(authorWorktree, [
+    "worktree",
+    "add",
+    reviewerWorktree,
+    "-b",
+    "qa/fixture",
+    candidate,
+  ]);
+  const authorDigest = digest(path.join(authorWorktree, "agents/BACKEND.md"));
+  const reviewerDigest = digest(
+    path.join(authorWorktree, "agents/QA_SECURITY.md"),
+  );
+  write(
+    fixture,
+    "docs/reviews/valid-qa.md",
+    `- Agent role: Independent QA/Security\n- Role-file path and digest: \`agents/QA_SECURITY.md\`; SHA-256 \`${reviewerDigest}\`.\n- Agent thread ID: \`/root/fixture-qa\`.\n- Review worktree and branch: \`${reviewerWorktree}\`; \`qa/fixture\`.\n- Candidate implementation commit: \`${candidate}\`\n- Result: PASS\n`,
+  );
+  write(
+    fixture,
+    "docs/handoffs/valid-backend.md",
+    `- Agent role: Backend\n- Role-file path and digest: \`agents/BACKEND.md\`; SHA-256 \`${authorDigest}\`.\n- Agent thread ID: \`/root/fixture-backend\`.\n- Worktree and branch: \`${authorWorktree}\`; \`recovery/fixture\`.\n- Commit: candidate \`${candidate}\`.\n- Structured task input: \`tasks/recovery/fixture.yaml\`.\n- Independent reviewer and review result: \`docs/reviews/valid-qa.md\`; PASS.\n`,
+  );
+  const sources = [
+    "docs/MASTER_PLAN.md#Outcome",
+    "docs/MASTER_PLAN.md#Delivery-stages",
+    "docs/MASTER_PLAN.md#V1-acceptance-themes",
+    "specs/01_product/vision_and_scope.md#Initial-commercial-slice",
+    "specs/01_product/vision_and_scope.md#Platform-planes",
+    "specs/01_product/vision_and_scope.md#Explicit-non-goals-for-v1",
+    "specs/03_architecture/system_architecture.md#Data-path",
+    "specs/03_architecture/system_architecture.md#Core-services",
+    "specs/03_architecture/system_architecture.md#Multi-tenancy-and-scale",
+    "specs/03_architecture/system_architecture.md#Reliability",
+  ];
+  for (const source of sources)
+    write(fixture, source.split("#", 1)[0], `# ${source}\n`);
+  const rows = Array.from({ length: 110 }, (_, index) => {
+    const suffix = String(index + 1).padStart(4, "0");
     const paths = {
-      source: `specs/source-${suffix}.md`,
       implementation: `implementation-${suffix}.mjs`,
       contract: `contract-${suffix}.yaml`,
       test: `test-${suffix}.mjs`,
       runtime: `runtime-${suffix}.md`,
       security: `security-${suffix}.md`,
       documentation: `docs-${suffix}.md`,
-      provenance: `provenance-${suffix}.md`,
     };
     for (const relative of Object.values(paths))
       write(fixture, relative, `specific evidence for ${relative}\n`);
     return [
-      `${paths.source}#Requirement-${suffix}`,
-      `MP-${suffix} distinct normative requirement for bounded capability ${suffix}`,
+      sources[index % sources.length],
+      `TASK-${suffix} distinct normative requirement for bounded capability ${suffix}`,
       paths.implementation,
       paths.contract,
       paths.test,
       paths.runtime,
       paths.security,
       paths.documentation,
-      paths.provenance,
-      "Proven reference implementation",
+      "docs/handoffs/valid-backend.md",
+      "Incomplete",
       `Distinct missing work for capability ${suffix} remains documented`,
       `External dependency status for capability ${suffix} is not required`,
       `RECOVERY-${suffix} is the next authorized task`,
     ];
   });
+  rows.push([
+    "specs/03_architecture/system_architecture.md#Data-path",
+    "FDX-01 FDX-first connector strategy requires legacy security license compatibility and test review",
+    "Not implemented: FDX adapter is absent",
+    "Not implemented: FDX contract is absent",
+    "Not implemented: provider test is absent",
+    "Not implemented: sandbox runtime is absent",
+    "Not implemented: legacy security review is absent",
+    "docs/handoffs/valid-backend.md",
+    "docs/handoffs/valid-backend.md",
+    "External prerequisite",
+    "FDX-first implementation and legacy security license compatibility test review remain absent",
+    "External prerequisite: approved provider sandbox and legal review",
+    "RECOVERY-FDX-01 is next",
+  ]);
   write(
     fixture,
     "docs/MASTER_PLAN_TRACEABILITY.md",
     `| ${columns.join(" | ")} |\n| ${columns.map(() => "---").join(" | ")} |\n${rows.map((row) => `| ${row.join(" | ")} |`).join("\n")}\n`,
   );
+  return { authorWorktree, candidate, reviewerWorktree };
 }
 
 function writeCapabilityFixture(fixture) {
@@ -161,14 +245,14 @@ test("traceability rejects headings-only, placeholders, repeated IDs, and nonexi
     matrix,
     fs
       .readFileSync(matrix, "utf8")
-      .replace("MP-02", "MP-01")
-      .replace("implementation-01.mjs", "missing.mjs"),
+      .replace("TASK-0002", "TASK-0001")
+      .replace("implementation-0001.mjs", "missing.mjs"),
   );
   const result = validateTraceability(fixture);
   assert.equal(result.status, "failed");
   assert.ok(
     result.errors.some((error) =>
-      error.includes("repeats requirement identifier MP-01"),
+      error.includes("repeats requirement identifier TASK-0001"),
     ),
   );
   assert.ok(
@@ -216,6 +300,134 @@ test("traceability rejects generic repeated bindings even when IDs are unique", 
     result.errors.some((error) =>
       error.includes("normalized requirement-to-evidence binding"),
     ),
+  );
+});
+
+test("traceability rejects spoofed reviewer provenance and required coverage omissions", () => {
+  const fixture = temp("upfs-traceability-reviewer-");
+  writeTraceabilityFixture(fixture);
+  const mutateReview = (replace, expected) => {
+    const review = path.join(fixture, "docs/reviews/valid-qa.md");
+    const original = fs.readFileSync(review, "utf8");
+    fs.writeFileSync(review, replace(original));
+    const result = validateTraceability(fixture);
+    assert.equal(result.status, "failed");
+    assert.ok(
+      result.errors.some((error) => error.includes(expected)),
+      result.errors.join(" | "),
+    );
+    fs.writeFileSync(review, original);
+  };
+  mutateReview(
+    (text) =>
+      text.replace(
+        /Review worktree and branch: `[^`]+`/,
+        "Review worktree and branch: `C:\\not-real`",
+      ),
+    "reviewer worktree does not exist",
+  );
+  mutateReview(
+    (text) => text.replace("qa/fixture", "qa/missing"),
+    "reviewer worktree does not bind declared branch",
+  );
+  mutateReview(
+    (text) => text.replace("agents/QA_SECURITY.md", "agents/BACKEND.md"),
+    "reviewer role-file must be agents/QA_SECURITY.md",
+  );
+  mutateReview(
+    (text) =>
+      text.replace(/SHA-256 `[a-f0-9]{64}`/, `SHA-256 \`${"0".repeat(64)}\``),
+    "reviewer role-file digest does not match Git blob bytes",
+  );
+  const handoff = path.join(fixture, "docs/handoffs/valid-backend.md");
+  const originalHandoff = fs.readFileSync(handoff, "utf8");
+  fs.writeFileSync(
+    handoff,
+    originalHandoff.replace(
+      /Role-file path and digest: `agents\/BACKEND\.md`; SHA-256 `[a-f0-9]{64}`/,
+      `Role-file path and digest: \`agents/BACKEND.md\`; SHA-256 \`${"0".repeat(64)}\``,
+    ),
+  );
+  let result = validateTraceability(fixture);
+  assert.equal(result.status, "failed");
+  assert.ok(
+    result.errors.some((error) =>
+      error.includes("author role-file digest does not match Git blob bytes"),
+    ),
+  );
+  fs.writeFileSync(handoff, originalHandoff);
+  fs.writeFileSync(
+    handoff,
+    originalHandoff.replace(
+      "docs/reviews/valid-qa.md",
+      "docs/reviews/fake-qa.md",
+    ),
+  );
+  write(
+    fixture,
+    "docs/reviews/fake-qa.md",
+    "- Agent role: Independent QA/Security\n- Result: PASS\n",
+  );
+  result = validateTraceability(fixture);
+  assert.equal(result.status, "failed");
+  assert.ok(
+    result.errors.some((error) => error.includes("must bind QA/Security role")),
+  );
+  fs.writeFileSync(handoff, originalHandoff);
+  const matrix = path.join(fixture, "docs/MASTER_PLAN_TRACEABILITY.md");
+  const originalMatrix = fs.readFileSync(matrix, "utf8");
+  fs.writeFileSync(matrix, originalMatrix.replace("FDX-01", "OMITTED-01"));
+  result = validateTraceability(fixture);
+  assert.equal(result.status, "failed");
+  assert.ok(
+    result.errors.some((error) =>
+      error.includes("lacks mandatory gap requirement FDX-01"),
+    ),
+  );
+  fs.writeFileSync(matrix, originalMatrix);
+});
+
+test("traceability rejects false committed task-evidence paths and commits", () => {
+  const mutateCandidateTask = (replace, expected) => {
+    const fixture = temp("upfs-traceability-task-evidence-");
+    const state = writeTraceabilityFixture(fixture);
+    const task = path.join(state.authorWorktree, "tasks/recovery/fixture.yaml");
+    fs.writeFileSync(task, replace(fs.readFileSync(task, "utf8")));
+    const invoke = (directory, args) => {
+      const result = spawnSync("git", ["-C", directory, ...args], {
+        encoding: "utf8",
+      });
+      assert.equal(result.status, 0, result.stderr);
+      return result.stdout.trim();
+    };
+    invoke(state.authorWorktree, ["add", "tasks/recovery/fixture.yaml"]);
+    invoke(state.authorWorktree, ["commit", "-m", "mutate fixture evidence"]);
+    const candidate = invoke(state.authorWorktree, ["rev-parse", "HEAD"]);
+    invoke(state.reviewerWorktree, ["reset", "--hard", candidate]);
+    for (const relative of [
+      "docs/handoffs/valid-backend.md",
+      "docs/reviews/valid-qa.md",
+    ]) {
+      const file = path.join(fixture, relative);
+      fs.writeFileSync(
+        file,
+        fs.readFileSync(file, "utf8").replaceAll(state.candidate, candidate),
+      );
+    }
+    const result = validateTraceability(fixture);
+    assert.equal(result.status, "failed");
+    assert.ok(
+      result.errors.some((error) => error.includes(expected)),
+      result.errors.join(" | "),
+    );
+  };
+  mutateCandidateTask(
+    (task) => task.replace("path: evidence.txt", "path: evidence-missing.txt"),
+    "task input evidence is not Git-resolvable",
+  );
+  mutateCandidateTask(
+    (task) => task.replace(/commit: [a-f0-9]{40}/, `commit: ${"a".repeat(40)}`),
+    "task input evidence is not Git-resolvable",
   );
 });
 
