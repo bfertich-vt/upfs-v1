@@ -29,6 +29,7 @@
     "skill:check": "node scripts/ci-gate-validator.mjs --capabilities skill",
     "accessibility:check": "node scripts/ci-gate-validator.mjs --capabilities accessibility",
     "security:dependencies": "npm audit --audit-level=high",
+    "validate": "node scripts/validate-repository.mjs",
     "queue:check": "node scripts/validate-repository.mjs",
     "provenance:check": "node --test scripts/provenance-command.test.mjs",
     "traceability:check": "node scripts/ci-gate-validator.mjs --traceability",

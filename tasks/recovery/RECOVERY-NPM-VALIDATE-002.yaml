@@ -1,0 +1,54 @@
+id: RECOVERY-NPM-VALIDATE-002
+title: Provide portable npm validation with observable semantic parity
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/12_testing/test_strategy.md
+  - package.json
+  - scripts/validate-repository.mjs
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-NPM-VALIDATE-001
+authorized_files:
+  - tasks/recovery/RECOVERY-NPM-VALIDATE-002.yaml
+  - package.json
+  - docs/handoffs/RECOVERY-NPM-VALIDATE-002.md
+prohibited_files:
+  - package-lock.json
+  - scripts/**
+  - tasks/queue.yaml
+  - docs/reviews/**
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - README.md
+  - START_HERE.md
+  - .github/**
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+acceptance_criteria:
+  - Plain npm run validate exists and invokes node scripts/validate-repository.mjs without PowerShell, shell interpolation, or a host-specific shim.
+  - npm and direct Node invocations have equal exit status and produce the same validator-created artifact/result semantics for both passing and failing fixtures; npm-owned banner/prefix output is explicitly excluded from parity because it is outside the script process.
+  - The command does not mask failure, skip validation, download external code, or weaken any queue/provenance/security check.
+  - Only package metadata, task input, and actual post-commit handoff change.
+required_tests:
+  - npm run validate
+  - node scripts/validate-repository.mjs
+  - npm test
+  - git diff --check
+security_requirements:
+  - No credentials, tenant/customer data, host-specific execution, or shell-evaluation behavior is introduced.
+rollback:
+  - Revert only an independently accepted corrective commit; retain prior rejected evidence and do not rewrite history.
+runtime_evidence_required: Direct/npm exit and validator-artifact parity for valid/failing fixtures, full tests, clean diff, real handoff provenance, and distinct independent QA/Security report.
