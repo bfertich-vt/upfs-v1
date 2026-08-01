@@ -1,0 +1,58 @@
+id: RECOVERY-WORKFLOW-TRIVY-PIN-002
+title: Normalize Trivy action identity before fail-closed CI pin enforcement
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - .github/workflows/security.yml
+  - scripts/validate-repository.mjs
+  - scripts/validate-repository.test.mjs
+normative_sources:
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-WORKFLOW-TRIVY-PIN-001
+authorized_files:
+  - tasks/recovery/RECOVERY-WORKFLOW-TRIVY-PIN-002.yaml
+  - scripts/validate-repository.mjs
+  - scripts/validate-repository.test.mjs
+  - docs/handoffs/RECOVERY-WORKFLOW-TRIVY-PIN-002.md
+prohibited_files:
+  - .github/**
+  - package.json
+  - tasks/queue.yaml
+  - docs/reviews/**
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - README.md
+  - START_HERE.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+acceptance_criteria:
+  - Validation identifies action owner/repository case-insensitively before enforcing exactly one canonical Trivy step at immutable SHA ed142fd0673e97e23eac54620cfb913e5ce36c25.
+  - Any case-variant mutable/wrong Trivy source, duplicate case-variant step, or malformed variant fails validation.
+  - Existing exact version, scan type/ref, scanners, severity, exit-code, alias/duplicate/malformed protections remain fail closed.
+  - No workflow/package/queue/security coverage semantics change; handoff is post-commit and validation clean.
+required_tests:
+  - node --test scripts/validate-repository.test.mjs
+  - npm run format:check
+  - npm run ci:gates
+  - npm run validate
+  - npm test
+  - git diff --check
+security_requirements:
+  - Normalize only for identity comparison; never permit case variants, mutable tags, duplicates, or weakened security scanning.
+rollback:
+  - Revert only independently accepted commits; preserve failure evidence and history.
+runtime_evidence_required: Case-variant/dedup mutation evidence, full gates, truthful queue baseline output, actual handoff, and independent QA/Security report.

@@ -277,6 +277,56 @@ export function validateNodeWorkflowPin(validateWorkflow) {
   }
 }
 
+const TRIVY_SOURCE = "aquasecurity/trivy-action";
+const TRIVY_ACTION =
+  "aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25";
+
+function actionSourceIdentity(uses) {
+  return typeof uses === "string" ? uses.split("@", 1)[0].toLowerCase() : "";
+}
+
+export function validateTrivyWorkflowPin(securityWorkflow) {
+  const document = parseDocument(securityWorkflow);
+  assert(
+    document.errors.length === 0,
+    `security workflow must be valid YAML: ${document.errors.map((error) => error.message).join("; ")}`,
+  );
+  const workflow = document.toJS({ maxAliasCount: 100 }) ?? {};
+  const steps = Object.values(workflow.jobs ?? {}).flatMap((job) =>
+    Array.isArray(job?.steps) ? job.steps : [],
+  );
+  const trivySteps = steps.filter(
+    (step) => actionSourceIdentity(step?.uses) === TRIVY_SOURCE,
+  );
+  assert(
+    trivySteps.length === 1,
+    "security workflow must contain exactly one aquasecurity/trivy-action step; duplicate or alias action steps are not permitted.",
+  );
+  const [trivy] = trivySteps;
+  assert(
+    trivy.uses === TRIVY_ACTION,
+    "security workflow must pin aquasecurity/trivy-action to the reviewed immutable commit.",
+  );
+  assert(
+    trivy.with && typeof trivy.with === "object" && !Array.isArray(trivy.with),
+    "security workflow pinned Trivy action must declare a mapping with required scanner settings.",
+  );
+  const required = {
+    version: "v0.69.3",
+    "scan-type": "fs",
+    "scan-ref": ".",
+    scanners: "vuln,secret",
+    severity: "HIGH,CRITICAL",
+    "exit-code": "1",
+  };
+  for (const [key, expected] of Object.entries(required)) {
+    assert(
+      trivy.with[key] === expected,
+      `security workflow pinned Trivy action must supply exact ${key}: ${expected}.`,
+    );
+  }
+}
+
 export function validateWorkflowPins(validationRoot = root) {
   const validateWorkflow = readUtf8(
     ".github/workflows/validate.yml",
@@ -298,18 +348,11 @@ export function validateWorkflowPins(validationRoot = root) {
     packageJson.dependencies?.yaml === "2.8.1",
     "package.json must pin yaml 2.8.1.",
   );
-  assert(
-    securityWorkflow.includes("aquasecurity/trivy-action@v0.36.0"),
-    "security workflow must pin Trivy.",
-  );
-  assert(
-    securityWorkflow.includes("version: v0.69.3"),
-    "security workflow must pin the Trivy tool version.",
-  );
+  validateTrivyWorkflowPin(securityWorkflow);
   recordCheck("workflow-pins", {
     validate_node: "24.16.0",
     yaml_parser: packageJson.dependencies.yaml,
-    trivy_action: "0.36.0",
+    trivy_action: "ed142fd0673e97e23eac54620cfb913e5ce36c25",
     trivy_version: "0.69.3",
   });
 }
