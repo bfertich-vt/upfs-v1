@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {evaluatePrerequisites} from './task-0041-prerequisites.mjs';
+const good=()=>({schema_version:'upfs.external-prerequisites.v1',items:['managed-infrastructure','credentials','external-approvals'].map(name=>({name,status:'missing',owner:'owner',evidence_ref:`evidence://${name}`}))});
+test('missing external prerequisites produce truthful no-go',()=>assert.equal(evaluatePrerequisites({inventory:good()}).decision,'NO-GO_EXTERNAL_PREREQUISITES'));
+for(const m of [x=>{x.items[0].owner=''},x=>{delete x.items[1].evidence_ref},x=>{x.items[2].secret_value='secret'},x=>{x.schema_version='bad'},x=>{x.items[0].status='ready'}])test('prerequisite mutations fail closed',()=>{const x=good();m(x);assert.equal(evaluatePrerequisites({inventory:x}).status,'failed');});
