@@ -613,13 +613,13 @@ tasks:
     acceptance: [Backup encryption, key references, rotation, expiry, restore usability, and revocation are evidenced]
   - id: TASK-0093
     title: Implement restore-point retention and deletion reconciliation
-    status: ready
+    status: complete
     dependencies: [TASK-0092]
     source: specs/03_architecture/system_architecture.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Restore points respect retention/legal hold/deletion and produce immutable reconciliation evidence]
   - id: TASK-0094
     title: Implement tenant-isolation chaos regression suite
-    status: pending
+    status: ready
     dependencies: [TASK-0093]
     source: specs/04_schema/identity_tenant_model.md; specs/12_testing/test_strategy.md
     acceptance: [Cross-tenant reads, writes, projections, exports, support, and recovery fail closed under injected faults]
