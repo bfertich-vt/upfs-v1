@@ -577,13 +577,13 @@ tasks:
     acceptance: [Keyboard, focus, labels, contrast, semantics, responsive states, and unavailable states are tested]
   - id: TASK-0087
     title: Implement customer-console authorization regression gate
-    status: ready
+    status: complete
     dependencies: [TASK-0086]
     source: specs/02_ui/console_experience.md; specs/04_schema/identity_tenant_model.md
     acceptance: [Tenant/environment scope, non-disclosure, redaction, and auth-derived API requests are mutation-tested]
   - id: TASK-0088
     title: Implement admin-console privileged-action regression gate
-    status: pending
+    status: ready
     dependencies: [TASK-0087]
     source: specs/14_admin_control_plane/admin_control_plane.md
     acceptance: [Approval, dual control, idempotency, audit, rollback, unavailable state, and direct-infra denial remain enforced]
