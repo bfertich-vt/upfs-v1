@@ -683,12 +683,90 @@ function validateBlobDigest(
 }
 
 function validGitRelativePath(value) {
-  return (
-    typeof value === "string" &&
-    value.trim().length > 0 &&
-    !path.isAbsolute(value) &&
-    !value.split(/[\\/]/).includes("..")
-  );
+  if (typeof value !== "string" || !value || value !== value.trim())
+    return false;
+  if (
+    value.includes(":") ||
+    value.includes("\0") ||
+    path.posix.isAbsolute(value) ||
+    path.win32.isAbsolute(value)
+  )
+    return false;
+  return value
+    .split(/[\\/]/)
+    .every((segment) => segment && segment !== "." && segment !== "..");
+}
+
+const EXTERNAL_HISTORICAL_AVAILABILITY =
+  "external historical evidence; not a file present in this candidate tree";
+const EXTERNAL_HISTORICAL_FIELDS = new Set([
+  "purpose",
+  "commit",
+  "path",
+  "sha256",
+  "availability",
+]);
+
+export function validateExternalHistoricalEvidence(
+  worktree,
+  externalHistoricalEvidence,
+) {
+  const errors = [];
+  if (externalHistoricalEvidence === undefined)
+    return { status: "passed", errors };
+  if (!Array.isArray(externalHistoricalEvidence)) {
+    errors.push("external historical evidence must be an array.");
+    return { status: "failed", errors };
+  }
+  for (const [index, record] of externalHistoricalEvidence.entries()) {
+    const label = `external historical evidence record ${index + 1}`;
+    if (
+      !record ||
+      typeof record !== "object" ||
+      Array.isArray(record) ||
+      Object.keys(record).length !== EXTERNAL_HISTORICAL_FIELDS.size ||
+      Object.keys(record).some(
+        (field) => !EXTERNAL_HISTORICAL_FIELDS.has(field),
+      )
+    ) {
+      errors.push(
+        `${label} must contain exactly purpose, commit, path, sha256, and availability.`,
+      );
+      continue;
+    }
+    const { purpose, commit, path: relative, sha256, availability } = record;
+    if (typeof purpose !== "string" || !purpose.trim())
+      errors.push(`${label} purpose must be non-empty.`);
+    if (!/^[a-f0-9]{40}$/.test(commit ?? ""))
+      errors.push(
+        `${label} commit must be a lowercase immutable 40-character Git identifier.`,
+      );
+    if (!validGitRelativePath(relative))
+      errors.push(`${label} path must be repository-relative and safe.`);
+    if (!/^[a-f0-9]{64}$/.test(sha256 ?? ""))
+      errors.push(
+        `${label} sha256 must be lowercase 64-character hexadecimal.`,
+      );
+    if (availability !== EXTERNAL_HISTORICAL_AVAILABILITY)
+      errors.push(`${label} availability must use the documented exact label.`);
+    if (
+      !/^[a-f0-9]{40}$/.test(commit ?? "") ||
+      !validGitRelativePath(relative) ||
+      !/^[a-f0-9]{64}$/.test(sha256 ?? "")
+    )
+      continue;
+    const bytes = gitBlobBytes(worktree, commit, relative);
+    if (!bytes) {
+      errors.push(
+        `${label} source is not Git-resolvable: ${commit}:${relative}.`,
+      );
+      continue;
+    }
+    const actual = crypto.createHash("sha256").update(bytes).digest("hex");
+    if (actual !== sha256)
+      errors.push(`${label} sha256 does not match raw Git blob bytes.`);
+  }
+  return { status: errors.length ? "failed" : "passed", errors };
 }
 
 function gitBlob(worktree, commit, relative) {
@@ -725,6 +803,12 @@ function validateTaskInputEvidence(
     );
     return;
   }
+  const external = validateExternalHistoricalEvidence(
+    worktree,
+    task.external_historical_evidence,
+  );
+  for (const error of external.errors)
+    errors.push(`traceability row ${rowNumber} ${error}`);
   const evidence = task.evidence_inputs ?? [];
   if (!Array.isArray(evidence)) {
     errors.push(

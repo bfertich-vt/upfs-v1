@@ -1,0 +1,62 @@
+id: RECOVERY-HISTORICAL-ERRATA-VALIDATOR-008
+title: Clean port cross-platform safe external historical evidence validation
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/governance/provenance-verification.md
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+normative_sources:
+  - AGENTS.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-HISTORICAL-ERRATA-VALIDATOR-007
+authorized_files:
+  - tasks/recovery/RECOVERY-HISTORICAL-ERRATA-VALIDATOR-008.yaml
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - docs/handoffs/RECOVERY-HISTORICAL-ERRATA-VALIDATOR-008.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-ERRATA-VALIDATOR-007.md
+  - docs/reviews/**
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - README.md
+  - START_HERE.md
+  - .github/workflows/**
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+acceptance_criteria:
+  - The implementation is a clean diff from authoritative integration commit 4c13247833b5f331ac73e1f76b9c96fbda1da1bf and ports no rejected historical commits.
+  - Every external_historical_evidence record is fail-closed by exact schema, lowercase 40-hex commit, lowercase 64-hex digest, exact availability label, source resolution, and raw Git blob-content digest equality.
+  - Path validation is platform-independent and rejects POSIX absolute paths, Windows drive/colon paths, UNC paths, single-backslash rooted paths, mixed-separator traversal, dot segments, empty paths, and non-repository-contained paths before Git resolution.
+  - Fixed Git argument arrays are used; no shell command can execute task-provided values.
+  - Valid evidence passes and all invalid schema/source/digest/path/availability/injection cases fail deterministically on Windows and POSIX semantics.
+  - No queue, historic artifacts, product behavior, traceability matrix, workflow, release, or readiness claim changes.
+required_tests:
+  - node --test scripts/ci-gate-validator.test.mjs
+  - npm test
+  - npm run traceability:check
+  - git diff --check
+security_requirements:
+  - Validate both slash styles independent of the host OS and reject before invoking Git.
+  - Never evaluate task-provided content in a shell; preserve evidence as immutable raw Git blob content only.
+  - Do not introduce credentials, tenant/customer data, or weaken tenant isolation.
+rollback:
+  - Revert only an independently accepted clean-port commit; retain all prior candidates and QA artifacts. Do not rewrite history.
+runtime_evidence_required: Clean base diff; Windows- and POSIX-style negative path evidence; focused/full tests; literal hash command; expected recovery baseline checks; and a distinct committed QA/Security report.

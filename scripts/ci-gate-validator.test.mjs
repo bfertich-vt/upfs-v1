@@ -7,6 +7,7 @@ import path from "node:path";
 import test from "node:test";
 import {
   validateCiGates,
+  validateExternalHistoricalEvidence,
   validateHandoffSpecificationDigests,
   validateRepositoryHandoffSpecificationDigests,
   validateRuntimeCapabilities,
@@ -667,6 +668,102 @@ test("traceability rejects false committed task-evidence paths and commits", () 
     (task) => task.replace(/commit: [a-f0-9]{40}/, `commit: ${"a".repeat(40)}`),
     "task input evidence is not Git-resolvable",
   );
+});
+
+test("external historical evidence is Git-bound and rejects cross-platform unsafe paths", () => {
+  const worktree = temp("upfs-external-historical-evidence-");
+  git(worktree, ["init", "--initial-branch=recovery/external-evidence"]);
+  git(worktree, ["config", "user.email", "fixture@example.test"]);
+  git(worktree, ["config", "user.name", "Fixture"]);
+  write(worktree, "docs/reviews/history.md", "immutable QA finding\n");
+  git(worktree, ["add", "."]);
+  git(worktree, ["commit", "-m", "external evidence fixture"]);
+  const commit = git(worktree, ["rev-parse", "HEAD"]);
+  const bytes = spawnSync(
+    "git",
+    ["-C", worktree, "show", `${commit}:docs/reviews/history.md`],
+    { encoding: null },
+  ).stdout;
+  const valid = [
+    {
+      purpose: "independent QA finding",
+      commit,
+      path: "docs/reviews/history.md",
+      sha256: crypto.createHash("sha256").update(bytes).digest("hex"),
+      availability:
+        "external historical evidence; not a file present in this candidate tree",
+    },
+  ];
+  assert.deepEqual(validateExternalHistoricalEvidence(worktree, valid), {
+    status: "passed",
+    errors: [],
+  });
+  const mutate = (change, expected) => {
+    const result = validateExternalHistoricalEvidence(
+      worktree,
+      change(structuredClone(valid)),
+    );
+    assert.equal(result.status, "failed");
+    assert.ok(
+      result.errors.some((error) => error.includes(expected)),
+      result.errors.join(" | "),
+    );
+  };
+  mutate((records) => {
+    records[0].path = "docs/reviews/missing.md";
+    return records;
+  }, "source is not Git-resolvable");
+  mutate((records) => {
+    records[0].sha256 = "A".repeat(64);
+    return records;
+  }, "sha256 must be lowercase");
+  mutate((records) => {
+    records[0].sha256 = "0".repeat(64);
+    return records;
+  }, "does not match raw Git blob bytes");
+  for (const unsafePath of [
+    "/absolute.md",
+    "C:\\absolute.md",
+    "\\\\server\\share\\absolute.md",
+    "\\rooted.md",
+    "a\\..\\b.md",
+    "a/../b.md",
+    "a\\../b.md",
+    "a/..\\b.md",
+    ".",
+    "a/./b.md",
+    "a\\.\\b.md",
+    "",
+    "a//b.md",
+    "a\\\\b.md",
+    "a\\/b.md",
+    "docs/reviews/history.md:alternate",
+  ]) {
+    mutate((records) => {
+      records[0].path = unsafePath;
+      return records;
+    }, "path must be repository-relative and safe");
+  }
+  mutate((records) => {
+    records[0].path = "docs/reviews/history.md;not-a-command";
+    return records;
+  }, "source is not Git-resolvable");
+  mutate((records) => {
+    records[0].extra = "claim";
+    return records;
+  }, "must contain exactly");
+  mutate((records) => {
+    delete records[0].purpose;
+    return records;
+  }, "must contain exactly");
+  mutate((records) => {
+    records[0].availability = "present locally";
+    return records;
+  }, "availability must use the documented exact label");
+  mutate((records) => {
+    records[0].commit = "A".repeat(40);
+    return records;
+  }, "commit must be a lowercase");
 });
 
 test("runtime capability gates reject empty, unbound, and unsafe placeholder artifacts", () => {
