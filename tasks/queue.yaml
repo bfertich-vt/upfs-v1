@@ -595,13 +595,13 @@ tasks:
     acceptance: [Sensitive fields are redacted and metric/log/trace cardinality remains bounded and tenant-safe]
   - id: TASK-0090
     title: Implement SLO threshold and alert-route change review
-    status: ready
+    status: complete
     dependencies: [TASK-0089]
     source: docs/runbooks/controlled-pilot-runbook.md; specs/09_cicd/delivery_pipeline.md
     acceptance: [SLO changes require impact analysis, approval, route ownership, rollback, and immutable evidence]
   - id: TASK-0091
     title: Implement incident drill diversity and coverage review
-    status: pending
+    status: ready
     dependencies: [TASK-0090]
     source: docs/runbooks/controlled-pilot-runbook.md; specs/12_testing/test_strategy.md
     acceptance: [Health, security, dependency, tenant-isolation, data-quality, recovery, and release drills are covered]
