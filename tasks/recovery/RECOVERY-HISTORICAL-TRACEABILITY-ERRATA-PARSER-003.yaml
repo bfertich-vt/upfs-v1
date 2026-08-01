@@ -1,0 +1,62 @@
+id: RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-003
+title: Support fail-closed append-only correction of legacy unpaired provenance records
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/governance/provenance-verification.md
+  - docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md
+  - tasks/recovery/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-002.yaml
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-002-QA
+authorized_files:
+  - tasks/recovery/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-003.yaml
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-003.md
+prohibited_files:
+  - docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md
+  - docs/handoffs/RECOVERY-CI-GATES-001.md
+  - docs/reviews/**
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - tasks/queue.yaml
+  - package.json
+  - .github/**
+  - README.md
+  - START_HERE.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+acceptance_criteria:
+  - Validator supports exactly one additional strict, append-only v1 correction mode for an original Specifications and contracts read record whose legacy syntax contains no path/digest pairs, and only when source handoff validation demonstrates that precise defect.
+  - The mode requires original source identity/value, original candidate, bounded Reason and Correction provenance, a complete exact allowlisted table derived from Git objects, and unchanged scope statement; it fails closed for paired records, partially paired records, valid records, ambiguous legacy records, duplicates, unknown paths, wrong candidate/blob/digest, missing/blank/oversized fields, free-form, claim changes, and non-prefix changes.
+  - The parser accepts the actual immutable RECOVERY-QUEUE-VALIDATION-001 legacy record only with a complete Git-object-derived correction and preserves current behavior for ordinary paired corrections and all valid handoffs.
+  - Tests include an accepted fixture plus all stated negative cases; historical handoffs are not edited in this task.
+  - Handoff is post-commit/provenance complete and validation has no new failure.
+required_tests:
+  - node --test scripts/ci-gate-validator.test.mjs
+  - npm test
+  - npm run traceability:check
+  - git diff --check
+security_requirements:
+  - Maintain fail-closed immutable provenance; prohibit evidence erasure, claim mutation, tenant leakage, credential/data exposure, and correction-scope bypass.
+rollback:
+  - Revert only independently accepted parser change; preserve historical handoffs and negative evidence.
+runtime_evidence_required: Accepted/negative mutation evidence, Git-object derivation, focused/full tests, traceability output, clean diff, candidate handoff, and independent QA/Security review.
