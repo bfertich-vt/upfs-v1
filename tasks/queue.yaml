@@ -649,13 +649,13 @@ tasks:
     acceptance: [Provider schema drift, mapping changes, quarantine, replay, versioning, and approval evidence fail closed]
   - id: TASK-0099
     title: Implement governed AI/context safety regression gate
-    status: ready
+    status: complete
     dependencies: [TASK-0098]
     source: specs/10_security/security_baseline.md; specs/05_apis/api_standards.md
     acceptance: [Citations, authorization, redaction, prompt bounds, model failure, and no-write/no-truth claims remain enforced]
   - id: TASK-0100
     title: Implement workflow and policy simulation regression gate
-    status: pending
+    status: ready
     dependencies: [TASK-0099]
     source: specs/14_admin_control_plane/admin_control_plane.md; specs/05_apis/api_standards.md
     acceptance: [Policy decisions, approval quorum, idempotency, concurrency, audit, export, and recovery remain fail closed]
