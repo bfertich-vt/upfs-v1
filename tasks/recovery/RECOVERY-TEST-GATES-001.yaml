@@ -1,0 +1,69 @@
+id: RECOVERY-TEST-GATES-001
+title: Cross-platform generated documentation drift validation recovery
+status: review
+assigned_role: Backend
+role_file: agents/BACKEND.md
+dependencies: []
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/05_apis/api_standards.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/12_testing/test_strategy.md
+  - specs/13_docs/documentation_platform.md
+  - scripts/generate-public-docs.mjs
+  - scripts/generate-public-docs.test.mjs
+  - scripts/task-0015-release-evidence.mjs
+  - scripts/task-0015-release-evidence.test.mjs
+  - scripts/task-0016-readiness-evidence.mjs
+  - scripts/task-0016-readiness-evidence.test.mjs
+  - scripts/task-0030-acceptance.mjs
+  - scripts/task-0030-acceptance.test.mjs
+  - scripts/task-0040-go-no-go.mjs
+  - scripts/task-0040-go-no-go.test.mjs
+  - contracts/openapi/admin-api.yaml
+  - contracts/openapi/governed-chat-api.yaml
+  - contracts/openapi/projection-search-api.yaml
+  - contracts/openapi/public-api.yaml
+  - contracts/asyncapi/platform-events.yaml
+authorized_files:
+  - scripts/generate-public-docs.mjs
+  - scripts/generate-public-docs.test.mjs
+  - scripts/task-0015-release-evidence.test.mjs
+  - scripts/task-0016-readiness-evidence.test.mjs
+  - scripts/task-0030-acceptance.mjs
+  - scripts/task-0030-acceptance.test.mjs
+  - scripts/task-0040-go-no-go.mjs
+  - docs/generated/api-reference.md
+  - packages/sdk-generated/index.ts
+  - tasks/recovery/RECOVERY-TEST-GATES-001.yaml
+  - docs/handoffs/RECOVERY-TEST-GATES-001.md
+scope_justification: Cross-platform EOL normalization is required for deterministic generated-contract drift detection under the CI/CD and documentation specifications; TASK-0016, TASK-0030, and TASK-0040 repairs are required to make the documented full test suite truthful and deterministic. The work does not relax semantic documentation/SDK drift detection or historical evidence requirements.
+prohibited_files:
+  - tasks/queue.yaml
+  - README.md
+  - START_HERE.md
+  - CODEOWNERS
+  - .github
+  - specs
+acceptance:
+  - Check mode accepts only genuine EOL representation differences on generated artifacts.
+  - Check mode rejects missing output, CRCRLF malformed output, and semantic documentation or SDK drift.
+  - TASK-0016 uses explicit isolated synthetic fixtures and cannot race or depend on generated historical artifacts.
+  - TASK-0030 reports failed NO-GO when required historical evidence is absent, as required by fail-closed delivery and testing contracts.
+  - TASK-0040 binds only predecessor evidence TASK-0033 through TASK-0039 and never its own output.
+  - npm ci --ignore-scripts, direct generator check, focused tests, and npm test pass from the clean stream.
+  - Tests leave no tracked or untracked generated-output mutation.
+required_tests:
+  - node scripts/generate-public-docs.mjs --check
+  - node --test scripts/generate-public-docs.test.mjs
+  - node --test scripts/task-0015-release-evidence.test.mjs scripts/task-0016-readiness-evidence.test.mjs scripts/task-0030-acceptance.test.mjs scripts/task-0040-go-no-go.test.mjs
+  - npm ci --ignore-scripts
+  - npm test
+security_requirements:
+  - No credentials, tenant data, product behavior, or authorization scope changes.
+  - Generated contract drift remains fail-closed for semantic changes.
+rollback:
+  - Revert the candidate commit; no data or external-system state changes.
+classification: corrective control-plane work; not a production capability

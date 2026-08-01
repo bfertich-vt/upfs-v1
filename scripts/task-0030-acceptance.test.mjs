@@ -5,11 +5,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { evaluateAcceptance } from './task-0030-acceptance.mjs';
 
-test('repository acceptance is truthful and preserves external prerequisites', () => {
+test('repository acceptance fails closed when historical artifacts are absent', () => {
   const report = evaluateAcceptance();
   assert.equal(report.synthetic_only, true);
   assert.equal(report.production_deployment, 'not-performed');
-  assert.equal(report.decision, 'NO-GO_EXTERNAL_PREREQUISITES');
+  assert.equal(report.status, 'failed');
+  assert.equal(report.decision, 'NO-GO');
+  assert.ok(report.checks.some((c) => c.id === 'artifact:native-postgres' && c.status === 'failed'));
   assert.ok(report.external_prerequisites.length >= 3);
 });
 

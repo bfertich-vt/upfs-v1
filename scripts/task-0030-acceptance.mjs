@@ -55,7 +55,7 @@ export function evaluateAcceptance({ root = defaultRoot } = {}) {
   check(checks, 'claims-boundary', noClaims, noClaims ? 'documentation preserves NO-GO and no certification/attestation claim' : 'unsupported production or certification claim detected');
   const all = checks.every((c) => c.status === 'passed');
   const externalPrerequisites = ['managed infrastructure and credentials', 'named external approvers', 'completed signed pilot go/no-go record'];
-  return { schema_version: 'upfs.task-0030.acceptance.v1', status: 'passed', decision: all ? 'NO-GO_EXTERNAL_PREREQUISITES' : 'NO-GO', synthetic_only: true, production_deployment: 'not-performed', checks, themes, evidence, external_prerequisites: externalPrerequisites };
+  return { schema_version: 'upfs.task-0030.acceptance.v1', status: all ? 'passed' : 'failed', decision: all ? 'NO-GO_EXTERNAL_PREREQUISITES' : 'NO-GO', synthetic_only: true, production_deployment: 'not-performed', checks, themes, evidence, external_prerequisites: externalPrerequisites };
 }
 
 export function main(root = defaultRoot) {

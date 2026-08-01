@@ -1,62 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { spawnSync } from "node:child_process";
 
-test("TASK-0016 produces complete, truthful pilot readiness evidence", () => {
-  const result = spawnSync(process.execPath, ["scripts/task-0016-readiness-evidence.mjs"], { encoding: "utf8" });
-  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
-  const report = JSON.parse(fs.readFileSync("artifacts/task-0016-readiness-report.json"));
-  assert.equal(report.status, "passed");
-  assert.equal(report.synthetic_only, true);
-  assert.equal(report.production_deployment, "not-performed");
-  assert.equal(report.certification, "not-claimed");
-  assert.ok(report.control_count >= 8);
-  assert.equal(report.checks.length, 4);
-});
+const script=path.resolve("scripts/task-0016-readiness-evidence.mjs");
+function fixture(){const root=fs.mkdtempSync(path.join(os.tmpdir(),"upfs-task-0016-")),libraryPath="docs/compliance/control-library.json",runbookPath="docs/runbooks/controlled-pilot-runbook.md",goPath="docs/compliance/pilot-go-no-go.md",libraryText=fs.readFileSync(libraryPath,"utf8"),write=(file,value)=>{const target=path.join(root,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,value);};write(libraryPath,libraryText);write(runbookPath,fs.readFileSync(runbookPath,"utf8"));write(goPath,fs.readFileSync(goPath,"utf8"));for(const control of JSON.parse(libraryText).controls)for(const source of control.evidence_source.split(/[;,]/).map(x=>x.trim()).filter(Boolean)){if(/^external-prerequisite:/i.test(source)||[libraryPath,runbookPath,goPath].includes(source))continue;write(source.replace(/^repository:/i,""),"synthetic test fixture; not historical evidence\n");}return root;}
+function withFixture(run){const root=fixture();try{return run(root);}finally{fs.rmSync(root,{recursive:true,force:true});}}
+const invoke=root=>spawnSync(process.execPath,[script,root],{encoding:"utf8"});
 
-test("TASK-0016 fails closed when a control loses required evidence metadata", () => {
-  const file = "docs/compliance/control-library.json";
-  const original = fs.readFileSync(file, "utf8");
-  const library = JSON.parse(original);
-  delete library.controls[0].reviewer;
-  fs.writeFileSync(file, `${JSON.stringify(library, null, 2)}\n`);
-  try {
-    const result = spawnSync(process.execPath, ["scripts/task-0016-readiness-evidence.mjs"], { encoding: "utf8" });
-    assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /control-completeness/);
-  } finally {
-    fs.writeFileSync(file, original);
-  }
-});
-
-test("TASK-0016 rejects empty, malformed, unresolved, and false-pass metadata", () => {
-  const libraryFile = "docs/compliance/control-library.json";
-  const runbookFile = "docs/runbooks/controlled-pilot-runbook.md";
-  const originalLibrary = fs.readFileSync(libraryFile, "utf8");
-  const originalRunbook = fs.readFileSync(runbookFile, "utf8");
-  const cases = [
-    (library) => { library.controls[0].owner = "   "; },
-    (library) => { library.controls[0].retention = "forever"; },
-    (library) => { library.controls[0].evidence_source = "missing/evidence.json"; },
-    (library) => { library.controls[0].evidence_status = "complete"; library.controls[0].last_execution = null; },
-    (library) => { library.controls[0].criteria = "SOC2"; }
-  ];
-  try {
-    for (const mutate of cases) {
-      const library = JSON.parse(originalLibrary);
-      mutate(library);
-      fs.writeFileSync(libraryFile, `${JSON.stringify(library, null, 2)}\n`);
-      const result = spawnSync(process.execPath, ["scripts/task-0016-readiness-evidence.mjs"], { encoding: "utf8" });
-      assert.notEqual(result.status, 0);
-    }
-    fs.writeFileSync(libraryFile, originalLibrary);
-    fs.writeFileSync(runbookFile, originalRunbook.replace("- Vendor/provider:", "- External/provider:"));
-    const result = spawnSync(process.execPath, ["scripts/task-0016-readiness-evidence.mjs"], { encoding: "utf8" });
-    assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /pilot-documents/);
-  } finally {
-    fs.writeFileSync(libraryFile, originalLibrary);
-    fs.writeFileSync(runbookFile, originalRunbook);
-  }
-});
+test("TASK-0016 produces complete, truthful pilot readiness evidence",()=>withFixture(root=>{const result=invoke(root);assert.equal(result.status,0,`${result.stdout}\n${result.stderr}`);const report=JSON.parse(fs.readFileSync(path.join(root,"artifacts/task-0016-readiness-report.json")));assert.equal(report.status,"passed");assert.equal(report.synthetic_only,true);assert.equal(report.production_deployment,"not-performed");assert.equal(report.certification,"not-claimed");assert.ok(report.control_count>=8);assert.equal(report.checks.length,4);}));
+test("TASK-0016 fails closed when a control loses required evidence metadata",()=>withFixture(root=>{const file=path.join(root,"docs/compliance/control-library.json"),library=JSON.parse(fs.readFileSync(file,"utf8"));delete library.controls[0].reviewer;fs.writeFileSync(file,`${JSON.stringify(library,null,2)}\n`);const result=invoke(root);assert.notEqual(result.status,0);assert.match(result.stderr,/control-completeness/);}));
+test("TASK-0016 rejects empty, malformed, unresolved, and false-pass metadata",()=>withFixture(root=>{const libraryFile=path.join(root,"docs/compliance/control-library.json"),runbookFile=path.join(root,"docs/runbooks/controlled-pilot-runbook.md"),originalLibrary=fs.readFileSync(libraryFile,"utf8"),originalRunbook=fs.readFileSync(runbookFile,"utf8"),cases=[library=>{library.controls[0].owner="   ";},library=>{library.controls[0].retention="forever";},library=>{library.controls[0].evidence_source="missing/evidence.json";},library=>{library.controls[0].evidence_status="complete";library.controls[0].last_execution=null;},library=>{library.controls[0].criteria="SOC2";}];for(const mutate of cases){const library=JSON.parse(originalLibrary);mutate(library);fs.writeFileSync(libraryFile,`${JSON.stringify(library,null,2)}\n`);assert.notEqual(invoke(root).status,0);}fs.writeFileSync(libraryFile,originalLibrary);fs.writeFileSync(runbookFile,originalRunbook.replace("- Vendor/provider:","- External/provider:"));const result=invoke(root);assert.notEqual(result.status,0);assert.match(result.stderr,/pilot-documents/);}));
