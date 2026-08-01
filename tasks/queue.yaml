@@ -299,3 +299,183 @@ tasks:
     dependencies: [TASK-0039]
     source: Stage 9 pilot and measured-rollout requirements; docs/compliance/pilot-go-no-go.md
     acceptance: [All evidence is indexed, external prerequisites are explicit, and final decision is truthful with no deployment or certification claim]
+  - id: TASK-0041
+    title: Close controlled-pilot external prerequisite inventory and ownership
+    status: ready
+    dependencies: [TASK-0040]
+    source: docs/compliance/pilot-go-no-go.md; specs/09_cicd/delivery_pipeline.md
+    acceptance: [Every missing managed resource, credential, approval, owner, expiry, and evidence reference is enumerated and fail-closed]
+  - id: TASK-0042
+    title: Implement managed provider onboarding and reference verification workflow
+    status: pending
+    dependencies: [TASK-0041]
+    source: specs/09_cicd/delivery_pipeline.md; infra/deployment-environment.json
+    acceptance: [Provider onboarding validates identity, environment binding, rotation, health, and immutable references without exposing secrets]
+  - id: TASK-0043
+    title: Implement protected signing-key and secret rotation rehearsal
+    status: pending
+    dependencies: [TASK-0042]
+    source: specs/09_cicd/delivery_pipeline.md; specs/10_security/security_baseline.md
+    acceptance: [Rotation, overlap, expiry, revocation, and rollback evidence is synthetic and fail-closed]
+  - id: TASK-0044
+    title: Implement managed database target readiness and native rehearsal gate
+    status: pending
+    dependencies: [TASK-0043]
+    source: specs/03_architecture/system_architecture.md; specs/12_testing/test_strategy.md
+    acceptance: [Managed PostgreSQL target, migrations, RLS, backup, restore, and replay prerequisites are verified without production access]
+  - id: TASK-0045
+    title: Implement managed observability destination and alert-route readiness
+    status: pending
+    dependencies: [TASK-0044]
+    source: specs/09_cicd/delivery_pipeline.md; specs/12_testing/test_strategy.md
+    acceptance: [Tenant-safe metrics, logs, traces, SLO alerts, paging ownership, and retention references are verified]
+  - id: TASK-0046
+    title: Execute external-readiness contract integration rehearsal
+    status: pending
+    dependencies: [TASK-0045]
+    source: specs/09_cicd/delivery_pipeline.md; docs/compliance/pilot-go-no-go.md
+    acceptance: [All managed adapter contracts compose into a truthful readiness report and fail closed on any mismatch]
+  - id: TASK-0047
+    title: Implement pilot tenant and environment enrollment controls
+    status: pending
+    dependencies: [TASK-0046]
+    source: specs/04_schema/identity_tenant_model.md; specs/14_admin_control_plane/admin_control_plane.md
+    acceptance: [Pilot enrollment is approval-gated, tenant-scoped, reversible, auditable, and synthetic until authorization]
+  - id: TASK-0048
+    title: Implement pilot scope, cohort, and data-boundary manifest
+    status: pending
+    dependencies: [TASK-0047]
+    source: docs/compliance/pilot-go-no-go.md; specs/10_security/security_baseline.md
+    acceptance: [Cohort, regions, environments, prohibited data, retention, and pause boundaries are versioned and checked]
+  - id: TASK-0049
+    title: Implement pilot consent and communication evidence workflow
+    status: pending
+    dependencies: [TASK-0048]
+    source: specs/11_soc2/soc2_readiness.md; docs/compliance/pilot-go-no-go.md
+    acceptance: [Required stakeholder notices, approvals, acknowledgements, and expiry are tracked without contacting external parties]
+  - id: TASK-0050
+    title: Implement pilot launch checklist and dry-run coordinator
+    status: pending
+    dependencies: [TASK-0049]
+    source: docs/runbooks/controlled-pilot-runbook.md; specs/09_cicd/delivery_pipeline.md
+    acceptance: [Checklist gates are ordered, idempotent, auditable, reversible, and never imply deployment]
+  - id: TASK-0051
+    title: Implement pilot health and error-budget review evidence
+    status: pending
+    dependencies: [TASK-0050]
+    source: docs/runbooks/controlled-pilot-runbook.md; specs/12_testing/test_strategy.md
+    acceptance: [Availability, latency, freshness, lag, error budget, pause, and escalation calculations are reproducible]
+  - id: TASK-0052
+    title: Implement pilot ingestion freshness and reconciliation review
+    status: pending
+    dependencies: [TASK-0051]
+    source: specs/03_architecture/system_architecture.md; specs/12_testing/test_strategy.md
+    acceptance: [Ingestion, quarantine, canonical parity, projection lag, and reconciliation evidence is tenant-safe and immutable]
+  - id: TASK-0053
+    title: Implement pilot support-access review and expiry enforcement
+    status: pending
+    dependencies: [TASK-0052]
+    source: specs/04_schema/identity_tenant_model.md; specs/14_admin_control_plane/admin_control_plane.md
+    acceptance: [Support access requires case, reason, approval, step-up, scope, expiry, redaction, and complete audit]
+  - id: TASK-0054
+    title: Implement pilot access-review and joiner-mover-leaver evidence
+    status: pending
+    dependencies: [TASK-0053]
+    source: specs/11_soc2/soc2_readiness.md; specs/10_security/security_baseline.md
+    acceptance: [Periodic access review, least privilege, offboarding, exceptions, and remediation evidence are complete]
+  - id: TASK-0055
+    title: Implement pilot vulnerability and dependency remediation workflow
+    status: pending
+    dependencies: [TASK-0054]
+    source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
+    acceptance: [Pinned scans, severity thresholds, ownership, remediation deadlines, exceptions, and retest evidence fail closed]
+  - id: TASK-0056
+    title: Implement pilot vendor and managed-provider review evidence
+    status: pending
+    dependencies: [TASK-0055]
+    source: specs/11_soc2/soc2_readiness.md; specs/09_cicd/delivery_pipeline.md
+    acceptance: [Provider scope, risk, review cadence, contract references, incidents, and exceptions are versioned]
+  - id: TASK-0057
+    title: Implement pilot change-management and emergency-change evidence
+    status: pending
+    dependencies: [TASK-0056]
+    source: specs/11_soc2/soc2_readiness.md; specs/09_cicd/delivery_pipeline.md
+    acceptance: [Review, approval, immutable artifact, rollback, corrective-forward, and retrospective evidence are enforced]
+  - id: TASK-0058
+    title: Implement pilot incident communications and postmortem workflow
+    status: pending
+    dependencies: [TASK-0057]
+    source: docs/runbooks/controlled-pilot-runbook.md; specs/11_soc2/soc2_readiness.md
+    acceptance: [Incident severity, timeline, notices, decisions, postmortem, corrective actions, and retention are auditable]
+  - id: TASK-0059
+    title: Implement pilot backup and restore review cadence
+    status: pending
+    dependencies: [TASK-0058]
+    source: specs/03_architecture/system_architecture.md; specs/11_soc2/soc2_readiness.md
+    acceptance: [Backup integrity, restore sampling, RPO/RTO, retention, encryption, and corrective-forward reviews are bound]
+  - id: TASK-0060
+    title: Implement pilot disaster-recovery exercise scheduler and evidence ledger
+    status: pending
+    dependencies: [TASK-0059]
+    source: specs/03_architecture/system_architecture.md; specs/12_testing/test_strategy.md
+    acceptance: [DR exercise schedule, owners, scenarios, results, failures, remediation, and immutable references are tracked]
+  - id: TASK-0061
+    title: Implement pilot capacity and environment-sizing review
+    status: pending
+    dependencies: [TASK-0060]
+    source: specs/12_testing/test_strategy.md; docs/runbooks/controlled-pilot-runbook.md
+    acceptance: [Capacity assumptions, tenant dimensions, thresholds, saturation, scaling actions, and review evidence are reproducible]
+  - id: TASK-0062
+    title: Implement pilot cost and resource-bound review
+    status: pending
+    dependencies: [TASK-0061]
+    source: specs/12_testing/test_strategy.md; specs/11_soc2/soc2_readiness.md
+    acceptance: [Synthetic cost/resource bounds, anomaly thresholds, owners, and pause actions are checked without real billing access]
+  - id: TASK-0063
+    title: Implement pilot data-retention and deletion evidence workflow
+    status: pending
+    dependencies: [TASK-0062]
+    source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
+    acceptance: [Retention, legal hold, deletion, quarantine, audit, and restore interactions are explicit and fail closed]
+  - id: TASK-0064
+    title: Implement privacy and sensitive-data handling review
+    status: pending
+    dependencies: [TASK-0063]
+    source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
+    acceptance: [Sensitive payload redaction, minimization, access, export, and incident review evidence is verified]
+  - id: TASK-0065
+    title: Implement pilot API contract and SDK compatibility gate
+    status: pending
+    dependencies: [TASK-0064]
+    source: specs/05_apis/api_standards.md; specs/13_docs/documentation_platform.md
+    acceptance: [API, events, permissions, errors, generated SDK, examples, and version compatibility remain synchronized]
+  - id: TASK-0066
+    title: Implement pilot customer-console release acceptance gate
+    status: pending
+    dependencies: [TASK-0065]
+    source: specs/02_ui/console_experience.md; docs/MASTER_PLAN.md
+    acceptance: [Documented customer pages, accessibility, authorization, API mapping, redaction, and unavailable states are verified]
+  - id: TASK-0067
+    title: Implement pilot admin-console operational acceptance gate
+    status: pending
+    dependencies: [TASK-0066]
+    source: specs/14_admin_control_plane/admin_control_plane.md; docs/MASTER_PLAN.md
+    acceptance: [Admin modules expose only API-backed, scoped, redacted, approval-gated operations with audit evidence]
+  - id: TASK-0068
+    title: Execute integrated controlled-pilot observation rehearsal
+    status: pending
+    dependencies: [TASK-0067]
+    source: docs/compliance/pilot-go-no-go.md; docs/runbooks/controlled-pilot-runbook.md
+    acceptance: [A bounded synthetic observation window exercises health, support, incidents, recovery, releases, and reviews]
+  - id: TASK-0069
+    title: Assemble v1.1 observation-period readiness assessment
+    status: pending
+    dependencies: [TASK-0068]
+    source: specs/11_soc2/soc2_readiness.md; docs/compliance/pilot-go-no-go.md
+    acceptance: [Observation evidence, exceptions, residual risk, remediation, owner sign-off fields, and external prerequisites are indexed]
+  - id: TASK-0070
+    title: Assemble v1.1 controlled-pilot continuation or stop decision
+    status: pending
+    dependencies: [TASK-0069]
+    source: docs/compliance/pilot-go-no-go.md; specs/11_soc2/soc2_readiness.md
+    acceptance: [Continuation, pause, or stop decision is reproducible, approval-gated, truthful, and makes no certification or production claim]
