@@ -1,0 +1,1 @@
+{"schema_version":"upfs.tenant-offboarding.v1","tenant":"tenant-synthetic","environment":"pilot","state":"deactivated","access_revoked":true,"evidence_preserved":true,"retention_applied":true,"cross_tenant_leakage":false,"replay":"replayed","conflict_rejected":true,"audit_ref":"evidence://offboarding/audit","digest":"synthetic"}
