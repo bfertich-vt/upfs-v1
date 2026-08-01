@@ -295,7 +295,7 @@ tasks:
     acceptance: [Security, tenant isolation, control evidence, vulnerabilities, and unsupported-claim checks are complete]
   - id: TASK-0040
     title: Assemble formal controlled-pilot go/no-go handoff
-      status: ready
+      status: complete
     dependencies: [TASK-0039]
     source: Stage 9 pilot and measured-rollout requirements; docs/compliance/pilot-go-no-go.md
     acceptance: [All evidence is indexed, external prerequisites are explicit, and final decision is truthful with no deployment or certification claim]
