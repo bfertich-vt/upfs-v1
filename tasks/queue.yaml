@@ -673,13 +673,13 @@ tasks:
     acceptance: [New boundaries, abuse cases, residual risks, mitigations, owners, and approvals are versioned]
   - id: TASK-0103
     title: Implement dependency and supply-chain provenance refresh
-    status: ready
+    status: complete
     dependencies: [TASK-0102]
     source: specs/09_cicd/delivery_pipeline.md; specs/10_security/security_baseline.md
     acceptance: [Dependency pins, advisories, SBOM, provenance, signatures, and remediation evidence remain bound]
   - id: TASK-0104
     title: Implement privacy request and export abuse rehearsal
-    status: pending
+    status: ready
     dependencies: [TASK-0103]
     source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Scoped requests, approval, redaction, expiry, rate limits, abuse detection, audit, and deletion interactions fail closed]
