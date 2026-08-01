@@ -587,6 +587,184 @@ test("repository scan permits only a strict, append-only Git-bound provenance er
   fs.rmSync(fixture, { force: true, recursive: true });
 });
 
+test("repository scan permits only the exact legacy unpaired queue provenance correction", () => {
+  const fixture = temp("upfs-legacy-unpaired-erratum-");
+  git(root, ["clone", "--no-checkout", root, fixture]);
+  git(fixture, [
+    "checkout",
+    "--detach",
+    "e7c81bf1a38726e0ac8ebf84c969219c21758aea",
+  ]);
+  const source = "e7c81bf1a38726e0ac8ebf84c969219c21758aea";
+  const candidate = "2ec8213fe000a0b78c68c588eb10768a39116be3";
+  const relative = "docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md";
+  const handoff = path.join(fixture, ...relative.split("/"));
+  const row = (entry) => {
+    const bytes = spawnSync(
+      "git",
+      ["-C", fixture, "show", `${candidate}:${entry}`],
+      {
+        encoding: null,
+      },
+    ).stdout;
+    const blob = git(fixture, ["rev-parse", `${candidate}:${entry}`]);
+    const hash = crypto.createHash("sha256").update(bytes).digest("hex");
+    return `| \`${entry}\` | \`${candidate}\` | \`${blob}\` | \`${hash}\` |`;
+  };
+  const paths = [
+    "AGENTS.md",
+    "agents/BACKEND.md",
+    "agents/WORKTREES.md",
+    "agents/HANDOFF_TEMPLATE.md",
+    "specs/00_constitution/engineering_constitution.md",
+    "specs/09_cicd/delivery_pipeline.md",
+    "specs/12_testing/test_strategy.md",
+    "tasks/queue.yaml",
+  ];
+  const erratum = () =>
+    [
+      "## Git-bound provenance erratum v1 \u2014 RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-003",
+      "",
+      `- Original handoff path: \`${relative}\`.`,
+      `- Original handoff source commit: \`${source}\`.`,
+      `- Original candidate commit: \`${candidate}\`.`,
+      "- Original provenance record: `Specifications and contracts read`.",
+      "- Reason: `Legacy record lists sources without path digest pairs`.",
+      "- Correction provenance: `Git object derivation for immutable queue handoff source`.",
+      "",
+      "| Path | Source candidate | Git blob | Derived SHA-256 |",
+      "| --- | --- | --- | --- |",
+      ...paths.map(row),
+      "",
+      "- Preservation statement: This erratum changes no historical task status, acceptance claim, test result, review state, risk, limitation, production-capability classification, or Independent QA/Security review result.",
+      "",
+    ].join("\n");
+  const original = spawnSync(
+    "git",
+    ["-C", fixture, "show", `${source}:${relative}`],
+    { encoding: "utf8" },
+  ).stdout;
+  const valid = original + erratum();
+  fs.writeFileSync(handoff, valid);
+  assert.deepEqual(validateRepositoryHandoffSpecificationDigests(fixture), {
+    status: "passed",
+    errors: [],
+  });
+  const reject = (mutated, expected) => {
+    fs.writeFileSync(handoff, mutated);
+    const result = validateRepositoryHandoffSpecificationDigests(fixture);
+    assert.equal(result.status, "failed", expected);
+    assert.ok(
+      result.errors.some((error) => error.includes(expected)),
+      result.errors.join(" | "),
+    );
+  };
+  reject(
+    valid.replace(row(paths[0]), row(paths[0]).replace(paths[0], "README.md")),
+    "not an existing original-record path",
+  );
+  reject(
+    valid.replace(row(paths[0]), row(paths[0]) + "\n" + row(paths[0])),
+    "duplicate correction path",
+  );
+  reject(
+    valid.replace(row(paths.at(-1)) + "\n", ""),
+    "omits original-record path",
+  );
+  reject(
+    valid.replace(
+      "- Reason: `Legacy record lists sources without path digest pairs`.\n",
+      "",
+    ),
+    "exact v1 allowlisted schema",
+  );
+  reject(
+    valid.replace(
+      "- Correction provenance: `Git object derivation for immutable queue handoff source`.\n",
+      "",
+    ),
+    "exact v1 allowlisted schema",
+  );
+  reject(
+    valid.replace(
+      "Legacy record lists sources without path digest pairs",
+      "   ",
+    ),
+    "Reason must be non-empty, non-whitespace",
+  );
+  reject(
+    valid.replace(
+      "Git object derivation for immutable queue handoff source",
+      "   ",
+    ),
+    "Correction provenance must be non-empty, non-whitespace",
+  );
+  reject(
+    valid.replace(
+      "Legacy record lists sources without path digest pairs",
+      "r".repeat(281),
+    ),
+    "Reason must be non-empty, non-whitespace",
+  );
+  reject(
+    valid.replace(
+      "Git object derivation for immutable queue handoff source",
+      "p".repeat(281),
+    ),
+    "Correction provenance must be non-empty, non-whitespace",
+  );
+  reject(
+    valid.replace(
+      "- Reason: `Legacy record lists sources without path digest pairs`.",
+      "- Reason: `Legacy record lists sources without path digest pairs`.\n- Reason: `Duplicate reason`.",
+    ),
+    "exact v1 allowlisted schema",
+  );
+  reject(
+    valid.replace(
+      `- Original candidate commit: \`${candidate}\`.`,
+      "- Original candidate commit: `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`.",
+    ),
+    "original candidate does not match",
+  );
+  reject(
+    valid.replace(
+      `- Original handoff source commit: \`${source}\`.`,
+      "- Original handoff source commit: `ffffffffffffffffffffffffffffffffffffffff`.",
+    ),
+    "original handoff is not Git-resolvable",
+  );
+  reject(
+    valid.replace(
+      /\| `[a-f0-9]{40}` \| `[a-f0-9]{64}` \|(?=\r?\n\r?\n- Preservation)/i,
+      "| `0000000000000000000000000000000000000000` | `" +
+        "0".repeat(64) +
+        "` |",
+    ),
+    "source blob is not Git-resolvable or does not match",
+  );
+  reject(
+    valid.replace(
+      "- Results: Focused and full repository tests passed.",
+      "- Results: rewritten historical result.",
+    ),
+    "append-only prefix",
+  );
+  reject(valid + "- Release status: accepted\n", "exact v1 allowlisted schema");
+  reject(
+    valid.replace(
+      "and the v7 candidate",
+      "(`" + "0".repeat(64) + "`); and the v7 candidate",
+    ),
+    "append-only prefix",
+  );
+  reject(
+    valid.replace("`AGENTS.md`;", "`AGENTS.md` (`" + "0".repeat(64) + "`);"),
+    "append-only prefix",
+  );
+  fs.rmSync(fixture, { force: true, recursive: true });
+});
+
 test("repository handoff discovery rejects unsafe directory roots before enumeration", () => {
   const fixture = temp("upfs-handoff-directory-root-");
   const outside = temp("upfs-handoff-directory-outside-");

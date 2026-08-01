@@ -413,6 +413,24 @@ const ERRATA_TEXT_MIN_LENGTH = 3;
 const ERRATA_TEXT_MAX_LENGTH = 280;
 const ERRATA_BOUNDED_TEXT =
   "(?=[^`\\r\\n]{3,280}`)(?=[^`\\r\\n]*[^\\s`\\r\\n][^`\\r\\n]*`)[^`\\r\\n]{3,280}";
+const LEGACY_UNPAIRED_ERRATUM = {
+  task: "RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-003",
+  relative: "docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md",
+  sourceCommit: "e7c81bf1a38726e0ac8ebf84c969219c21758aea",
+  candidate: "2ec8213fe000a0b78c68c588eb10768a39116be3",
+  record:
+    "- Specifications and contracts read: `AGENTS.md`; `agents/BACKEND.md`; `agents/WORKTREES.md`; `agents/HANDOFF_TEMPLATE.md`; `specs/00_constitution/engineering_constitution.md`; `specs/09_cicd/delivery_pipeline.md`; `specs/12_testing/test_strategy.md`; `tasks/queue.yaml`; and the v7 candidate, task input, validator, tests, repository validator, and handoff.",
+  paths: [
+    "AGENTS.md",
+    "agents/BACKEND.md",
+    "agents/WORKTREES.md",
+    "agents/HANDOFF_TEMPLATE.md",
+    "specs/00_constitution/engineering_constitution.md",
+    "specs/09_cicd/delivery_pipeline.md",
+    "specs/12_testing/test_strategy.md",
+    "tasks/queue.yaml",
+  ],
+};
 const ERRATA_ALLOWED_SECTION = new RegExp(
   "^## Git-bound provenance erratum v1 [^\\r\\n]+\\r?\\n" +
     "\\r?\\n" +
@@ -494,6 +512,27 @@ function originalSpecificationRecords(record) {
     [...record.matchAll(/`([^`]+)`\s*\(`([a-f0-9]{64})`\)/gi)].map(
       ([, relative, digest]) => [relative, digest.toLowerCase()],
     ),
+  );
+}
+
+function legacyUnpairedErratum(original, relative, section, record) {
+  const sourceCommit = requiredErrataField(
+    section.text,
+    "Original handoff source commit",
+    [],
+  );
+  const originalCandidate = requiredErrataField(
+    section.text,
+    "Original candidate commit",
+    [],
+  );
+  return (
+    section.task === LEGACY_UNPAIRED_ERRATUM.task &&
+    relative === LEGACY_UNPAIRED_ERRATUM.relative &&
+    sourceCommit === LEGACY_UNPAIRED_ERRATUM.sourceCommit &&
+    originalCandidate === LEGACY_UNPAIRED_ERRATUM.candidate &&
+    record?.trim() === LEGACY_UNPAIRED_ERRATUM.record &&
+    original.includes(LEGACY_UNPAIRED_ERRATUM.record)
   );
 }
 
@@ -606,7 +645,13 @@ function validateGitBoundErratum(worktree, relative, body, section) {
     return { status: "failed", errors };
   }
   const originalRecords = originalSpecificationRecords(record);
-  if (!originalRecords.size)
+  const legacyUnpaired = legacyUnpairedErratum(
+    original,
+    relative,
+    section,
+    record,
+  );
+  if (!originalRecords.size && !legacyUnpaired)
     errors.push(
       "Git-bound provenance erratum original record does not declare any correctable paths.",
     );
@@ -618,13 +663,24 @@ function validateGitBoundErratum(worktree, relative, body, section) {
     errors.push(
       "Git-bound provenance erratum cannot correct an already-valid provenance record.",
     );
+  if (legacyUnpaired) {
+    const expectedError =
+      "handoff Specifications and contracts read record 1 requires path/digest pairs.";
+    if (
+      originalValidation.errors.length !== 1 ||
+      originalValidation.errors[0] !== expectedError
+    )
+      errors.push(
+        "Git-bound provenance erratum legacy source does not demonstrate exactly the allowlisted unpaired provenance defect.",
+      );
+  }
+  const requiredPaths = legacyUnpaired
+    ? new Set(LEGACY_UNPAIRED_ERRATUM.paths)
+    : new Set(originalRecords.keys());
   const rows = parseErrataRows(section.text, errors);
   const seen = new Set();
   for (const [relativePath, rowCandidate, blob, digest] of rows) {
-    if (
-      !validGitRelativePath(relativePath) ||
-      !originalRecords.has(relativePath)
-    )
+    if (!validGitRelativePath(relativePath) || !requiredPaths.has(relativePath))
       errors.push(
         `Git-bound provenance erratum correction path is not an existing original-record path: ${relativePath}.`,
       );
@@ -661,12 +717,15 @@ function validateGitBoundErratum(worktree, relative, body, section) {
       errors.push(
         `Git-bound provenance erratum correction ${relativePath} digest does not match Git blob bytes.`,
       );
-    if (originalRecords.get(relativePath) === digest.toLowerCase())
+    if (
+      !legacyUnpaired &&
+      originalRecords.get(relativePath) === digest.toLowerCase()
+    )
       errors.push(
         `Git-bound provenance erratum correction ${relativePath} does not change the malformed original value.`,
       );
   }
-  for (const required of originalRecords.keys())
+  for (const required of requiredPaths)
     if (!seen.has(required))
       errors.push(
         `Git-bound provenance erratum omits original-record path ${required}.`,
