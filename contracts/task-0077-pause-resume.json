@@ -1,0 +1,1 @@
+{"schema_version":"upfs.pilot-pause-resume.v1","tenant":"synthetic-tenant","environment":"pilot","idempotency_key":"pause-1","pause":{"reason":"slo breach","approved":true,"audit_ref":"evidence://pause/audit"},"resume":{"approval":true,"corrective_action_ref":"evidence://pause/remediation","audit_ref":"evidence://pause/resume"},"reversible":true,"deployment":"not-performed"}
