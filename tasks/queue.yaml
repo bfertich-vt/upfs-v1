@@ -409,13 +409,13 @@ tasks:
     acceptance: [Incident severity, timeline, notices, decisions, postmortem, corrective actions, and retention are auditable]
   - id: TASK-0059
     title: Implement pilot backup and restore review cadence
-    status: ready
+    status: complete
     dependencies: [TASK-0058]
     source: specs/03_architecture/system_architecture.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Backup integrity, restore sampling, RPO/RTO, retention, encryption, and corrective-forward reviews are bound]
   - id: TASK-0060
     title: Implement pilot disaster-recovery exercise scheduler and evidence ledger
-    status: pending
+    status: ready
     dependencies: [TASK-0059]
     source: specs/03_architecture/system_architecture.md; specs/12_testing/test_strategy.md
     acceptance: [DR exercise schedule, owners, scenarios, results, failures, remediation, and immutable references are tracked]
