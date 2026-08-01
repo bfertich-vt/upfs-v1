@@ -523,13 +523,13 @@ tasks:
     acceptance: [Pause/resume is idempotent, approval-gated, tenant/environment scoped, audited, and reversible]
   - id: TASK-0078
     title: Implement pilot stop and orderly wind-down workflow
-    status: ready
+    status: complete
     dependencies: [TASK-0077]
     source: docs/compliance/pilot-go-no-go.md; specs/10_security/security_baseline.md
     acceptance: [Stop protects data, access, retention, audit, backups, communications evidence, and rollback boundaries]
   - id: TASK-0079
     title: Implement synthetic tenant offboarding rehearsal
-    status: pending
+    status: ready
     dependencies: [TASK-0078]
     source: specs/04_schema/identity_tenant_model.md; specs/10_security/security_baseline.md
     acceptance: [Offboarding revokes access, preserves required evidence, applies retention, and prevents cross-tenant leakage]
