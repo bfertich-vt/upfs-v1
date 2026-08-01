@@ -1,0 +1,1 @@
+import assert from'node:assert/strict';import fs from'node:fs';import test from'node:test';import{evaluateLoadProfile}from'./task-0096-load-profile.mjs';test('load profile passes',()=>assert.equal(evaluateLoadProfile({contract:JSON.parse(fs.readFileSync('contracts/task-0096-load-profile.json'))}).status,'passed'));
