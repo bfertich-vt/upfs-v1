@@ -7,6 +7,7 @@ import path from "node:path";
 import test from "node:test";
 import {
   validateCiGates,
+  validateHandoffSpecificationDigests,
   validateRuntimeCapabilities,
   validateTraceability,
 } from "./ci-gate-validator.mjs";
@@ -44,6 +45,65 @@ function write(relativeRoot, relative, contents) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, contents);
   return file;
+}
+
+function git(directory, args) {
+  const result = spawnSync("git", ["-C", directory, ...args], {
+    encoding: "utf8",
+  });
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout.trim();
+}
+
+function filesRecursively(directory) {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const target = path.join(directory, entry.name);
+    return entry.isDirectory() ? filesRecursively(target) : [target];
+  });
+}
+
+function writeHandoffSpecificationFixture(fixture) {
+  const worktree = path.join(path.dirname(fixture), "upfs-handoff-spec-author");
+  fs.mkdirSync(worktree, { recursive: true });
+  git(worktree, ["init", "--initial-branch=recovery/handoff-spec-fixture"]);
+  git(worktree, ["config", "user.email", "fixture@example.test"]);
+  git(worktree, ["config", "user.name", "Fixture"]);
+  const inputs = [
+    ["AGENTS.md", "fixture agents\n"],
+    ["specs/09_cicd/delivery_pipeline.md", "fixture delivery pipeline\n"],
+    ["specs/12_testing/test_strategy.md", "fixture testing strategy\n"],
+    ["docs/historical/rejected-evidence.md", "preserved historical evidence\n"],
+  ];
+  for (const [relative, contents] of inputs)
+    write(worktree, relative, contents);
+  git(worktree, ["add", "."]);
+  git(worktree, ["commit", "-m", "handoff specification fixture"]);
+  const candidate = git(worktree, ["rev-parse", "HEAD"]);
+  const pairs = inputs.map(([relative]) => {
+    const bytes = spawnSync(
+      "git",
+      ["-C", worktree, "show", `${candidate}:${relative}`],
+      {
+        encoding: null,
+      },
+    ).stdout;
+    return [relative, crypto.createHash("sha256").update(bytes).digest("hex")];
+  });
+  const handoffs = [
+    ["recovery.md", pairs.slice(0, 3)],
+    ["historical.md", pairs.slice(3)],
+  ];
+  for (const [name, records] of handoffs) {
+    const listed = records
+      .map(([relative, digest]) => `\`${relative}\` (\`${digest}\`)`)
+      .join("; ");
+    write(
+      fixture,
+      `docs/handoffs/${name}`,
+      `- Commit: candidate \`${candidate}\`.\n- Specifications and contracts read: ${listed}.\n- Results: fixture only.\n`,
+    );
+  }
+  return { worktree, candidate };
 }
 
 function writeTraceabilityFixture(fixture) {
@@ -224,6 +284,53 @@ test("mutable actions and removed gates fail closed", () => {
     result.errors.some((error) => error.includes("npm run queue:check")),
   );
   assert.ok(result.errors.some((error) => error.includes("immutable commit")));
+});
+
+test("handoff specification records are discovered generically and bound to candidate Git blobs", () => {
+  const fixture = temp("upfs-handoff-specifications-");
+  const state = writeHandoffSpecificationFixture(fixture);
+  const handoffs = filesRecursively(
+    path.join(fixture, "docs", "handoffs"),
+  ).filter((file) =>
+    fs.readFileSync(file, "utf8").includes("Specifications and contracts read"),
+  );
+  assert.equal(handoffs.length, 2);
+  for (const handoff of handoffs) {
+    const result = validateHandoffSpecificationDigests(
+      state.worktree,
+      fs.readFileSync(handoff, "utf8"),
+    );
+    assert.deepEqual(result, { status: "passed", errors: [] });
+  }
+  const recovery = handoffs.find(
+    (file) => path.basename(file) === "recovery.md",
+  );
+  const original = fs.readFileSync(recovery, "utf8");
+  fs.writeFileSync(
+    recovery,
+    original.replace(/`[a-f0-9]{64}`/, `\`${"0".repeat(64)}\``),
+  );
+  let result = validateHandoffSpecificationDigests(
+    state.worktree,
+    fs.readFileSync(recovery, "utf8"),
+  );
+  assert.equal(result.status, "failed");
+  assert.ok(
+    result.errors.some((error) =>
+      error.includes("digest does not match Git blob bytes"),
+    ),
+    result.errors.join(" | "),
+  );
+  fs.writeFileSync(recovery, original.replace("AGENTS.md", "missing.md"));
+  result = validateHandoffSpecificationDigests(
+    state.worktree,
+    fs.readFileSync(recovery, "utf8"),
+  );
+  assert.equal(result.status, "failed");
+  assert.ok(
+    result.errors.some((error) => error.includes("not Git-resolvable")),
+    result.errors.join(" | "),
+  );
 });
 
 test("traceability rejects headings-only, placeholders, repeated IDs, and nonexistent artifacts", () => {

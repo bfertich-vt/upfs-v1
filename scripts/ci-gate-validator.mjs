@@ -343,6 +343,68 @@ function git(directory, args, encoding = "utf8") {
   return result.status === 0 ? result.stdout : undefined;
 }
 
+function gitBlobBytes(directory, commit, relative) {
+  if (!validGitRelativePath(relative) || !/^[a-f0-9]{40}$/i.test(commit ?? ""))
+    return undefined;
+  const result = spawnSync(
+    "git",
+    ["-C", directory, "show", `${commit}:${relative}`],
+    {
+      encoding: null,
+      timeout: 10_000,
+      windowsHide: true,
+    },
+  );
+  return result.status === 0 ? result.stdout : undefined;
+}
+
+function handoffCandidate(body) {
+  return /^- Commit:\s*(?:candidate\s+)?`([a-f0-9]{40})`/im.exec(body)?.[1];
+}
+
+export function validateHandoffSpecificationDigests(worktree, body) {
+  const errors = [];
+  const candidate = handoffCandidate(body);
+  if (!candidate) {
+    errors.push(
+      "handoff Specifications and contracts read record requires a declared candidate commit.",
+    );
+    return { status: "failed", errors };
+  }
+  const records = [
+    ...body.matchAll(
+      /^- Specifications and contracts read:\s*([\s\S]*?)(?=^-\s+|(?![\s\S]))/gim,
+    ),
+  ];
+  if (!records.length) return { status: "passed", errors };
+  for (const [recordIndex, record] of records.entries()) {
+    const declared = [
+      ...record[1].matchAll(/`([^`]+)`\s*\(`([a-f0-9]{64})`\)/gi),
+    ];
+    if (!declared.length) {
+      errors.push(
+        `handoff Specifications and contracts read record ${recordIndex + 1} requires path/digest pairs.`,
+      );
+      continue;
+    }
+    for (const [, relative, digest] of declared) {
+      const bytes = gitBlobBytes(worktree, candidate, relative);
+      if (!bytes) {
+        errors.push(
+          `handoff Specifications and contracts read ${relative} is not Git-resolvable at candidate ${candidate}.`,
+        );
+        continue;
+      }
+      const actual = crypto.createHash("sha256").update(bytes).digest("hex");
+      if (actual !== digest.toLowerCase())
+        errors.push(
+          `handoff Specifications and contracts read ${relative} digest does not match Git blob bytes at candidate ${candidate}.`,
+        );
+    }
+  }
+  return { status: errors.length ? "failed" : "passed", errors };
+}
+
 function sourceBinding(value) {
   const match = /^([^#:]+)[#:](.+)$/.exec(value ?? "");
   return match && { file: match[1].trim(), section: match[2].trim() };
