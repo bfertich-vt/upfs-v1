@@ -1,0 +1,15 @@
+{
+  "schema_version": "upfs.managed-adapters.v1",
+  "contract_version": "2026-07-31.1",
+  "protected_environments": ["pilot", "production"],
+  "providers": {
+    "postgresql": "external-managed-postgresql",
+    "secrets": "external-managed-secret-and-config",
+    "observability": "external-managed-observability",
+    "backup": "external-managed-object-storage"
+  },
+  "required_health_signals": ["reachable", "authenticated", "policy_compliant"],
+  "required_rotation": ["version", "rotated_at", "next_rotation_due"],
+  "required_references": ["secret_ref", "config_ref", "signing_key_ref"],
+  "drift": { "algorithm": "sha256", "immutable_manifest_binding": true }
+}
