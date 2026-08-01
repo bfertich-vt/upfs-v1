@@ -499,13 +499,13 @@ tasks:
     acceptance: [Exceptions are created, approved, monitored, remediated, expired, and audited without weakening gates]
   - id: TASK-0074
     title: Implement evidence retention and chain-of-custody index
-    status: ready
+    status: complete
     dependencies: [TASK-0073]
     source: specs/11_soc2/soc2_readiness.md; specs/10_security/security_baseline.md
     acceptance: [Evidence owners, hashes, timestamps, retention, access, lineage, and disposal controls are bound]
   - id: TASK-0075
     title: Implement audit-evidence completeness and tamper review
-    status: pending
+    status: ready
     dependencies: [TASK-0074]
     source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Sensitive actions have tenant-safe immutable audit records and tamper mutations fail closed]
