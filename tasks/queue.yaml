@@ -445,13 +445,13 @@ tasks:
     acceptance: [Sensitive payload redaction, minimization, access, export, and incident review evidence is verified]
   - id: TASK-0065
     title: Implement pilot API contract and SDK compatibility gate
-    status: ready
+    status: complete
     dependencies: [TASK-0064]
     source: specs/05_apis/api_standards.md; specs/13_docs/documentation_platform.md
     acceptance: [API, events, permissions, errors, generated SDK, examples, and version compatibility remain synchronized]
   - id: TASK-0066
     title: Implement pilot customer-console release acceptance gate
-    status: pending
+    status: ready
     dependencies: [TASK-0065]
     source: specs/02_ui/console_experience.md; docs/MASTER_PLAN.md
     acceptance: [Documented customer pages, accessibility, authorization, API mapping, redaction, and unavailable states are verified]
