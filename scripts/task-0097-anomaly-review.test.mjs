@@ -22,6 +22,7 @@ for (const [name, mutate] of [
   ['rejects missing quarantine', value => { value.evidence.quarantine = false; }],
   ['rejects missing reconciliation', value => { value.evidence.reconciliation = false; }],
   ['rejects unassigned owner', value => { value.evidence.owner = ' '; }],
+  ['rejects malformed owner', value => { value.evidence.owner = { id: 'quality-owner' }; }],
   ['rejects missing remediation', value => { value.evidence.remediation = false; }],
   ['rejects missing corrective-forward evidence', value => { value.evidence.corrective_forward = false; }],
   ['rejects invalid durable workflow state', value => { value.evidence.state = 'approved'; }],
