@@ -8,6 +8,7 @@ import test from "node:test";
 import {
   validateCiGates,
   validateHandoffSpecificationDigests,
+  validateRepositoryHandoffSpecificationDigests,
   validateRuntimeCapabilities,
   validateTraceability,
 } from "./ci-gate-validator.mjs";
@@ -334,6 +335,66 @@ test("handoff specification records are discovered generically and bound to cand
     result.errors.some((error) => error.includes("not Git-resolvable")),
     result.errors.join(" | "),
   );
+});
+
+test("traceability command discovers malformed and wrong-digest repository handoffs", () => {
+  const fixture = temp("upfs-repository-handoff-scan-");
+  git(fixture, ["init", "--initial-branch=recovery/handoff-scan-fixture"]);
+  git(fixture, ["config", "user.email", "fixture@example.test"]);
+  git(fixture, ["config", "user.name", "Fixture"]);
+  write(fixture, "AGENTS.md", "fixture agent instructions\n");
+  write(fixture, "specs/09_cicd/delivery_pipeline.md", "fixture delivery\n");
+  git(fixture, ["add", "."]);
+  git(fixture, ["commit", "-m", "fixture handoff source evidence"]);
+  const candidate = git(fixture, ["rev-parse", "HEAD"]);
+  const digest = crypto
+    .createHash("sha256")
+    .update(fs.readFileSync(path.join(fixture, "AGENTS.md")))
+    .digest("hex");
+  write(
+    fixture,
+    "docs/handoffs/valid.md",
+    `- Commit: candidate \`${candidate}\`.\n- Specifications and contracts read: \`AGENTS.md\` (\`${digest}\`).\n`,
+  );
+  write(
+    fixture,
+    "docs/handoffs/wrong-agents.md",
+    `- Commit: candidate \`${candidate}\`.\n- Specifications and contracts read: \`AGENTS.md\` (\`${"0".repeat(64)}\`).\n`,
+  );
+  write(
+    fixture,
+    "docs/handoffs/malformed.md",
+    `- Commit: candidate \`${candidate}\`.\n- Specifications and contracts read: AGENTS.md digest unavailable.\n`,
+  );
+  const scan = validateRepositoryHandoffSpecificationDigests(fixture);
+  assert.equal(scan.status, "failed");
+  assert.ok(
+    scan.errors.some(
+      (error) =>
+        error.includes("wrong-agents.md") &&
+        error.includes("digest does not match Git blob bytes"),
+    ),
+    scan.errors.join(" | "),
+  );
+  assert.ok(
+    scan.errors.some(
+      (error) =>
+        error.includes("malformed.md") &&
+        error.includes("requires path/digest pairs"),
+    ),
+    scan.errors.join(" | "),
+  );
+  const command = spawnSync(
+    process.execPath,
+    [path.join(root, "scripts/ci-gate-validator.mjs"), "--traceability"],
+    { cwd: fixture, encoding: "utf8" },
+  );
+  assert.notEqual(command.status, 0, command.stderr);
+  assert.match(
+    command.stderr,
+    /wrong-agents\.md:.*digest does not match Git blob bytes/i,
+  );
+  assert.match(command.stderr, /malformed\.md:.*requires path\/digest pairs/i);
 });
 
 test("traceability rejects headings-only, placeholders, repeated IDs, and nonexistent artifacts", () => {

@@ -405,6 +405,44 @@ export function validateHandoffSpecificationDigests(worktree, body) {
   return { status: errors.length ? "failed" : "passed", errors };
 }
 
+function discoveredHandoffFiles(root, errors) {
+  const relativeDirectory = "docs/handoffs";
+  const directory = path.join(root, relativeDirectory);
+  let entries;
+  try {
+    entries = fs.readdirSync(directory, { withFileTypes: true });
+  } catch (error) {
+    errors.push(`${relativeDirectory} cannot be enumerated: ${error.message}`);
+    return [];
+  }
+  const files = [];
+  for (const entry of entries) {
+    const relative = path.posix.join(relativeDirectory, entry.name);
+    if (entry.isSymbolicLink()) {
+      errors.push(
+        `${relative} is a symbolic link and cannot supply handoff provenance.`,
+      );
+      continue;
+    }
+    if (entry.isFile() && entry.name.endsWith(".md")) files.push(relative);
+  }
+  return files;
+}
+
+export function validateRepositoryHandoffSpecificationDigests(
+  root = process.cwd(),
+) {
+  const errors = [];
+  const handoffs = discoveredHandoffFiles(root, errors);
+  for (const relative of handoffs) {
+    const body = read(root, relative, errors);
+    if (!/^\s*-\s+Specifications and contracts read:/im.test(body)) continue;
+    const result = validateHandoffSpecificationDigests(root, body);
+    for (const error of result.errors) errors.push(`${relative}: ${error}`);
+  }
+  return { status: errors.length ? "failed" : "passed", errors };
+}
+
 function sourceBinding(value) {
   const match = /^([^#:]+)[#:](.+)$/.exec(value ?? "");
   return match && { file: match[1].trim(), section: match[2].trim() };
@@ -813,7 +851,7 @@ function validateProvenance(
 
 export function validateTraceability(root = process.cwd()) {
   const relative = "docs/MASTER_PLAN_TRACEABILITY.md";
-  const errors = [];
+  const errors = validateRepositoryHandoffSpecificationDigests(root).errors;
   const body = read(root, relative, errors);
   if (!body)
     return {
