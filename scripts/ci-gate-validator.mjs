@@ -405,6 +405,249 @@ export function validateHandoffSpecificationDigests(worktree, body) {
   return { status: errors.length ? "failed" : "passed", errors };
 }
 
+const GIT_BOUND_ERRATA_TITLE =
+  /^## Git-bound provenance erratum v1 — ([A-Z][A-Z0-9-]+)\s*$/gim;
+const ERRATA_SCOPE_STATEMENT =
+  "This erratum changes no historical task status, acceptance claim, test result, review state, risk, limitation, production-capability classification, or Independent QA/Security review result.";
+const ERRATA_ALLOWED_SECTION = new RegExp(
+  "^## Git-bound provenance erratum v1 [^\\r\\n]+\\r?\\n" +
+    "\\r?\\n" +
+    "- Original handoff path: `[^`\\r\\n]+`\\.\\r?\\n" +
+    "- Original handoff source commit: `[a-f0-9]{40}`\\.\\r?\\n" +
+    "- Original candidate commit: `[a-f0-9]{40}`\\.\\r?\\n" +
+    "- Original provenance record: `Specifications and contracts read`\\.\\r?\\n" +
+    "\\r?\\n" +
+    "\\| Path \\| Source candidate \\| Git blob \\| Derived SHA-256 \\|\\r?\\n" +
+    "\\| --- \\| --- \\| --- \\| --- \\|\\r?\\n" +
+    "(?:\\| `[^`|\\r\\n]+` \\| `[a-f0-9]{40}` \\| `[a-f0-9]{40}` \\| `[a-f0-9]{64}` \\|\\r?\\n)+" +
+    "\\r?\\n" +
+    "- Preservation statement: " +
+    ERRATA_SCOPE_STATEMENT.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&") +
+    "\\r?\\n*$",
+  "i",
+);
+
+function errataSections(body) {
+  const titles = [...body.matchAll(GIT_BOUND_ERRATA_TITLE)];
+  return titles.map((title, index) => ({
+    task: title[1],
+    text: body.slice(title.index, titles[index + 1]?.index),
+  }));
+}
+
+function requiredErrataField(section, label, errors) {
+  const match = new RegExp(
+    "^- " + label + ":\\s*`([^`]+)`\\.?\\s*$",
+    "im",
+  ).exec(section);
+  if (!match) {
+    errors.push(`Git-bound provenance erratum requires ${label}.`);
+    return undefined;
+  }
+  return match[1];
+}
+
+function originalSpecificationRecord(original) {
+  return /^- Specifications and contracts read:\s*([^\r\n]*)\.?\s*$/im.exec(
+    original,
+  )?.[0];
+}
+
+function originalSpecificationRecords(record) {
+  return new Map(
+    [...record.matchAll(/`([^`]+)`\s*\(`([a-f0-9]{64})`\)/gi)].map(
+      ([, relative, digest]) => [relative, digest.toLowerCase()],
+    ),
+  );
+}
+
+function parseErrataRows(section, errors) {
+  const lines = section
+    .split(/\r?\n/)
+    .filter((line) => line.trim().startsWith("|"));
+  const header = lines.find((line) =>
+    /^\|\s*Path\s*\|\s*Source candidate\s*\|\s*Git blob\s*\|\s*Derived SHA-256\s*\|\s*$/i.test(
+      line.trim(),
+    ),
+  );
+  if (!header) {
+    errors.push(
+      "Git-bound provenance erratum requires the exact correction table header.",
+    );
+    return [];
+  }
+  const headerIndex = lines.indexOf(header);
+  const rows = [];
+  for (const line of lines.slice(headerIndex + 1)) {
+    if (/^\|\s*(?:---\s*\|\s*)+$/i.test(line.trim())) continue;
+    const fields = line
+      .split("|")
+      .slice(1, -1)
+      .map((field) => field.trim().replace(/^`|`$/g, ""));
+    if (fields.length !== 4 || fields.some((field) => !field)) {
+      errors.push(
+        "Git-bound provenance erratum has a malformed correction table row.",
+      );
+      continue;
+    }
+    rows.push(fields);
+  }
+  if (!rows.length)
+    errors.push(
+      "Git-bound provenance erratum requires at least one correction row.",
+    );
+  return rows;
+}
+
+function validateGitBoundErratum(worktree, relative, body, section) {
+  const errors = [];
+  if (!ERRATA_ALLOWED_SECTION.test(section.text))
+    errors.push(
+      "Git-bound provenance erratum must contain only the exact v1 allowlisted schema; freeform or claim-changing content is not permitted.",
+    );
+  const originalPath = requiredErrataField(
+    section.text,
+    "Original handoff path",
+    errors,
+  );
+  const sourceCommit = requiredErrataField(
+    section.text,
+    "Original handoff source commit",
+    errors,
+  );
+  const originalCandidate = requiredErrataField(
+    section.text,
+    "Original candidate commit",
+    errors,
+  );
+  const originalRecord = requiredErrataField(
+    section.text,
+    "Original provenance record",
+    errors,
+  );
+  if (originalPath !== relative)
+    errors.push(
+      `Git-bound provenance erratum original handoff path must be ${relative}.`,
+    );
+  if (!/^[a-f0-9]{40}$/i.test(sourceCommit ?? ""))
+    errors.push(
+      "Git-bound provenance erratum original handoff source commit must be immutable.",
+    );
+  if (!/^[a-f0-9]{40}$/i.test(originalCandidate ?? ""))
+    errors.push(
+      "Git-bound provenance erratum original candidate commit must be immutable.",
+    );
+  if (originalRecord !== "Specifications and contracts read")
+    errors.push(
+      "Git-bound provenance erratum may correct only the existing Specifications and contracts read record.",
+    );
+  const original =
+    sourceCommit && originalPath === relative
+      ? gitBlob(worktree, sourceCommit, originalPath)
+      : undefined;
+  if (!original) {
+    errors.push(
+      "Git-bound provenance erratum original handoff is not Git-resolvable at its declared source commit.",
+    );
+    return { status: "failed", errors };
+  }
+  if (!body.startsWith(original))
+    errors.push(
+      "Git-bound provenance erratum must preserve the original handoff bytes as an append-only prefix.",
+    );
+  const candidate = handoffCandidate(original);
+  if (!candidate || candidate !== originalCandidate)
+    errors.push(
+      "Git-bound provenance erratum original candidate does not match the existing original record.",
+    );
+  const record = originalSpecificationRecord(original);
+  if (!record) {
+    errors.push(
+      "Git-bound provenance erratum cannot locate the existing original Specifications and contracts read record.",
+    );
+    return { status: "failed", errors };
+  }
+  const originalRecords = originalSpecificationRecords(record);
+  if (!originalRecords.size)
+    errors.push(
+      "Git-bound provenance erratum original record does not declare any correctable paths.",
+    );
+  const originalValidation = validateHandoffSpecificationDigests(
+    worktree,
+    original,
+  );
+  if (originalValidation.status === "passed")
+    errors.push(
+      "Git-bound provenance erratum cannot correct an already-valid provenance record.",
+    );
+  const rows = parseErrataRows(section.text, errors);
+  const seen = new Set();
+  for (const [relativePath, rowCandidate, blob, digest] of rows) {
+    if (
+      !validGitRelativePath(relativePath) ||
+      !originalRecords.has(relativePath)
+    )
+      errors.push(
+        `Git-bound provenance erratum correction path is not an existing original-record path: ${relativePath}.`,
+      );
+    if (rowCandidate !== originalCandidate)
+      errors.push(
+        `Git-bound provenance erratum correction ${relativePath} must bind original candidate ${originalCandidate}.`,
+      );
+    if (!/^[a-f0-9]{40}$/i.test(blob ?? ""))
+      errors.push(
+        `Git-bound provenance erratum correction ${relativePath} must declare an immutable Git blob.`,
+      );
+    if (!/^[a-f0-9]{64}$/i.test(digest ?? ""))
+      errors.push(
+        `Git-bound provenance erratum correction ${relativePath} must declare a SHA-256 digest.`,
+      );
+    if (seen.has(relativePath))
+      errors.push(
+        `Git-bound provenance erratum has a duplicate correction path: ${relativePath}.`,
+      );
+    seen.add(relativePath);
+    const bytes = gitBlobBytes(worktree, originalCandidate, relativePath);
+    const actualBlob = git(worktree, [
+      "rev-parse",
+      `${originalCandidate}:${relativePath}`,
+    ])?.trim();
+    const actualDigest = bytes
+      ? crypto.createHash("sha256").update(bytes).digest("hex")
+      : undefined;
+    if (!bytes || !actualBlob || actualBlob !== blob)
+      errors.push(
+        `Git-bound provenance erratum correction ${relativePath} source blob is not Git-resolvable or does not match.`,
+      );
+    if (!actualDigest || actualDigest !== digest.toLowerCase())
+      errors.push(
+        `Git-bound provenance erratum correction ${relativePath} digest does not match Git blob bytes.`,
+      );
+    if (originalRecords.get(relativePath) === digest.toLowerCase())
+      errors.push(
+        `Git-bound provenance erratum correction ${relativePath} does not change the malformed original value.`,
+      );
+  }
+  for (const required of originalRecords.keys())
+    if (!seen.has(required))
+      errors.push(
+        `Git-bound provenance erratum omits original-record path ${required}.`,
+      );
+  return { status: errors.length ? "failed" : "passed", errors };
+}
+
+function validatedErrataForHandoff(worktree, relative, body) {
+  const sections = errataSections(body);
+  if (sections.length !== 1)
+    return {
+      status: "failed",
+      errors: [
+        "handoff must contain exactly one Git-bound provenance erratum.",
+      ],
+    };
+  return validateGitBoundErratum(worktree, relative, body, sections[0]);
+}
+
 function discoveredHandoffFiles(root, errors) {
   const relativeDirectory = "docs/handoffs";
   const rootReal = (() => {
@@ -481,7 +724,11 @@ export function validateRepositoryHandoffSpecificationDigests(
     const body = read(root, relative, errors);
     if (!/^\s*-\s+Specifications and contracts read:/im.test(body)) continue;
     const result = validateHandoffSpecificationDigests(root, body);
-    for (const error of result.errors) errors.push(`${relative}: ${error}`);
+    const errata = errataSections(body);
+    const effective = errata.length
+      ? validatedErrataForHandoff(root, relative, body)
+      : result;
+    for (const error of effective.errors) errors.push(`${relative}: ${error}`);
   }
   return { status: errors.length ? "failed" : "passed", errors };
 }

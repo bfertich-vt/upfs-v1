@@ -398,6 +398,140 @@ test("traceability command discovers malformed and wrong-digest repository hando
   assert.match(command.stderr, /malformed\.md:.*requires path\/digest pairs/i);
 });
 
+test("repository scan permits only a strict, append-only Git-bound provenance erratum", () => {
+  const fixture = temp("upfs-git-bound-erratum-");
+  git(fixture, ["init", "--initial-branch=recovery/erratum-fixture"]);
+  git(fixture, ["config", "user.email", "fixture@example.test"]);
+  git(fixture, ["config", "user.name", "Fixture"]);
+  write(fixture, "AGENTS.md", "fixture agent instructions\n");
+  write(fixture, "specs/09_cicd/delivery_pipeline.md", "fixture delivery\n");
+  git(fixture, ["add", "."]);
+  git(fixture, ["commit", "-m", "candidate source evidence"]);
+  const candidate = git(fixture, ["rev-parse", "HEAD"]);
+  const originalRecord = [
+    "- Commit: candidate `" + candidate + "`.",
+    "- Specifications and contracts read: `AGENTS.md` (`" +
+      "0".repeat(64) +
+      "`); `specs/09_cicd/delivery_pipeline.md` (`" +
+      "0".repeat(64) +
+      "`).",
+    "- Results: preserved historical result.",
+    "",
+  ].join("\n");
+  write(fixture, "docs/handoffs/legacy.md", originalRecord);
+  git(fixture, ["add", "."]);
+  git(fixture, ["commit", "-m", "preserve malformed historical handoff"]);
+  const sourceCommit = git(fixture, ["rev-parse", "HEAD"]);
+  const row = (relative) => {
+    const bytes = spawnSync(
+      "git",
+      ["-C", fixture, "show", `${candidate}:${relative}`],
+      { encoding: null },
+    ).stdout;
+    const blob = git(fixture, ["rev-parse", `${candidate}:${relative}`]);
+    const hash = crypto.createHash("sha256").update(bytes).digest("hex");
+    return `| \`${relative}\` | \`${candidate}\` | \`${blob}\` | \`${hash}\` |`;
+  };
+  const erratum = (source = sourceCommit) =>
+    [
+      "## Git-bound provenance erratum v1 — RECOVERY-FIXTURE-001",
+      "",
+      "- Original handoff path: `docs/handoffs/legacy.md`.",
+      "- Original handoff source commit: `" + source + "`.",
+      "- Original candidate commit: `" + candidate + "`.",
+      "- Original provenance record: `Specifications and contracts read`.",
+      "",
+      "| Path | Source candidate | Git blob | Derived SHA-256 |",
+      "| --- | --- | --- | --- |",
+      row("AGENTS.md"),
+      row("specs/09_cicd/delivery_pipeline.md"),
+      "",
+      "- Preservation statement: This erratum changes no historical task status, acceptance claim, test result, review state, risk, limitation, production-capability classification, or Independent QA/Security review result.",
+      "",
+    ].join("\n");
+  const erratumFile = path.join(fixture, "docs", "handoffs", "legacy.md");
+  const valid = originalRecord + erratum();
+  fs.writeFileSync(erratumFile, valid);
+  assert.deepEqual(validateRepositoryHandoffSpecificationDigests(fixture), {
+    status: "passed",
+    errors: [],
+  });
+  const reject = (mutated, expected) => {
+    fs.writeFileSync(erratumFile, mutated);
+    const result = validateRepositoryHandoffSpecificationDigests(fixture);
+    assert.equal(result.status, "failed", expected);
+    assert.ok(
+      result.errors.some((error) => error.includes(expected)),
+      result.errors.join(" | "),
+    );
+  };
+  reject(
+    valid.replace(
+      "Original handoff source commit",
+      "Missing handoff source commit",
+    ),
+    "requires Original handoff source commit",
+  );
+  reject(valid + erratum(), "exactly one Git-bound provenance erratum");
+  reject(
+    valid.replace(
+      "- Original provenance record: `Specifications and contracts read`.",
+      "- Original provenance record: `Specifications and contracts read`.\n- Unauthorized field: `bypass`.",
+    ),
+    "exact v1 allowlisted schema",
+  );
+  reject(
+    valid.replace(
+      `- Original candidate commit: \`${candidate}\`.`,
+      "- Original candidate commit: `" + "a".repeat(40) + "`.",
+    ),
+    "original candidate does not match",
+  );
+  reject(
+    valid.replace(
+      `- Original handoff source commit: \`${sourceCommit}\`.`,
+      "- Original handoff source commit: `" + "f".repeat(40) + "`.",
+    ),
+    "original handoff is not Git-resolvable",
+  );
+  reject(
+    valid.replace(
+      /`[a-f0-9]{64}`(?= \|\r?\n\r?\n- Preservation)/i,
+      "`" + "f".repeat(64) + "`",
+    ),
+    "digest does not match Git blob bytes",
+  );
+  reject(
+    valid.replace("preserved historical result", "rewritten historical result"),
+    "append-only prefix",
+  );
+  reject(valid + "- Release status: accepted\n", "exact v1 allowlisted schema");
+
+  const correctDigest = (relative) => {
+    const bytes = spawnSync(
+      "git",
+      ["-C", fixture, "show", `${candidate}:${relative}`],
+      { encoding: null },
+    ).stdout;
+    return crypto.createHash("sha256").update(bytes).digest("hex");
+  };
+  const validOriginal = originalRecord
+    .replace("0".repeat(64), correctDigest("AGENTS.md"))
+    .replace(
+      "0".repeat(64),
+      correctDigest("specs/09_cicd/delivery_pipeline.md"),
+    );
+  fs.writeFileSync(erratumFile, validOriginal);
+  git(fixture, ["add", "."]);
+  git(fixture, ["commit", "-m", "preserve valid historical handoff fixture"]);
+  const validSourceCommit = git(fixture, ["rev-parse", "HEAD"]);
+  reject(
+    validOriginal + erratum(validSourceCommit),
+    "cannot correct an already-valid provenance record",
+  );
+  fs.rmSync(fixture, { force: true, recursive: true });
+});
+
 test("repository handoff discovery rejects unsafe directory roots before enumeration", () => {
   const fixture = temp("upfs-handoff-directory-root-");
   const outside = temp("upfs-handoff-directory-outside-");

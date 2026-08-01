@@ -1,0 +1,63 @@
+id: RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-001
+title: Add strict append-only provenance-correction semantics to handoff validation
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/governance/provenance-verification.md
+  - docs/handoffs/RECOVERY-CI-GATES-001.md
+  - docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-QUEUE-RECLASSIFICATION-007
+authorized_files:
+  - tasks/recovery/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-001.yaml
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-001.md
+prohibited_files:
+  - docs/handoffs/RECOVERY-CI-GATES-001.md
+  - docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md
+  - docs/reviews/**
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - tasks/queue.yaml
+  - package.json
+  - .github/**
+  - README.md
+  - START_HERE.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+acceptance_criteria:
+  - Validator supports an explicit, append-only correction schema that supersedes only exactly identified malformed historical specification-provenance records; original text remains required and unchanged.
+  - A correction identifies original record identity/value, candidate commit:path, immutable raw-Git-byte replacement digest, reason, and correction provenance; no free-form field may silently bypass validation.
+  - Validator rejects missing/duplicate/ambiguous target, unauthorized field, mismatched original value, unavailable commit:path, wrong replacement digest, correction of a valid record, or correction that changes non-provenance claims.
+  - Existing valid handoffs and all strict validation behavior remain unchanged without a qualifying correction.
+  - Tests cover valid correction and all listed negative cases, using fixture handoffs only; no historical handoff content changes.
+  - Handoff is post-commit/provenance complete and candidate validation passes.
+required_tests:
+  - node --test scripts/ci-gate-validator.test.mjs
+  - npm test
+  - npm run traceability:check
+  - git diff --check
+security_requirements:
+  - Corrections must be immutable, exact, append-only, and fail closed; do not permit evidence erasure, credential/data exposure, or unrelated provenance bypass.
+rollback:
+  - Revert only independently accepted parser correction; preserve historical handoffs and rejected evidence without history rewrite.
+runtime_evidence_required: Parser schema/mutation results, regression evidence, traceability output, clean diff, actual handoff, and distinct QA/Security review.
