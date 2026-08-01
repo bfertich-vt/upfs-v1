@@ -583,13 +583,13 @@ tasks:
     acceptance: [Tenant/environment scope, non-disclosure, redaction, and auth-derived API requests are mutation-tested]
   - id: TASK-0088
     title: Implement admin-console privileged-action regression gate
-    status: ready
+    status: complete
     dependencies: [TASK-0087]
     source: specs/14_admin_control_plane/admin_control_plane.md
     acceptance: [Approval, dual control, idempotency, audit, rollback, unavailable state, and direct-infra denial remain enforced]
   - id: TASK-0089
     title: Implement observability redaction and cardinality review
-    status: pending
+    status: ready
     dependencies: [TASK-0088]
     source: specs/10_security/security_baseline.md; specs/12_testing/test_strategy.md
     acceptance: [Sensitive fields are redacted and metric/log/trace cardinality remains bounded and tenant-safe]
