@@ -691,13 +691,13 @@ tasks:
     acceptance: [Runbooks reference current APIs, thresholds, owners, commands, evidence, rollback, and unavailable states]
   - id: TASK-0106
     title: Implement public documentation and example drift refresh
-    status: ready
+    status: complete
     dependencies: [TASK-0105]
     source: specs/13_docs/documentation_platform.md; specs/05_apis/api_standards.md
     acceptance: [Public docs, examples, SDKs, contracts, versions, permissions, errors, and migration guidance remain synchronized]
   - id: TASK-0107
     title: Implement integrated v1.1 release-candidate rehearsal
-    status: pending
+    status: ready
     dependencies: [TASK-0106]
     source: specs/09_cicd/delivery_pipeline.md; specs/12_testing/test_strategy.md
     acceptance: [Security, migration, recovery, resilience, API, UI, documentation, and compliance gates execute in order]
