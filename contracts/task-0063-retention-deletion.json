@@ -1,0 +1,48 @@
+{
+  "schema_version": "upfs.retention-deletion-review.v1",
+  "reviewed_at": "2030-01-01T00:00:00Z",
+  "owner": "data-governance-owner",
+  "reviewer": "security-reviewer",
+  "retention": {
+    "raw_evidence_days": 35,
+    "quarantine_days": 35,
+    "backup_days": 35,
+    "audit_days": 2555,
+    "policy_ref": "evidence://retention/policy/1"
+  },
+  "legal_hold": {
+    "checked": true,
+    "held_records_blocked": true,
+    "evidence_ref": "evidence://retention/legal-hold/1"
+  },
+  "deletion": {
+    "dry_run": true,
+    "execution": "not-performed",
+    "eligible_records": 3,
+    "held_records_excluded": true,
+    "approval_required": true,
+    "evidence_ref": "evidence://retention/deletion/1"
+  },
+  "quarantine": {
+    "isolated": true,
+    "release_requires_scan": true,
+    "deletion_requires_approval": true,
+    "evidence_ref": "evidence://retention/quarantine/1"
+  },
+  "audit": {
+    "append_only": true,
+    "tenant_scoped": true,
+    "redacted": true,
+    "evidence_ref": "evidence://retention/audit/1"
+  },
+  "restore": {
+    "retention_reapplied": true,
+    "legal_holds_preserved": true,
+    "quarantine_state_preserved": true,
+    "evidence_ref": "evidence://retention/restore/1"
+  },
+  "review_evidence": {
+    "evidence_ref": "evidence://retention/review/1",
+    "review_digest": "4642d1d585e4520b0c7107960ce4b276cd2eed2a5d986c0ac0fd47cc2762eda5"
+  }
+}
