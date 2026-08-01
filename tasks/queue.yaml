@@ -493,13 +493,13 @@ tasks:
     acceptance: [Risk acceptance requires named owner, scope, compensating controls, expiry, approval, and escalation]
   - id: TASK-0073
     title: Implement pilot control exception lifecycle
-    status: ready
+    status: complete
     dependencies: [TASK-0072]
     source: specs/11_soc2/soc2_readiness.md; docs/compliance/control-library.json
     acceptance: [Exceptions are created, approved, monitored, remediated, expired, and audited without weakening gates]
   - id: TASK-0074
     title: Implement evidence retention and chain-of-custody index
-    status: pending
+    status: ready
     dependencies: [TASK-0073]
     source: specs/11_soc2/soc2_readiness.md; specs/10_security/security_baseline.md
     acceptance: [Evidence owners, hashes, timestamps, retention, access, lineage, and disposal controls are bound]
