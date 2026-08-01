@@ -259,13 +259,13 @@ tasks:
     acceptance: [Provider identity, environment binding, rotation, health, and drift contracts are versioned and fail closed]
   - id: TASK-0034
     title: Produce protected deployment promotion and rollback evidence
-    status: ready
+    status: complete
     dependencies: [TASK-0033]
     source: Stage 9 immutable promotion and rollback requirements; specs/09_cicd/delivery_pipeline.md
     acceptance: [Canary/cell promotion, approval, verification, rollback, and corrective-forward evidence is reproducible]
   - id: TASK-0035
     title: Complete observability, alerting, and incident operations evidence
-    status: pending
+    status: ready
     dependencies: [TASK-0034]
     source: Stage 9 operational readiness and incident requirements; specs/12_testing/test_strategy.md
     acceptance: [Tenant-safe telemetry, SLO alerts, incident detection/pause/abort/recovery, and audit evidence are verified]
