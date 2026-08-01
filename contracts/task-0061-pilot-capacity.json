@@ -1,0 +1,36 @@
+{
+  "schema_version": "upfs.pilot-capacity-review.v1",
+  "reviewed_at": "2030-01-01T00:00:00Z",
+  "reviewer": "capacity-review-owner",
+  "dimensions": {
+    "pilot_tenants": 10,
+    "concurrent_users": 100,
+    "read_requests_per_second": 250,
+    "ingestion_events_per_minute": 5000,
+    "cells": 2
+  },
+  "thresholds": {
+    "availability_min_percent": 99,
+    "read_api_p95_max_ms": 750,
+    "ingestion_freshness_max_minutes": 15,
+    "unexplained_projection_drift_max": 0,
+    "rpo_max_minutes": 15,
+    "rto_max_minutes": 60
+  },
+  "saturation": [
+    {"signal": "cpu", "pause_at_percent": 85, "observed_peak_percent": 65},
+    {"signal": "memory", "pause_at_percent": 85, "observed_peak_percent": 60},
+    {"signal": "database_connections", "pause_at_percent": 80, "observed_peak_percent": 50},
+    {"signal": "queue_depth", "pause_at_percent": 80, "observed_peak_percent": 40}
+  ],
+  "scaling_actions": [
+    {"signal": "cpu", "trigger": "sustained saturation", "action": "increase bounded worker capacity", "owner": "capacity-owner", "evidence_ref": "evidence://capacity/cpu"},
+    {"signal": "memory", "trigger": "sustained saturation", "action": "increase bounded memory allocation", "owner": "capacity-owner", "evidence_ref": "evidence://capacity/memory"},
+    {"signal": "database_connections", "trigger": "connection saturation", "action": "increase bounded pool capacity", "owner": "database-owner", "evidence_ref": "evidence://capacity/connections"},
+    {"signal": "queue_depth", "trigger": "backpressure threshold", "action": "apply backpressure and scale consumers", "owner": "ingestion-owner", "evidence_ref": "evidence://capacity/queue"}
+  ],
+  "review_evidence": {
+    "evidence_ref": "evidence://capacity/review/1",
+    "review_digest": "7760209ae2d025ee07552472a61b000d8af99ef448dfc2be03fec90aa974a9af"
+  }
+}
