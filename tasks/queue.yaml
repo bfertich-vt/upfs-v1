@@ -415,13 +415,13 @@ tasks:
     acceptance: [Backup integrity, restore sampling, RPO/RTO, retention, encryption, and corrective-forward reviews are bound]
   - id: TASK-0060
     title: Implement pilot disaster-recovery exercise scheduler and evidence ledger
-    status: ready
+    status: complete
     dependencies: [TASK-0059]
     source: specs/03_architecture/system_architecture.md; specs/12_testing/test_strategy.md
     acceptance: [DR exercise schedule, owners, scenarios, results, failures, remediation, and immutable references are tracked]
   - id: TASK-0061
     title: Implement pilot capacity and environment-sizing review
-    status: pending
+    status: ready
     dependencies: [TASK-0060]
     source: specs/12_testing/test_strategy.md; docs/runbooks/controlled-pilot-runbook.md
     acceptance: [Capacity assumptions, tenant dimensions, thresholds, saturation, scaling actions, and review evidence are reproducible]
