@@ -1,0 +1,55 @@
+{
+  "schema_version": "upfs.promotion-report.v1",
+  "status": "failed",
+  "decision": "NO-GO_EXTERNAL_PREREQUISITES",
+  "synthetic_only": true,
+  "deployment": "not-performed",
+  "checks": [
+    {
+      "name": "boundary",
+      "status": "passed",
+      "details": "synthetic rehearsal does not deploy"
+    },
+    {
+      "name": "environment",
+      "status": "passed",
+      "details": "protected environment required"
+    },
+    {
+      "name": "approval",
+      "status": "failed",
+      "details": "unexpired approval evidence required"
+    },
+    {
+      "name": "dual-control",
+      "status": "passed",
+      "details": "production requires dual control"
+    },
+    {
+      "name": "immutable-artifact",
+      "status": "failed",
+      "details": "immutable signed artifact digest required"
+    },
+    {
+      "name": "managed-binding",
+      "status": "failed",
+      "details": "managed signing and environment binding required"
+    },
+    {
+      "name": "health",
+      "status": "failed",
+      "details": "automatic health gate required"
+    },
+    {
+      "name": "reconciliation",
+      "status": "failed",
+      "details": "post-deploy reconciliation must be zero drift"
+    },
+    {
+      "name": "rollout",
+      "status": "passed",
+      "details": "canary and corrective-forward rollback policy required"
+    }
+  ],
+  "generated_at": "2026-08-01T00:12:09.793Z"
+}

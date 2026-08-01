@@ -1,0 +1,45 @@
+{
+  "schema_version": "upfs.release-sync-report.v1",
+  "status": "passed",
+  "decision": "READY_FOR_EXTERNAL_APPROVAL",
+  "synthetic_only": true,
+  "deployment": "not-performed",
+  "checks": [
+    {
+      "name": "boundary",
+      "status": "passed",
+      "details": "synthetic release evidence"
+    },
+    {
+      "name": "generated",
+      "status": "passed",
+      "details": "generated docs and SDK are drift-free"
+    },
+    {
+      "name": "documentation",
+      "status": "passed",
+      "details": "public API documentation complete"
+    },
+    {
+      "name": "sdk",
+      "status": "passed",
+      "details": "SDK contract metadata present"
+    },
+    {
+      "name": "release-notes",
+      "status": "passed",
+      "details": "release notes include limitations"
+    },
+    {
+      "name": "examples",
+      "status": "passed",
+      "details": "examples are runnable synthetic-only"
+    },
+    {
+      "name": "migration",
+      "status": "passed",
+      "details": "migration guidance includes rehearsal and rollback"
+    }
+  ],
+  "generated_at": "2026-08-01T00:12:10.259Z"
+}

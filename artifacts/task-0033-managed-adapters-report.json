@@ -1,0 +1,105 @@
+{
+  "schema_version": "upfs.managed-adapter-report.v1",
+  "status": "failed",
+  "decision": "NO-GO_EXTERNAL_PREREQUISITES",
+  "synthetic_only": true,
+  "deployment": "not-performed",
+  "checks": [
+    {
+      "name": "schema",
+      "status": "failed",
+      "details": "versioned managed-adapter contract is required"
+    },
+    {
+      "name": "provider-postgresql",
+      "status": "failed",
+      "details": "postgresql provider identity does not match approved external provider"
+    },
+    {
+      "name": "provider-secrets",
+      "status": "failed",
+      "details": "secrets provider identity does not match approved external provider"
+    },
+    {
+      "name": "provider-observability",
+      "status": "failed",
+      "details": "observability provider identity does not match approved external provider"
+    },
+    {
+      "name": "provider-backup",
+      "status": "failed",
+      "details": "backup provider identity does not match approved external provider"
+    },
+    {
+      "name": "environment-pilot",
+      "status": "failed",
+      "details": "provider responses must bind to the protected environment"
+    },
+    {
+      "name": "health-pilot-reachable",
+      "status": "failed",
+      "details": "required managed adapter health signal is missing"
+    },
+    {
+      "name": "health-pilot-authenticated",
+      "status": "failed",
+      "details": "required managed adapter health signal is missing"
+    },
+    {
+      "name": "health-pilot-policy_compliant",
+      "status": "failed",
+      "details": "required managed adapter health signal is missing"
+    },
+    {
+      "name": "rotation-pilot",
+      "status": "failed",
+      "details": "versioned rotation metadata and a future rotation deadline are required"
+    },
+    {
+      "name": "references-pilot",
+      "status": "failed",
+      "details": "managed references must use approved schemes"
+    },
+    {
+      "name": "environment-production",
+      "status": "failed",
+      "details": "provider responses must bind to the protected environment"
+    },
+    {
+      "name": "health-production-reachable",
+      "status": "failed",
+      "details": "required managed adapter health signal is missing"
+    },
+    {
+      "name": "health-production-authenticated",
+      "status": "failed",
+      "details": "required managed adapter health signal is missing"
+    },
+    {
+      "name": "health-production-policy_compliant",
+      "status": "failed",
+      "details": "required managed adapter health signal is missing"
+    },
+    {
+      "name": "rotation-production",
+      "status": "failed",
+      "details": "versioned rotation metadata and a future rotation deadline are required"
+    },
+    {
+      "name": "references-production",
+      "status": "failed",
+      "details": "managed references must use approved schemes"
+    },
+    {
+      "name": "drift",
+      "status": "failed",
+      "details": "immutable manifest digest is required"
+    },
+    {
+      "name": "boundary",
+      "status": "failed",
+      "details": "evaluation must remain synthetic-only and deployment-free"
+    }
+  ],
+  "generated_at": "2026-08-01T00:12:09.742Z"
+}

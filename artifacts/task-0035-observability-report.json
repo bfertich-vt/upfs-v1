@@ -1,0 +1,50 @@
+{
+  "schema_version": "upfs.observability-report.v1",
+  "status": "failed",
+  "decision": "NO-GO_EXTERNAL_PREREQUISITES",
+  "synthetic_only": true,
+  "deployment": "not-performed",
+  "checks": [
+    {
+      "name": "boundary",
+      "status": "passed",
+      "details": "synthetic and deployment-free"
+    },
+    {
+      "name": "provider",
+      "status": "failed",
+      "details": "managed observability provider identity required"
+    },
+    {
+      "name": "tenant-safety",
+      "status": "failed",
+      "details": "tenant-safe telemetry and redaction required"
+    },
+    {
+      "name": "signals",
+      "status": "failed",
+      "details": "metrics, logs, and traces required"
+    },
+    {
+      "name": "slo-alerts",
+      "status": "failed",
+      "details": "SLO alert thresholds and paging route required"
+    },
+    {
+      "name": "incident-order",
+      "status": "failed",
+      "details": "incident detect/pause/abort/recover ordering required"
+    },
+    {
+      "name": "incident-evidence",
+      "status": "failed",
+      "details": "rollback and corrective-forward evidence required"
+    },
+    {
+      "name": "audit",
+      "status": "failed",
+      "details": "tenant-safe append-only audit evidence required"
+    }
+  ],
+  "generated_at": "2026-08-01T00:12:09.844Z"
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": "upfs.resilience-report.v1",
+  "status": "failed",
+  "decision": "NO-GO_EXTERNAL_PREREQUISITES",
+  "synthetic_only": true,
+  "deployment": "not-performed",
+  "checks": [
+    {
+      "name": "boundary",
+      "status": "passed",
+      "details": "synthetic no-deployment rehearsal"
+    },
+    {
+      "name": "load",
+      "status": "failed",
+      "details": "environment-sized load and SLO evidence required"
+    },
+    {
+      "name": "soak",
+      "status": "failed",
+      "details": "bounded soak and error threshold required"
+    },
+    {
+      "name": "failures",
+      "status": "failed",
+      "details": "dependency failure and projection lag recovery required"
+    },
+    {
+      "name": "tenants",
+      "status": "failed",
+      "details": "tenant isolation must remain zero-escape"
+    },
+    {
+      "name": "recovery",
+      "status": "failed",
+      "details": "checkpoint/outbox recovery required"
+    },
+    {
+      "name": "evidence",
+      "status": "failed",
+      "details": "immutable evidence digest and references required"
+    }
+  ],
+  "generated_at": "2026-08-01T00:12:09.959Z"
+}

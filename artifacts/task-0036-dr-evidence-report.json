@@ -1,0 +1,40 @@
+{
+  "schema_version": "upfs.dr-evidence-report.v1",
+  "status": "failed",
+  "decision": "NO-GO_EXTERNAL_PREREQUISITES",
+  "synthetic_only": true,
+  "deployment": "not-performed",
+  "checks": [
+    {
+      "name": "boundary",
+      "status": "passed",
+      "details": "synthetic and deployment-free"
+    },
+    {
+      "name": "backup",
+      "status": "failed",
+      "details": "managed encrypted backup integrity evidence required"
+    },
+    {
+      "name": "restore",
+      "status": "failed",
+      "details": "native restore and bound evidence required"
+    },
+    {
+      "name": "rpo-rto",
+      "status": "failed",
+      "details": "observed RPO/RTO must satisfy targets"
+    },
+    {
+      "name": "failover",
+      "status": "failed",
+      "details": "managed failover and corrective-forward evidence required"
+    },
+    {
+      "name": "tenant-safety",
+      "status": "failed",
+      "details": "tenant isolation required for recovery evidence"
+    }
+  ],
+  "generated_at": "2026-08-01T00:12:09.896Z"
+}
