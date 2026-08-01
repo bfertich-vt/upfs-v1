@@ -589,13 +589,13 @@ tasks:
     acceptance: [Approval, dual control, idempotency, audit, rollback, unavailable state, and direct-infra denial remain enforced]
   - id: TASK-0089
     title: Implement observability redaction and cardinality review
-    status: ready
+    status: complete
     dependencies: [TASK-0088]
     source: specs/10_security/security_baseline.md; specs/12_testing/test_strategy.md
     acceptance: [Sensitive fields are redacted and metric/log/trace cardinality remains bounded and tenant-safe]
   - id: TASK-0090
     title: Implement SLO threshold and alert-route change review
-    status: pending
+    status: ready
     dependencies: [TASK-0089]
     source: docs/runbooks/controlled-pilot-runbook.md; specs/09_cicd/delivery_pipeline.md
     acceptance: [SLO changes require impact analysis, approval, route ownership, rollback, and immutable evidence]
