@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import crypto from 'node:crypto';import {evaluateRotation} from './task-0043-rotation.mjs';
+const good=()=>({overlap:true,old_key_active:true,new_key_active:true,expiry_enforced:true,expired_rejected:true,revocation_enforced:true,revoked_rejected:true,rollback_verified:true,corrective_forward:true,immutable:true,evidence_ref:'evidence://rotation/1',digest:crypto.createHash('sha256').update('rotation').digest('hex')});
+test('rotation rehearsal passes',()=>assert.equal(evaluateRotation({rehearsal:good()}).status,'passed'));
+for(const m of [x=>{x.overlap=false},x=>{x.expired_rejected=false},x=>{x.revoked_rejected=false},x=>{x.rollback_verified=false},x=>{x.digest='bad'},x=>{x.private_key='secret'}])test('rotation rehearsal fails closed',()=>{const x=good();m(x);assert.equal(evaluateRotation({rehearsal:x}).status,'failed');});
