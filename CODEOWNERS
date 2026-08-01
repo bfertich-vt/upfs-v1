@@ -1,6 +1,6 @@
-* @upfs/platform
-/specs/00_constitution/ @upfs/security @upfs/platform
-/specs/10_security/ @upfs/security
-/specs/11_soc2/ @upfs/security @upfs/compliance
-/contracts/ @upfs/api @upfs/platform
-/.github/workflows/ @upfs/platform @upfs/security
+* @bfertich-vt
+/specs/00_constitution/ @bfertich-vt
+/specs/10_security/ @bfertich-vt
+/specs/11_soc2/ @bfertich-vt
+/contracts/ @bfertich-vt
+/.github/workflows/ @bfertich-vt

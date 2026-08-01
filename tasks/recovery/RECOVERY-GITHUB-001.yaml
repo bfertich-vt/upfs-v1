@@ -1,0 +1,39 @@
+task_id: RECOVERY-GITHUB-001
+title: Correct GitHub ownership references and record external governance blockers
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+scope: Governance control-plane documentation and CODEOWNERS only; no product implementation.
+normative_sources:
+  - AGENTS.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - docs/REPOSITORY_GOVERNANCE.md
+dependencies: []
+authorized_files:
+  - CODEOWNERS
+  - docs/governance/github-governance-audit.md
+  - tasks/recovery/RECOVERY-GITHUB-001.yaml
+  - docs/handoffs/RECOVERY-GITHUB-001.md
+prohibited_files:
+  - tasks/queue.yaml
+  - .github/workflows/**
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+acceptance_criteria:
+  - CODEOWNERS contains only verified GitHub owners.
+  - GitHub CODEOWNERS errors API returns no errors after the candidate is committed.
+  - Audit records the pre-correction error count, verified owner, PR #1 review state, and protection/ruleset API results.
+  - Audit preserves the fail-closed no-merge position and documents the external plan decision.
+  - Independent QA/Security review is performed from the committed candidate state.
+required_tests:
+  - Read-only GitHub CODEOWNERS errors API query after commit.
+  - File-scope inspection against authorized files.
+security_requirements:
+  - No GitHub settings mutation, push, merge, token disclosure, or reduction of required governance controls.
+  - Preserve independent review and protected-branch requirements as release blockers.
+rollback: Revert the candidate commit through a separately reviewed corrective commit; do not rewrite history.
+runtime_evidence_required: GitHub API response URLs/results and independent QA report.
