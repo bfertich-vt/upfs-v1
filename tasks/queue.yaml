@@ -313,13 +313,13 @@ tasks:
     acceptance: [Provider onboarding validates identity, environment binding, rotation, health, and immutable references without exposing secrets]
   - id: TASK-0043
     title: Implement protected signing-key and secret rotation rehearsal
-    status: ready
+    status: complete
     dependencies: [TASK-0042]
     source: specs/09_cicd/delivery_pipeline.md; specs/10_security/security_baseline.md
     acceptance: [Rotation, overlap, expiry, revocation, and rollback evidence is synthetic and fail-closed]
   - id: TASK-0044
     title: Implement managed database target readiness and native rehearsal gate
-    status: pending
+    status: ready
     dependencies: [TASK-0043]
     source: specs/03_architecture/system_architecture.md; specs/12_testing/test_strategy.md
     acceptance: [Managed PostgreSQL target, migrations, RLS, backup, restore, and replay prerequisites are verified without production access]
