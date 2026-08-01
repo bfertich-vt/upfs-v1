@@ -26,7 +26,7 @@ export function createAdminApi({ fetchImpl = globalThis.fetch, baseUrl = '', sup
     approveOperation: ({ operationId, reason, dualControl = false, idempotencyKey }) => request(`/admin/v1/operations/${encodeURIComponent(operationId)}/approve`, { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ reason, dual_control: dualControl }) }),
     executeOperation: ({ operationId, idempotencyKey }) => request(`/admin/v1/operations/${encodeURIComponent(operationId)}/execute`, { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey } }),
     rollbackOperation: ({ operationId, evidence, idempotencyKey }) => request(`/admin/v1/operations/${encodeURIComponent(operationId)}/rollback`, { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ evidence }) }),
-    module: (name) => { const allowed = new Set(['support-access','ingestion','canonical-quality','search-projections','redis','ai-ops','workflows','policy-simulator','security','compliance','releases','incidents','audit','operations']); if (!allowed.has(name)) throw Object.assign(new Error('unsupported_admin_module'), { code: 'unsupported_admin_module', status: 400 }); return request(`/admin/v1/${name}`); }
+    module: (name) => { const allowed = new Set(['support-access','ingestion','canonical-quality','search-projections','redis','ai-ops','workflows','policy-simulator','policies','security','compliance','releases','incidents','audit','operations','data-quality','managed-integrations']); if (!allowed.has(name)) throw Object.assign(new Error('unsupported_admin_module'), { code: 'unsupported_admin_module', status: 400 }); return request(`/admin/v1/${name}`); }
   };
 }
 
@@ -37,7 +37,7 @@ export function createAdminConsole({ root, api } = {}) {
   if (!root || typeof root.replaceChildren !== 'function') throw new TypeError('root element is required');
   if (!api || typeof api.health !== 'function') throw new TypeError('admin API is required');
   // This list mirrors specs/14_admin_control_plane. Names are API route identifiers.
-  const modules = ['support-access', 'ingestion', 'canonical-quality', 'search-projections', 'redis', 'ai-ops', 'workflows', 'policy-simulator', 'security', 'compliance', 'releases', 'incidents', 'audit', 'operations'];
+  const modules = ['support-access', 'ingestion', 'canonical-quality', 'data-quality', 'search-projections', 'redis', 'ai-ops', 'workflows', 'policy-simulator', 'policies', 'security', 'compliance', 'managed-integrations', 'releases', 'incidents', 'audit', 'operations'];
   const state = { view: 'dashboard', status: 'idle', health: null, tenants: [], selected: null, moduleData: {}, integration: null, operations: [], operationResults: [], error: null };
   const render = () => {
     root.replaceChildren();
