@@ -661,13 +661,13 @@ tasks:
     acceptance: [Policy decisions, approval quorum, idempotency, concurrency, audit, export, and recovery remain fail closed]
   - id: TASK-0101
     title: Implement compliance control-library evidence refresh
-    status: ready
+    status: complete
     dependencies: [TASK-0100]
     source: docs/compliance/control-library.json; specs/11_soc2/soc2_readiness.md
     acceptance: [Control owners, frequency, systems, procedures, evidence, reviewers, exceptions, remediation, and retention synchronize]
   - id: TASK-0102
     title: Implement security threat-model delta review
-    status: pending
+    status: ready
     dependencies: [TASK-0101]
     source: specs/10_security/security_baseline.md
     acceptance: [New boundaries, abuse cases, residual risks, mitigations, owners, and approvals are versioned]
