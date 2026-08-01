@@ -385,13 +385,13 @@ tasks:
     acceptance: [Periodic access review, least privilege, offboarding, exceptions, and remediation evidence are complete]
   - id: TASK-0055
     title: Implement pilot vulnerability and dependency remediation workflow
-    status: ready
+    status: complete
     dependencies: [TASK-0054]
     source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Pinned scans, severity thresholds, ownership, remediation deadlines, exceptions, and retest evidence fail closed]
   - id: TASK-0056
     title: Implement pilot vendor and managed-provider review evidence
-    status: pending
+    status: ready
     dependencies: [TASK-0055]
     source: specs/11_soc2/soc2_readiness.md; specs/09_cicd/delivery_pipeline.md
     acceptance: [Provider scope, risk, review cadence, contract references, incidents, and exceptions are versioned]
