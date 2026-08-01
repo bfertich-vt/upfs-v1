@@ -343,13 +343,13 @@ tasks:
     acceptance: [Pilot enrollment is approval-gated, tenant-scoped, reversible, auditable, and synthetic until authorization]
   - id: TASK-0048
     title: Implement pilot scope, cohort, and data-boundary manifest
-    status: ready
+    status: complete
     dependencies: [TASK-0047]
     source: docs/compliance/pilot-go-no-go.md; specs/10_security/security_baseline.md
     acceptance: [Cohort, regions, environments, prohibited data, retention, and pause boundaries are versioned and checked]
   - id: TASK-0049
     title: Implement pilot consent and communication evidence workflow
-    status: pending
+    status: ready
     dependencies: [TASK-0048]
     source: specs/11_soc2/soc2_readiness.md; docs/compliance/pilot-go-no-go.md
     acceptance: [Required stakeholder notices, approvals, acknowledgements, and expiry are tracked without contacting external parties]
