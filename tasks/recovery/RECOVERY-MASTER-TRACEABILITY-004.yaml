@@ -1,0 +1,58 @@
+id: RECOVERY-MASTER-TRACEABILITY-004
+title: Correct master traceability candidate handoff provenance label
+status: candidate
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - tasks/recovery/RECOVERY-MASTER-TRACEABILITY-003.yaml
+  - docs/handoffs/RECOVERY-MASTER-TRACEABILITY-003.md
+  - docs/handoffs/RECOVERY-MASTER-TRACEABILITY-003-QA.md
+  - scripts/ci-gate-validator.mjs
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-MASTER-TRACEABILITY-003-QA
+authorized_files:
+  - tasks/recovery/RECOVERY-MASTER-TRACEABILITY-004.yaml
+  - docs/handoffs/RECOVERY-MASTER-TRACEABILITY-003.md
+  - docs/handoffs/RECOVERY-MASTER-TRACEABILITY-004.md
+prohibited_files:
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - docs/handoffs/RECOVERY-MASTER-TRACEABILITY-003-QA.md
+  - docs/reviews/**
+  - scripts/**
+  - tasks/queue.yaml
+  - package.json
+  - .github/**
+  - README.md
+  - START_HERE.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+acceptance_criteria:
+  - The candidate handoff uses the exact required `Commit` provenance label and passes handoff parsing; it truthfully refers to the immutable implementation commit.
+  - No matrix, implementation, queue, historical evidence, QA rejection, or acceptance claim is changed.
+  - The exact RECOVERY-MASTER-TRACEABILITY-003-QA finding is resolved with a post-commit provenance-complete remediation handoff.
+  - Candidate validation has no candidate-origin handoff grammar failure; only independently demonstrated inherited historical failures may remain.
+required_tests:
+  - npm run traceability:check
+  - npm test
+  - git diff --check
+security_requirements:
+  - Preserve exact immutable provenance and fail closed; do not erase, rewrite, or weaken review/evidence/tenant controls.
+rollback:
+  - Revert only the independently accepted handoff correction; preserve rejection evidence and prior history.
+runtime_evidence_required: Handoff parser output, full test output, clean diff, corrective handoff, and distinct QA/Security review.
