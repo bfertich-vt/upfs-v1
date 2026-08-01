@@ -1,6 +1,8 @@
 # Repository governance baseline
 
-`TASK-0001` establishes the minimum merge controls for this repository. These controls are mandatory for the default branch before any blocked implementation task is authorized.
+## Required baseline (not current enforcement evidence)
+
+`TASK-0001` describes the minimum merge controls that must exist before any blocked implementation task is authorized. This section is a target baseline, not evidence that GitHub currently enforces it.
 
 ## Required branch protection
 
@@ -20,6 +22,16 @@
 - `/specs/00_constitution/`, `/specs/10_security/`, and `/specs/11_soc2/` require security and compliance review.
 
 When GitHub branch protection is configured, enable "Require review from Code Owners" so these ownership rules are enforced by the platform rather than by convention.
+
+## External audit status (2026-08-01)
+
+The current GitHub REST audit of `bfertich-vt/upfs-v1` found the default branch is `codex/task-0001-baseline`. Pull request [#1](https://github.com/bfertich-vt/upfs-v1/pull/1) remains open against `main`, is unmerged, and has no submitted reviews. This is not evidence that `main` is protected or that any review requirement is enforced.
+
+The remote `CODEOWNERS` errors endpoint reports unknown `@upfs` owners (`@upfs/platform`, `@upfs/security`, `@upfs/compliance`, and `@upfs/api`) until a corrective branch is published and the remote file is accepted. Local ownership text therefore does not establish remote CODEOWNERS enforcement.
+
+The branch-protection endpoint for `main` and the repository-rulesets endpoint both returned HTTP 403 with GitHub's private-plan eligibility message. Consequently, branch protection, rulesets, required status checks, required CODEOWNERS review, administrator-bypass posture, force-push restriction, and branch-deletion restriction are external governance blockers, not verified controls. Do not claim protected `main`, CODEOWNERS enforcement, deployment governance, release certification, or production readiness from local checks.
+
+The recorded local recovery evidence covers queue, provenance, traceability, repository validation, and the local full suite on the authoritative integration checkout. It remains distinct from external GitHub enforcement and does not authorize product work while the audited queue is frozen.
 
 ## Evidence expectations
 
