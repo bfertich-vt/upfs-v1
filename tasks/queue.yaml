@@ -637,13 +637,13 @@ tasks:
     acceptance: [Bounded tenants, concurrency, payloads, duration, saturation signals, and scaling actions are immutable]
   - id: TASK-0097
     title: Implement data-quality anomaly review workflow
-    status: ready
+    status: complete
     dependencies: [TASK-0096]
     source: specs/03_architecture/system_architecture.md; specs/14_admin_control_plane/admin_control_plane.md
     acceptance: [Canonical anomalies, quarantine, reconciliation, owner, remediation, and corrective-forward evidence are tracked]
   - id: TASK-0098
     title: Implement provider schema drift and mapping review
-    status: pending
+    status: ready
     dependencies: [TASK-0097]
     source: specs/03_architecture/system_architecture.md; specs/09_cicd/delivery_pipeline.md
     acceptance: [Provider schema drift, mapping changes, quarantine, replay, versioning, and approval evidence fail closed]
