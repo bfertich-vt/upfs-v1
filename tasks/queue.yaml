@@ -475,7 +475,7 @@ tasks:
     acceptance: [Observation evidence, exceptions, residual risk, remediation, owner sign-off fields, and external prerequisites are indexed]
   - id: TASK-0070
     title: Assemble v1.1 controlled-pilot continuation or stop decision
-    status: ready
+    status: complete
     dependencies: [TASK-0069]
     source: docs/compliance/pilot-go-no-go.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Continuation, pause, or stop decision is reproducible, approval-gated, truthful, and makes no certification or production claim]
