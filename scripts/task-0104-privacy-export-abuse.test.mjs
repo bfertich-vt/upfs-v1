@@ -12,6 +12,7 @@ for (const [name, mutate] of [
   ['rejects external deployment', value => { value.deployment = 'performed'; }], ['rejects scope mutation', value => { value.scope.environment_id = 'production'; }],
   ['rejects unverified request scope', value => { value.evidence.request_scope = 'unverified'; }], ['rejects missing approval', value => { value.evidence.approval = 'pending'; }],
   ['rejects unredacted export', value => { value.evidence.redaction = 'missing'; }], ['rejects missing expiry', value => { value.evidence.expiry = 'missing'; }],
+  ['rejects expired export expiry even with recomputed digest', value => { value.evidence.expires_at = '2020-01-01T00:00:00.000Z'; }], ['rejects malformed export expiry', value => { value.evidence.expires_at = '2027-07-31'; }],
   ['rejects missing rate limits', value => { value.evidence.rate_limits = 'missing'; }], ['rejects absent abuse detection', value => { value.evidence.abuse_detection = 'missing'; }],
   ['rejects mutable audit', value => { value.evidence.audit = 'mutable'; }], ['rejects unsafe deletion interaction', value => { value.evidence.deletion_interaction = 'executed'; }],
   ['rejects invalid workflow state', value => { value.evidence.state = 'executed'; }], ['rejects invalid replay', value => { value.evidence.replay = 'pending'; }],
