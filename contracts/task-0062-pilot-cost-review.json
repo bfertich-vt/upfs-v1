@@ -1,0 +1,34 @@
+{
+  "schema_version": "upfs.pilot-cost-resource-review.v1",
+  "reviewed_at": "2030-01-01T00:00:00Z",
+  "owner": "finops-owner",
+  "reviewer": "independent-reviewer",
+  "frequency": "weekly during pilot",
+  "billing_access": "not-configured",
+  "resource_observation": "synthetic",
+  "bounds": {
+    "monthly_cost_usd": {"limit": 5000, "observed": 3200},
+    "compute_unit_hours": {"limit": 10000, "observed": 6000},
+    "storage_gb": {"limit": 2000, "observed": 800},
+    "egress_gb": {"limit": 500, "observed": 150},
+    "log_retention_gb": {"limit": 1000, "observed": 400}
+  },
+  "anomaly_thresholds": [
+    {"resource": "monthly_cost_usd", "warning_percent": 70, "pause_percent": 90},
+    {"resource": "compute_unit_hours", "warning_percent": 70, "pause_percent": 90},
+    {"resource": "storage_gb", "warning_percent": 70, "pause_percent": 90},
+    {"resource": "egress_gb", "warning_percent": 70, "pause_percent": 90},
+    {"resource": "log_retention_gb", "warning_percent": 70, "pause_percent": 90}
+  ],
+  "pause_actions": [
+    {"resource": "monthly_cost_usd", "action": "pause expansion and investigate anomaly", "owner": "finops-owner", "evidence_ref": "evidence://cost/monthly"},
+    {"resource": "compute_unit_hours", "action": "pause expansion and cap compute", "owner": "capacity-owner", "evidence_ref": "evidence://cost/compute"},
+    {"resource": "storage_gb", "action": "pause expansion and review retention", "owner": "data-owner", "evidence_ref": "evidence://cost/storage"},
+    {"resource": "egress_gb", "action": "pause expansion and apply transfer controls", "owner": "platform-owner", "evidence_ref": "evidence://cost/egress"},
+    {"resource": "log_retention_gb", "action": "pause expansion and enforce retention", "owner": "security-owner", "evidence_ref": "evidence://cost/logs"}
+  ],
+  "review_evidence": {
+    "evidence_ref": "evidence://cost/review/1",
+    "review_digest": "f61bbf825bc4675aa2c0973819a5eec529c459cf1fdd5b469f699973443dcf2b"
+  }
+}
