@@ -1,0 +1,28 @@
+{
+  "schema_version": "upfs.compatibility-gate.v1",
+  "scope": { "tenant": "synthetic-tenant", "environment": "pilot" },
+  "source_refs": [
+    "specs/04_schema/identity_tenant_model.md",
+    "specs/05_apis/api_standards.md"
+  ],
+  "changes": [
+    {
+      "surface": "schema", "name": "identity-tenant-environment", "from_version": "v1", "to_version": "v2", "breaking": true,
+      "migration": { "ref": "evidence://compatibility/schema-migration", "version": "v2", "status": "passed" },
+      "compatibility": { "ref": "evidence://compatibility/schema-check", "version": "v2", "status": "passed", "identity_scope_preserved": true, "audit_history_preserved": true }
+    },
+    {
+      "surface": "api", "name": "/v1/memberships", "from_version": "v1", "to_version": "v2", "breaking": true,
+      "migration": { "ref": "evidence://compatibility/api-migration", "version": "v2", "status": "passed" },
+      "compatibility": { "ref": "evidence://compatibility/api-check", "version": "v2", "status": "passed", "idempotency_preserved": true, "optimistic_concurrency_preserved": true, "error_envelope_stable": true }
+    },
+    {
+      "surface": "event", "name": "membership.changed", "from_version": "v1", "to_version": "v2", "breaking": true,
+      "migration": { "ref": "evidence://compatibility/event-migration", "version": "v2", "status": "passed" },
+      "compatibility": { "ref": "evidence://compatibility/event-check", "version": "v2", "status": "passed", "consumer_backward_compatible": true, "replay_safe": true, "versioned": true }
+    }
+  ],
+  "state": "blocked",
+  "deployment": "not-performed",
+  "digest": "338dab07f666996a02889b92743895050636edc50fe686c2d88a1d4c2a7193c0"
+}
