@@ -529,13 +529,13 @@ tasks:
     acceptance: [Stop protects data, access, retention, audit, backups, communications evidence, and rollback boundaries]
   - id: TASK-0079
     title: Implement synthetic tenant offboarding rehearsal
-    status: ready
+    status: complete
     dependencies: [TASK-0078]
     source: specs/04_schema/identity_tenant_model.md; specs/10_security/security_baseline.md
     acceptance: [Offboarding revokes access, preserves required evidence, applies retention, and prevents cross-tenant leakage]
   - id: TASK-0080
     title: Implement managed-provider deprovisioning readiness gate
-    status: pending
+    status: ready
     dependencies: [TASK-0079]
     source: specs/09_cicd/delivery_pipeline.md; specs/10_security/security_baseline.md
     acceptance: [Deprovisioning checks bindings, rotation, revocation, evidence retention, and approval without changing production]
