@@ -63,7 +63,10 @@ function filesRecursively(directory) {
 }
 
 function writeHandoffSpecificationFixture(fixture) {
-  const worktree = path.join(path.dirname(fixture), "upfs-handoff-spec-author");
+  const worktree = path.join(
+    path.dirname(fixture),
+    `upfs-${path.basename(fixture)}-handoff-spec-author`,
+  );
   fs.mkdirSync(worktree, { recursive: true });
   git(worktree, ["init", "--initial-branch=recovery/handoff-spec-fixture"]);
   git(worktree, ["config", "user.email", "fixture@example.test"]);
