@@ -517,13 +517,13 @@ tasks:
     acceptance: [Renewal requires current evidence, approvals, expiry, scope, risks, and external prerequisites]
   - id: TASK-0077
     title: Implement pilot pause and resume workflow
-    status: ready
+    status: complete
     dependencies: [TASK-0076]
     source: docs/runbooks/controlled-pilot-runbook.md; specs/09_cicd/delivery_pipeline.md
     acceptance: [Pause/resume is idempotent, approval-gated, tenant/environment scoped, audited, and reversible]
   - id: TASK-0078
     title: Implement pilot stop and orderly wind-down workflow
-    status: pending
+    status: ready
     dependencies: [TASK-0077]
     source: docs/compliance/pilot-go-no-go.md; specs/10_security/security_baseline.md
     acceptance: [Stop protects data, access, retention, audit, backups, communications evidence, and rollback boundaries]
