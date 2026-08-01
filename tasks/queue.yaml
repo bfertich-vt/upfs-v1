@@ -479,3 +479,243 @@ tasks:
     dependencies: [TASK-0069]
     source: docs/compliance/pilot-go-no-go.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Continuation, pause, or stop decision is reproducible, approval-gated, truthful, and makes no certification or production claim]
+  - id: TASK-0071
+    title: Establish v1.1 post-observation corrective-action register
+    status: ready
+    dependencies: [TASK-0070]
+    source: specs/11_soc2/soc2_readiness.md; docs/compliance/pilot-go-no-go.md
+    acceptance: [Residual risks, owners, due dates, evidence refs, priority, status, and closure verification are versioned]
+  - id: TASK-0072
+    title: Implement risk-acceptance expiry and escalation controls
+    status: pending
+    dependencies: [TASK-0071]
+    source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
+    acceptance: [Risk acceptance requires named owner, scope, compensating controls, expiry, approval, and escalation]
+  - id: TASK-0073
+    title: Implement pilot control exception lifecycle
+    status: pending
+    dependencies: [TASK-0072]
+    source: specs/11_soc2/soc2_readiness.md; docs/compliance/control-library.json
+    acceptance: [Exceptions are created, approved, monitored, remediated, expired, and audited without weakening gates]
+  - id: TASK-0074
+    title: Implement evidence retention and chain-of-custody index
+    status: pending
+    dependencies: [TASK-0073]
+    source: specs/11_soc2/soc2_readiness.md; specs/10_security/security_baseline.md
+    acceptance: [Evidence owners, hashes, timestamps, retention, access, lineage, and disposal controls are bound]
+  - id: TASK-0075
+    title: Implement audit-evidence completeness and tamper review
+    status: pending
+    dependencies: [TASK-0074]
+    source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
+    acceptance: [Sensitive actions have tenant-safe immutable audit records and tamper mutations fail closed]
+  - id: TASK-0076
+    title: Implement pilot authorization renewal workflow
+    status: pending
+    dependencies: [TASK-0075]
+    source: docs/compliance/pilot-go-no-go.md; specs/09_cicd/delivery_pipeline.md
+    acceptance: [Renewal requires current evidence, approvals, expiry, scope, risks, and external prerequisites]
+  - id: TASK-0077
+    title: Implement pilot pause and resume workflow
+    status: pending
+    dependencies: [TASK-0076]
+    source: docs/runbooks/controlled-pilot-runbook.md; specs/09_cicd/delivery_pipeline.md
+    acceptance: [Pause/resume is idempotent, approval-gated, tenant/environment scoped, audited, and reversible]
+  - id: TASK-0078
+    title: Implement pilot stop and orderly wind-down workflow
+    status: pending
+    dependencies: [TASK-0077]
+    source: docs/compliance/pilot-go-no-go.md; specs/10_security/security_baseline.md
+    acceptance: [Stop protects data, access, retention, audit, backups, communications evidence, and rollback boundaries]
+  - id: TASK-0079
+    title: Implement synthetic tenant offboarding rehearsal
+    status: pending
+    dependencies: [TASK-0078]
+    source: specs/04_schema/identity_tenant_model.md; specs/10_security/security_baseline.md
+    acceptance: [Offboarding revokes access, preserves required evidence, applies retention, and prevents cross-tenant leakage]
+  - id: TASK-0080
+    title: Implement managed-provider deprovisioning readiness gate
+    status: pending
+    dependencies: [TASK-0079]
+    source: specs/09_cicd/delivery_pipeline.md; specs/10_security/security_baseline.md
+    acceptance: [Deprovisioning checks bindings, rotation, revocation, evidence retention, and approval without changing production]
+  - id: TASK-0081
+    title: Implement pilot release train readiness board
+    status: pending
+    dependencies: [TASK-0080]
+    source: specs/09_cicd/delivery_pipeline.md; docs/runbooks/controlled-pilot-runbook.md
+    acceptance: [Release candidates, gates, owners, approvals, artifacts, rollback, and blockers are source-bound]
+  - id: TASK-0082
+    title: Implement release artifact provenance refresh gate
+    status: pending
+    dependencies: [TASK-0081]
+    source: specs/09_cicd/delivery_pipeline.md; specs/10_security/security_baseline.md
+    acceptance: [SBOM, provenance, signatures, dependency pins, digests, and source commits are mutually bound]
+  - id: TASK-0083
+    title: Implement migration compatibility and rollback rehearsal v1.1
+    status: pending
+    dependencies: [TASK-0082]
+    source: specs/03_architecture/system_architecture.md; specs/12_testing/test_strategy.md
+    acceptance: [Expand/contract migration, rollback, corrective-forward, RLS, outbox, and projection evidence are reproducible]
+  - id: TASK-0084
+    title: Implement schema and contract backward-compatibility gate
+    status: pending
+    dependencies: [TASK-0083]
+    source: specs/04_schema/identity_tenant_model.md; specs/05_apis/api_standards.md
+    acceptance: [Breaking schema/API/event changes fail closed without versioned migration and compatibility evidence]
+  - id: TASK-0085
+    title: Implement SDK consumer compatibility rehearsal
+    status: pending
+    dependencies: [TASK-0084]
+    source: specs/13_docs/documentation_platform.md; specs/05_apis/api_standards.md
+    acceptance: [Generated SDK, examples, pagination, errors, auth, permissions, and versioned consumers remain compatible]
+  - id: TASK-0086
+    title: Implement accessibility regression evidence gate
+    status: pending
+    dependencies: [TASK-0085]
+    source: specs/02_ui/console_experience.md; docs/MASTER_PLAN.md
+    acceptance: [Keyboard, focus, labels, contrast, semantics, responsive states, and unavailable states are tested]
+  - id: TASK-0087
+    title: Implement customer-console authorization regression gate
+    status: pending
+    dependencies: [TASK-0086]
+    source: specs/02_ui/console_experience.md; specs/04_schema/identity_tenant_model.md
+    acceptance: [Tenant/environment scope, non-disclosure, redaction, and auth-derived API requests are mutation-tested]
+  - id: TASK-0088
+    title: Implement admin-console privileged-action regression gate
+    status: pending
+    dependencies: [TASK-0087]
+    source: specs/14_admin_control_plane/admin_control_plane.md
+    acceptance: [Approval, dual control, idempotency, audit, rollback, unavailable state, and direct-infra denial remain enforced]
+  - id: TASK-0089
+    title: Implement observability redaction and cardinality review
+    status: pending
+    dependencies: [TASK-0088]
+    source: specs/10_security/security_baseline.md; specs/12_testing/test_strategy.md
+    acceptance: [Sensitive fields are redacted and metric/log/trace cardinality remains bounded and tenant-safe]
+  - id: TASK-0090
+    title: Implement SLO threshold and alert-route change review
+    status: pending
+    dependencies: [TASK-0089]
+    source: docs/runbooks/controlled-pilot-runbook.md; specs/09_cicd/delivery_pipeline.md
+    acceptance: [SLO changes require impact analysis, approval, route ownership, rollback, and immutable evidence]
+  - id: TASK-0091
+    title: Implement incident drill diversity and coverage review
+    status: pending
+    dependencies: [TASK-0090]
+    source: docs/runbooks/controlled-pilot-runbook.md; specs/12_testing/test_strategy.md
+    acceptance: [Health, security, dependency, tenant-isolation, data-quality, recovery, and release drills are covered]
+  - id: TASK-0092
+    title: Implement backup encryption and key lifecycle review
+    status: pending
+    dependencies: [TASK-0091]
+    source: specs/03_architecture/system_architecture.md; specs/10_security/security_baseline.md
+    acceptance: [Backup encryption, key references, rotation, expiry, restore usability, and revocation are evidenced]
+  - id: TASK-0093
+    title: Implement restore-point retention and deletion reconciliation
+    status: pending
+    dependencies: [TASK-0092]
+    source: specs/03_architecture/system_architecture.md; specs/11_soc2/soc2_readiness.md
+    acceptance: [Restore points respect retention/legal hold/deletion and produce immutable reconciliation evidence]
+  - id: TASK-0094
+    title: Implement tenant-isolation chaos regression suite
+    status: pending
+    dependencies: [TASK-0093]
+    source: specs/04_schema/identity_tenant_model.md; specs/12_testing/test_strategy.md
+    acceptance: [Cross-tenant reads, writes, projections, exports, support, and recovery fail closed under injected faults]
+  - id: TASK-0095
+    title: Implement dependency degradation and recovery matrix
+    status: pending
+    dependencies: [TASK-0094]
+    source: specs/12_testing/test_strategy.md; docs/runbooks/controlled-pilot-runbook.md
+    acceptance: [Postgres, outbox, projection, Redis, provider, and model degradation have bounded recovery evidence]
+  - id: TASK-0096
+    title: Implement load-shape and saturation profile refresh
+    status: pending
+    dependencies: [TASK-0095]
+    source: specs/12_testing/test_strategy.md
+    acceptance: [Bounded tenants, concurrency, payloads, duration, saturation signals, and scaling actions are immutable]
+  - id: TASK-0097
+    title: Implement data-quality anomaly review workflow
+    status: pending
+    dependencies: [TASK-0096]
+    source: specs/03_architecture/system_architecture.md; specs/14_admin_control_plane/admin_control_plane.md
+    acceptance: [Canonical anomalies, quarantine, reconciliation, owner, remediation, and corrective-forward evidence are tracked]
+  - id: TASK-0098
+    title: Implement provider schema drift and mapping review
+    status: pending
+    dependencies: [TASK-0097]
+    source: specs/03_architecture/system_architecture.md; specs/09_cicd/delivery_pipeline.md
+    acceptance: [Provider schema drift, mapping changes, quarantine, replay, versioning, and approval evidence fail closed]
+  - id: TASK-0099
+    title: Implement governed AI/context safety regression gate
+    status: pending
+    dependencies: [TASK-0098]
+    source: specs/10_security/security_baseline.md; specs/05_apis/api_standards.md
+    acceptance: [Citations, authorization, redaction, prompt bounds, model failure, and no-write/no-truth claims remain enforced]
+  - id: TASK-0100
+    title: Implement workflow and policy simulation regression gate
+    status: pending
+    dependencies: [TASK-0099]
+    source: specs/14_admin_control_plane/admin_control_plane.md; specs/05_apis/api_standards.md
+    acceptance: [Policy decisions, approval quorum, idempotency, concurrency, audit, export, and recovery remain fail closed]
+  - id: TASK-0101
+    title: Implement compliance control-library evidence refresh
+    status: pending
+    dependencies: [TASK-0100]
+    source: docs/compliance/control-library.json; specs/11_soc2/soc2_readiness.md
+    acceptance: [Control owners, frequency, systems, procedures, evidence, reviewers, exceptions, remediation, and retention synchronize]
+  - id: TASK-0102
+    title: Implement security threat-model delta review
+    status: pending
+    dependencies: [TASK-0101]
+    source: specs/10_security/security_baseline.md
+    acceptance: [New boundaries, abuse cases, residual risks, mitigations, owners, and approvals are versioned]
+  - id: TASK-0103
+    title: Implement dependency and supply-chain provenance refresh
+    status: pending
+    dependencies: [TASK-0102]
+    source: specs/09_cicd/delivery_pipeline.md; specs/10_security/security_baseline.md
+    acceptance: [Dependency pins, advisories, SBOM, provenance, signatures, and remediation evidence remain bound]
+  - id: TASK-0104
+    title: Implement privacy request and export abuse rehearsal
+    status: pending
+    dependencies: [TASK-0103]
+    source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
+    acceptance: [Scoped requests, approval, redaction, expiry, rate limits, abuse detection, audit, and deletion interactions fail closed]
+  - id: TASK-0105
+    title: Implement operational runbook drift gate
+    status: pending
+    dependencies: [TASK-0104]
+    source: docs/runbooks/controlled-pilot-runbook.md; specs/13_docs/documentation_platform.md
+    acceptance: [Runbooks reference current APIs, thresholds, owners, commands, evidence, rollback, and unavailable states]
+  - id: TASK-0106
+    title: Implement public documentation and example drift refresh
+    status: pending
+    dependencies: [TASK-0105]
+    source: specs/13_docs/documentation_platform.md; specs/05_apis/api_standards.md
+    acceptance: [Public docs, examples, SDKs, contracts, versions, permissions, errors, and migration guidance remain synchronized]
+  - id: TASK-0107
+    title: Implement integrated v1.1 release-candidate rehearsal
+    status: pending
+    dependencies: [TASK-0106]
+    source: specs/09_cicd/delivery_pipeline.md; specs/12_testing/test_strategy.md
+    acceptance: [Security, migration, recovery, resilience, API, UI, documentation, and compliance gates execute in order]
+  - id: TASK-0108
+    title: Implement independent release-candidate evidence review
+    status: pending
+    dependencies: [TASK-0107]
+    source: AGENTS.md; agents/SUPERVISOR.md; docs/compliance/pilot-go-no-go.md
+    acceptance: [Independent review verifies source binding, mutation coverage, clean gates, no unsupported claims, and open blockers]
+  - id: TASK-0109
+    title: Assemble v1.1 release-candidate evidence index
+    status: pending
+    dependencies: [TASK-0108]
+    source: docs/MASTER_PLAN.md; docs/compliance/pilot-go-no-go.md
+    acceptance: [All TASK-0071–0108 artifacts, tests, controls, risks, owners, and external prerequisites are indexed]
+  - id: TASK-0110
+    title: Assemble v1.1 release-candidate go/no-go decision
+    status: pending
+    dependencies: [TASK-0109]
+    source: docs/compliance/pilot-go-no-go.md; specs/11_soc2/soc2_readiness.md
+    acceptance: [Final continuation/pause/stop decision is reproducible, approval-gated, source-bound, truthful, and makes no certification or production claim]
