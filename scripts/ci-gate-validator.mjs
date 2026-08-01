@@ -431,6 +431,24 @@ const LEGACY_UNPAIRED_ERRATUM = {
     "tasks/queue.yaml",
   ],
 };
+const HISTORICAL_PARTIAL_ERRATUM = {
+  task: "RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-005",
+  relative: "docs/handoffs/RECOVERY-CI-GATES-001.md",
+  sourceCommit: "4ae7e95f0af88e21dde526be44443846a8d8d9a6",
+  candidate: "90208c69504893c7a01cbcd51a8eb35caf21f5e3",
+  record:
+    "- Specifications and contracts read: `AGENTS.md` (`eb3f551dbfbf1656d29bf8dd126a8c95d4d67e3c117cc71c5f430c090f1ac47d`); `agents/BACKEND.md` (`94836c3f25375688f0e8c47b55b6997a4ba688ab819930a686b676183a980faa`); `agents/WORKTREES.md` (`8ac05c7826d4e29f83db86d29bc6261110e6c921c61e1d9c312820efaacb01ab`); `agents/HANDOFF_TEMPLATE.md` (`9eee8fc9845bff968d43775a29df66e51c9738c74f685baed6d958643282abfe`); `specs/00_constitution/engineering_constitution.md` (`66809aff93fb19d7a3e1688facc8d6dacb9e53fb10e597cac8b0026ae2a534d7`); `specs/09_cicd/delivery_pipeline.md` (`1b1812728d6304751fb3d976fae33f2dfe2633e299b24f4634f3d304cc68de73`); `specs/10_security/security_baseline.md` (`ec987b02582abbb33438004bb2bc083e5409b12299eef63f14d478cbbb7d998b`); `specs/12_testing/test_strategy.md` (`21600491c4c87f1474bcd2131fa0f814bf7da6a819fd6f8bdd7d25384c8d0cff`); the structured task input; QA-v3 rejection evidence; and the preserved CI-v4 final delta.",
+  paths: [
+    "AGENTS.md",
+    "agents/BACKEND.md",
+    "agents/WORKTREES.md",
+    "agents/HANDOFF_TEMPLATE.md",
+    "specs/00_constitution/engineering_constitution.md",
+    "specs/09_cicd/delivery_pipeline.md",
+    "specs/10_security/security_baseline.md",
+    "specs/12_testing/test_strategy.md",
+  ],
+};
 const ERRATA_ALLOWED_SECTION = new RegExp(
   "^## Git-bound provenance erratum v1 [^\\r\\n]+\\r?\\n" +
     "\\r?\\n" +
@@ -545,6 +563,27 @@ function legacyUnpairedErratum(original, relative, section, record) {
     originalCandidate === LEGACY_UNPAIRED_ERRATUM.candidate &&
     record?.trim() === LEGACY_UNPAIRED_ERRATUM.record &&
     original.includes(LEGACY_UNPAIRED_ERRATUM.record)
+  );
+}
+
+function historicalPartialErratum(original, relative, section, record) {
+  const sourceCommit = requiredErrataField(
+    section.text,
+    "Original handoff source commit",
+    [],
+  );
+  const originalCandidate = requiredErrataField(
+    section.text,
+    "Original candidate commit",
+    [],
+  );
+  return (
+    section.task === HISTORICAL_PARTIAL_ERRATUM.task &&
+    relative === HISTORICAL_PARTIAL_ERRATUM.relative &&
+    sourceCommit === HISTORICAL_PARTIAL_ERRATUM.sourceCommit &&
+    originalCandidate === HISTORICAL_PARTIAL_ERRATUM.candidate &&
+    record?.trim() === HISTORICAL_PARTIAL_ERRATUM.record &&
+    original.includes(HISTORICAL_PARTIAL_ERRATUM.record)
   );
 }
 
@@ -663,7 +702,13 @@ function validateGitBoundErratum(worktree, relative, body, section) {
     section,
     record,
   );
-  if (classification.kind === "partial") {
+  const historicalPartial = historicalPartialErratum(
+    original,
+    relative,
+    section,
+    record,
+  );
+  if (classification.kind === "partial" && !historicalPartial) {
     errors.push(
       "Git-bound provenance erratum original record contains partially paired or ambiguous entries and is not correctable.",
     );
@@ -692,9 +737,11 @@ function validateGitBoundErratum(worktree, relative, body, section) {
         "Git-bound provenance erratum legacy source does not demonstrate exactly the allowlisted unpaired provenance defect.",
       );
   }
-  const requiredPaths = legacyUnpaired
-    ? new Set(LEGACY_UNPAIRED_ERRATUM.paths)
-    : new Set(classification.records.keys());
+  const requiredPaths = historicalPartial
+    ? new Set(HISTORICAL_PARTIAL_ERRATUM.paths)
+    : legacyUnpaired
+      ? new Set(LEGACY_UNPAIRED_ERRATUM.paths)
+      : new Set(classification.records.keys());
   const rows = parseErrataRows(section.text, errors);
   const seen = new Set();
   for (const [relativePath, rowCandidate, blob, digest] of rows) {
@@ -737,6 +784,7 @@ function validateGitBoundErratum(worktree, relative, body, section) {
       );
     if (
       !legacyUnpaired &&
+      !historicalPartial &&
       classification.records.get(relativePath) === digest.toLowerCase()
     )
       errors.push(

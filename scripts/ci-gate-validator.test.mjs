@@ -891,6 +891,224 @@ test("repository scan permits only the exact legacy unpaired queue provenance co
   fs.rmSync(fixture, { force: true, recursive: true });
 });
 
+test("repository scan permits only the immutable historical partially paired CI correction", () => {
+  const fixture = temp("upfs-historical-partial-erratum-");
+  const source = "4ae7e95f0af88e21dde526be44443846a8d8d9a6";
+  const candidate = "90208c69504893c7a01cbcd51a8eb35caf21f5e3";
+  const relative = "docs/handoffs/RECOVERY-CI-GATES-001.md";
+  const paths = [
+    "AGENTS.md",
+    "agents/BACKEND.md",
+    "agents/WORKTREES.md",
+    "agents/HANDOFF_TEMPLATE.md",
+    "specs/00_constitution/engineering_constitution.md",
+    "specs/09_cicd/delivery_pipeline.md",
+    "specs/10_security/security_baseline.md",
+    "specs/12_testing/test_strategy.md",
+  ];
+  git(root, ["clone", "--no-checkout", root, fixture]);
+  git(fixture, ["checkout", "--detach", source]);
+  const handoff = path.join(fixture, ...relative.split("/"));
+  const row = (entry) => {
+    const bytes = spawnSync(
+      "git",
+      ["-C", fixture, "show", `${candidate}:${entry}`],
+      {
+        encoding: null,
+      },
+    ).stdout;
+    return `| \`${entry}\` | \`${candidate}\` | \`${git(fixture, ["rev-parse", `${candidate}:${entry}`])}\` | \`${crypto.createHash("sha256").update(bytes).digest("hex")}\` |`;
+  };
+  const original = spawnSync(
+    "git",
+    ["-C", fixture, "show", `${source}:${relative}`],
+    {
+      encoding: "utf8",
+    },
+  ).stdout;
+  const legacySource = "e7c81bf1a38726e0ac8ebf84c969219c21758aea";
+  const legacyCandidate = "2ec8213fe000a0b78c68c588eb10768a39116be3";
+  const legacyRelative = "docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md";
+  const legacyPaths = paths
+    .filter((entry) => entry !== "specs/10_security/security_baseline.md")
+    .concat("tasks/queue.yaml");
+  const legacyOriginal = spawnSync(
+    "git",
+    ["-C", fixture, "show", `${legacySource}:${legacyRelative}`],
+    {
+      encoding: "utf8",
+    },
+  ).stdout;
+  const legacyRow = (entry) => {
+    const bytes = spawnSync(
+      "git",
+      ["-C", fixture, "show", `${legacyCandidate}:${entry}`],
+      {
+        encoding: null,
+      },
+    ).stdout;
+    return `| \`${entry}\` | \`${legacyCandidate}\` | \`${git(fixture, ["rev-parse", `${legacyCandidate}:${entry}`])}\` | \`${crypto.createHash("sha256").update(bytes).digest("hex")}\` |`;
+  };
+  const legacyErratum = [
+    "## Git-bound provenance erratum v1 — RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-003",
+    "",
+    `- Original handoff path: \`${legacyRelative}\`.`,
+    `- Original handoff source commit: \`${legacySource}\`.`,
+    `- Original candidate commit: \`${legacyCandidate}\`.`,
+    "- Original provenance record: `Specifications and contracts read`.",
+    "- Reason: `Legacy record lists sources without path digest pairs`.",
+    "- Correction provenance: `Git object derivation for immutable queue handoff source`.",
+    "",
+    "| Path | Source candidate | Git blob | Derived SHA-256 |",
+    "| --- | --- | --- | --- |",
+    ...legacyPaths.map(legacyRow),
+    "",
+    "- Preservation statement: This erratum changes no historical task status, acceptance claim, test result, review state, risk, limitation, production-capability classification, or Independent QA/Security review result.",
+    "",
+  ].join("\n");
+  const erratum = () =>
+    [
+      "## Git-bound provenance erratum v1 — RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-005",
+      "",
+      `- Original handoff path: \`${relative}\`.`,
+      `- Original handoff source commit: \`${source}\`.`,
+      `- Original candidate commit: \`${candidate}\`.`,
+      "- Original provenance record: `Specifications and contracts read`.",
+      "- Reason: `Immutable historical partial-record digest repair`.",
+      "- Correction provenance: `Raw Git object derivation for the fixed CI source`.",
+      "",
+      "| Path | Source candidate | Git blob | Derived SHA-256 |",
+      "| --- | --- | --- | --- |",
+      ...paths.map(row),
+      "",
+      "- Preservation statement: This erratum changes no historical task status, acceptance claim, test result, review state, risk, limitation, production-capability classification, or Independent QA/Security review result.",
+      "",
+    ].join("\n");
+  const valid = original + erratum();
+  try {
+    fs.writeFileSync(
+      path.join(fixture, ...legacyRelative.split("/")),
+      legacyOriginal + legacyErratum,
+    );
+    fs.writeFileSync(handoff, valid);
+    assert.deepEqual(validateRepositoryHandoffSpecificationDigests(fixture), {
+      status: "passed",
+      errors: [],
+    });
+    const reject = (mutated, expected) => {
+      fs.writeFileSync(handoff, mutated);
+      const result = validateRepositoryHandoffSpecificationDigests(fixture);
+      assert.equal(result.status, "failed", expected);
+      assert.ok(
+        result.errors.some((error) => error.includes(expected)),
+        result.errors.join(" | "),
+      );
+    };
+    const mutateErratum = (mutate) => original + mutate(erratum());
+    reject(
+      mutateErratum((text) => text.replace("PARSER-005", "PARSER-006")),
+      "partially paired or ambiguous",
+    );
+    reject(
+      mutateErratum((text) =>
+        text.replace(
+          relative,
+          "docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md",
+        ),
+      ),
+      "original handoff path must be",
+    );
+    reject(
+      mutateErratum((text) => text.replace(source, "f".repeat(40))),
+      "original handoff is not Git-resolvable",
+    );
+    reject(
+      mutateErratum((text) => text.replace(candidate, "a".repeat(40))),
+      "original candidate does not match",
+    );
+    reject(
+      mutateErratum((text) =>
+        text.replace(
+          row(paths[0]),
+          row(paths[0]).replace(paths[0], "README.md"),
+        ),
+      ),
+      "not an existing original-record path",
+    );
+    reject(
+      mutateErratum((text) =>
+        text.replace(row(paths[0]), row(paths[0]) + "\n" + row(paths[0])),
+      ),
+      "duplicate correction path",
+    );
+    reject(
+      mutateErratum((text) => text.replace(row(paths.at(-1)) + "\n", "")),
+      "omits original-record path",
+    );
+    reject(
+      mutateErratum((text) =>
+        text.replace(
+          row(paths[0]),
+          row(paths[0]).replace(candidate, "b".repeat(40)),
+        ),
+      ),
+      "must bind original candidate",
+    );
+    reject(
+      mutateErratum((text) =>
+        text.replace(
+          row(paths[0]),
+          row(paths[0]).replace(
+            /`[a-f0-9]{40}` \| `([a-f0-9]{64})` \|$/,
+            "`" + "0".repeat(40) + "` | `$1` |",
+          ),
+        ),
+      ),
+      "source blob is not Git-resolvable or does not match",
+    );
+    reject(
+      mutateErratum((text) =>
+        text.replace(
+          row(paths[0]),
+          row(paths[0]).replace(
+            /`[a-f0-9]{64}` \|$/,
+            "`" + "0".repeat(64) + "` |",
+          ),
+        ),
+      ),
+      "digest does not match Git blob bytes",
+    );
+    reject(
+      mutateErratum((text) =>
+        text.replace(
+          "Immutable historical partial-record digest repair",
+          "r".repeat(281),
+        ),
+      ),
+      "Reason must be non-empty",
+    );
+    reject(
+      mutateErratum((text) =>
+        text.replace(
+          "Raw Git object derivation for the fixed CI source",
+          "   ",
+        ),
+      ),
+      "Correction provenance must be non-empty",
+    );
+    reject(
+      valid + "- Release status: accepted\n",
+      "exact v1 allowlisted schema",
+    );
+    reject(
+      valid.replace("the structured task input", "the altered task input"),
+      "append-only prefix",
+    );
+  } finally {
+    fs.rmSync(fixture, { force: true, recursive: true });
+  }
+});
+
 test("repository handoff discovery rejects unsafe directory roots before enumeration", () => {
   const fixture = temp("upfs-handoff-directory-root-");
   const outside = temp("upfs-handoff-directory-outside-");
