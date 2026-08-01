@@ -265,13 +265,13 @@ tasks:
     acceptance: [Canary/cell promotion, approval, verification, rollback, and corrective-forward evidence is reproducible]
   - id: TASK-0035
     title: Complete observability, alerting, and incident operations evidence
-    status: ready
+      status: complete
     dependencies: [TASK-0034]
     source: Stage 9 operational readiness and incident requirements; specs/12_testing/test_strategy.md
     acceptance: [Tenant-safe telemetry, SLO alerts, incident detection/pause/abort/recovery, and audit evidence are verified]
   - id: TASK-0036
     title: Complete native backup/restore and disaster-recovery evidence binding
-    status: pending
+      status: ready
     dependencies: [TASK-0035]
     source: Stage 9 DR and recovery requirements; specs/03_architecture/system_architecture.md
     acceptance: [Backup integrity, restore references, RPO/RTO, failover, and corrective-forward evidence are bound and fail closed]
