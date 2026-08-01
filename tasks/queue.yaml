@@ -505,13 +505,13 @@ tasks:
     acceptance: [Evidence owners, hashes, timestamps, retention, access, lineage, and disposal controls are bound]
   - id: TASK-0075
     title: Implement audit-evidence completeness and tamper review
-    status: ready
+    status: complete
     dependencies: [TASK-0074]
     source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Sensitive actions have tenant-safe immutable audit records and tamper mutations fail closed]
   - id: TASK-0076
     title: Implement pilot authorization renewal workflow
-    status: pending
+    status: ready
     dependencies: [TASK-0075]
     source: docs/compliance/pilot-go-no-go.md; specs/09_cicd/delivery_pipeline.md
     acceptance: [Renewal requires current evidence, approvals, expiry, scope, risks, and external prerequisites]
