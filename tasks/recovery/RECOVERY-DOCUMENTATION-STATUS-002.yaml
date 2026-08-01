@@ -1,0 +1,63 @@
+id: RECOVERY-DOCUMENTATION-STATUS-002
+title: Correct onboarding and governance status after control-plane recovery
+status: candidate
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - README.md
+  - START_HERE.md
+  - docs/REPOSITORY_GOVERNANCE.md
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - tasks/queue.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-002-QA-V3.md
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-002-QA-V3
+authorized_files:
+  - tasks/recovery/RECOVERY-DOCUMENTATION-STATUS-002.yaml
+  - README.md
+  - START_HERE.md
+  - docs/REPOSITORY_GOVERNANCE.md
+  - docs/handoffs/RECOVERY-DOCUMENTATION-STATUS-002.md
+prohibited_files:
+  - CODEOWNERS
+  - .github/**
+  - tasks/queue.yaml
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-002-QA-V3.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - infra/**
+  - scripts/**
+  - specs/**
+acceptance_criteria:
+  - README and START_HERE state the truthful recovery status: queue, provenance, traceability, repository validation, and local full suite are passing on the authoritative integration checkout, but product capability is not accepted/production-ready and product work remains gated.
+  - Documents do not direct readers to start TASK-0001 or any ready product task when the audited queue is reclassified/frozen; they identify the verified commands and the current branch without overstating GitHub deployment governance.
+  - Repository governance documentation records verified external facts: GitHub default branch is codex/task-0001-baseline; remote CODEOWNERS error API still reports unknown @upfs teams until the corrective branch is published; PR #1 is open against main with no reviews; branch protection/rulesets API returns a private-plan 403 blocker.
+  - Documentation distinguishes local control-plane gates passing from external GitHub protection/reviewer enforcement blocked; does not claim production readiness, CODEOWNERS enforcement, protected main, or release certification.
+  - Existing architecture/security/tenant/provenance guidance remains truthful and no product implementation/queue/CODEOWNERS/workflow changes occur.
+  - Post-commit handoff provides immutable command/result provenance and rollback notes; independent QA/Security review remains required.
+required_tests:
+  - npm run traceability:check
+  - npm run validate
+  - npm test
+  - git diff --check
+security_requirements:
+  - Do not expose tokens, credentials, sensitive artifacts, unredacted external API data, or tenant information; preserve fail-closed external-governance status.
+rollback:
+  - Revert only independently accepted documentation correction; preserve external audit evidence and historical recovery records.
+runtime_evidence_required: Command outputs from current authoritative candidate, exact GitHub audit endpoints/results, documentation diff, candidate handoff, and independent QA/Security review.
