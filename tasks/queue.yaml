@@ -427,13 +427,13 @@ tasks:
     acceptance: [Capacity assumptions, tenant dimensions, thresholds, saturation, scaling actions, and review evidence are reproducible]
   - id: TASK-0062
     title: Implement pilot cost and resource-bound review
-    status: ready
+    status: complete
     dependencies: [TASK-0061]
     source: specs/12_testing/test_strategy.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Synthetic cost/resource bounds, anomaly thresholds, owners, and pause actions are checked without real billing access]
   - id: TASK-0063
     title: Implement pilot data-retention and deletion evidence workflow
-    status: pending
+    status: ready
     dependencies: [TASK-0062]
     source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Retention, legal hold, deletion, quarantine, audit, and restore interactions are explicit and fail closed]
