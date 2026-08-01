@@ -355,13 +355,13 @@ tasks:
     acceptance: [Required stakeholder notices, approvals, acknowledgements, and expiry are tracked without contacting external parties]
   - id: TASK-0050
     title: Implement pilot launch checklist and dry-run coordinator
-    status: ready
+    status: complete
     dependencies: [TASK-0049]
     source: docs/runbooks/controlled-pilot-runbook.md; specs/09_cicd/delivery_pipeline.md
     acceptance: [Checklist gates are ordered, idempotent, auditable, reversible, and never imply deployment]
   - id: TASK-0051
     title: Implement pilot health and error-budget review evidence
-    status: pending
+    status: ready
     dependencies: [TASK-0050]
     source: docs/runbooks/controlled-pilot-runbook.md; specs/12_testing/test_strategy.md
     acceptance: [Availability, latency, freshness, lag, error budget, pause, and escalation calculations are reproducible]
