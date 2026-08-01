@@ -13,3 +13,14 @@
 - Rollback/corrective-forward: revert candidate `5268b99230e8ea970fd5d08f97b4443ddb9b54df`; no data or external state changed.
 - Known limitations: the suite proves repository control behavior and synthetic/reference tests only; it does not establish production readiness. Embedded PostgreSQL remains opt-in.
 - Independent reviewer and result: pending a fresh seventh QA/Security reviewer, distinct from the author and all prior reviewers, starting from this committed candidate state and making no implementation edits.
+
+## Post-integration corrective-forward v3
+
+- Trigger and preserved history: after v2 integration, current authoritative integration `d0375f8810ce4e9fed19733ba25823ff3a5273fb` exposed TASK-0030 test dependence on ignored artifacts in its checkout. The accepted v2 worktree/branch and all earlier evidence remain untouched.
+- New worktree and branch: `C:\source\upfs-recovery-test-gates-001-v3`; `recovery/test-gates-001-v3`, created from current `codex/task-0001-baseline` at `d0375f8`. `git merge-base --is-ancestor d0375f8 codex/task-0001-baseline` exited 0 before creation.
+- Candidate commit: `3289b04a0dab5f33ef5eb18cc75305c42e620a4c`.
+- Scope: only `scripts/task-0030-acceptance.test.mjs` and the structured recovery task input changed. No artifact was deleted or modified.
+- Correction: every TASK-0030 assertion now supplies an explicit temporary root. The controlled positive fixture creates valid synthetic evidence and returns `NO-GO_EXTERNAL_PREREQUISITES`; missing evidence returns failed `NO-GO`; a performed-deployment fixture fails the synthetic boundary. Therefore ignored repository artifacts cannot affect the result.
+- Verification: `npm ci --ignore-scripts` passed; direct TASK-0030 tests passed 3/3; full `npm test` passed 831/831 with one opt-in skip while normal ignored artifacts existed; no output artifact mutation or generated-output change remained. A temporary external Node-test sentinel exited 1 and was removed. `git diff --check` passed.
+- Security, limitations, and rollback: synthetic fixtures contain no credentials or tenant data; no product/auth/tenant behavior changed. This remains corrective test-control work, not production evidence. Revert `3289b04a0dab5f33ef5eb18cc75305c42e620a4c` for rollback; no external state changed.
+- Independent reviewer and result: pending a fresh QA/Security reviewer distinct from all authors/reviewers, beginning from this committed v3 candidate and making no implementation edits.
