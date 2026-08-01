@@ -643,13 +643,13 @@ tasks:
     acceptance: [Canonical anomalies, quarantine, reconciliation, owner, remediation, and corrective-forward evidence are tracked]
   - id: TASK-0098
     title: Implement provider schema drift and mapping review
-    status: ready
+    status: complete
     dependencies: [TASK-0097]
     source: specs/03_architecture/system_architecture.md; specs/09_cicd/delivery_pipeline.md
     acceptance: [Provider schema drift, mapping changes, quarantine, replay, versioning, and approval evidence fail closed]
   - id: TASK-0099
     title: Implement governed AI/context safety regression gate
-    status: pending
+    status: ready
     dependencies: [TASK-0098]
     source: specs/10_security/security_baseline.md; specs/05_apis/api_standards.md
     acceptance: [Citations, authorization, redaction, prompt bounds, model failure, and no-write/no-truth claims remain enforced]
