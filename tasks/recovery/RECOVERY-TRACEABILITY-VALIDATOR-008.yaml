@@ -1,0 +1,54 @@
+id: RECOVERY-TRACEABILITY-VALIDATOR-008
+title: Contain the discovered handoff-provenance directory before enumeration
+status: in_review
+role: Backend
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/REPOSITORY_GOVERNANCE.md
+  - tasks/recovery/RECOVERY-TRACEABILITY-VALIDATOR-007.yaml
+  - docs/handoffs/RECOVERY-TRACEABILITY-VALIDATOR-007.md
+  - docs/reviews/RECOVERY-TRACEABILITY-VALIDATOR-007-QA.md
+evidence_inputs:
+  - path: docs/reviews/RECOVERY-TRACEABILITY-VALIDATOR-007-QA.md
+    commit: d282a72a11f18b0041f06f37b4c31877a6102d12
+historical_evidence:
+  RECOVERY-TRACEABILITY-VALIDATOR-007-QA:
+    classification: immutable rejection evidence
+    reason: The prior scanner followed a docs/handoffs directory junction before validating containment.
+acceptance:
+  - Retain the prior real discovered-handoff scan and all existing traceability provenance controls.
+  - Resolve and validate docs/handoffs through the contained-path defense before enumeration.
+  - Fail closed with a non-leaking error for absent, external, symbolic-link, junction, or reparse docs/handoffs roots.
+  - Reject an in-repository symbolic-link or reparse directory root as untrusted provenance even when its real target is contained.
+  - Preserve normal top-level handoff discovery for a real contained directory.
+  - Record focused, command-path, full-suite, and diff validation before independent QA.
+authorized_files:
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - tasks/recovery/RECOVERY-TRACEABILITY-VALIDATOR-008.yaml
+  - docs/handoffs/RECOVERY-TRACEABILITY-VALIDATOR-008.md
+prohibited_files:
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - tasks/queue.yaml
+  - README.md
+  - START_HERE.md
+  - .github/workflows
+  - product runtime, API, provider, identity, tenant, financial, or deployment files
+security_requirements:
+  - Fail closed without leaking filesystem targets when provenance roots are missing, unsafe, or outside containment.
+  - Do not change tenant isolation, authorization, provider credentials, financial records, production runtime, or deployment behavior.
+tests:
+  - npm ci --ignore-scripts
+  - node --test scripts/ci-gate-validator.test.mjs
+  - npm run traceability:check
+  - npm test
+  - git diff --check
+rollback:
+  - Revert only an independently accepted corrective commit, preserve rejected evidence, and rerun focused plus full validation. Do not rewrite history or alter product data.
