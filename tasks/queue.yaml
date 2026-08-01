@@ -457,13 +457,13 @@ tasks:
     acceptance: [Documented customer pages, accessibility, authorization, API mapping, redaction, and unavailable states are verified]
   - id: TASK-0067
     title: Implement pilot admin-console operational acceptance gate
-    status: ready
+    status: complete
     dependencies: [TASK-0066]
     source: specs/14_admin_control_plane/admin_control_plane.md; docs/MASTER_PLAN.md
     acceptance: [Admin modules expose only API-backed, scoped, redacted, approval-gated operations with audit evidence]
   - id: TASK-0068
     title: Execute integrated controlled-pilot observation rehearsal
-    status: pending
+    status: ready
     dependencies: [TASK-0067]
     source: docs/compliance/pilot-go-no-go.md; docs/runbooks/controlled-pilot-runbook.md
     acceptance: [A bounded synthetic observation window exercises health, support, incidents, recovery, releases, and reviews]
