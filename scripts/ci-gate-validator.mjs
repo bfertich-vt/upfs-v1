@@ -409,6 +409,10 @@ const GIT_BOUND_ERRATA_TITLE =
   /^## Git-bound provenance erratum v1 — ([A-Z][A-Z0-9-]+)\s*$/gim;
 const ERRATA_SCOPE_STATEMENT =
   "This erratum changes no historical task status, acceptance claim, test result, review state, risk, limitation, production-capability classification, or Independent QA/Security review result.";
+const ERRATA_TEXT_MIN_LENGTH = 3;
+const ERRATA_TEXT_MAX_LENGTH = 280;
+const ERRATA_BOUNDED_TEXT =
+  "(?=[^`\\r\\n]{3,280}`)(?=[^`\\r\\n]*[^\\s`\\r\\n][^`\\r\\n]*`)[^`\\r\\n]{3,280}";
 const ERRATA_ALLOWED_SECTION = new RegExp(
   "^## Git-bound provenance erratum v1 [^\\r\\n]+\\r?\\n" +
     "\\r?\\n" +
@@ -416,6 +420,12 @@ const ERRATA_ALLOWED_SECTION = new RegExp(
     "- Original handoff source commit: `[a-f0-9]{40}`\\.\\r?\\n" +
     "- Original candidate commit: `[a-f0-9]{40}`\\.\\r?\\n" +
     "- Original provenance record: `Specifications and contracts read`\\.\\r?\\n" +
+    "- Reason: `" +
+    ERRATA_BOUNDED_TEXT +
+    "`\\.\\r?\\n" +
+    "- Correction provenance: `" +
+    ERRATA_BOUNDED_TEXT +
+    "`\\.\\r?\\n" +
     "\\r?\\n" +
     "\\| Path \\| Source candidate \\| Git blob \\| Derived SHA-256 \\|\\r?\\n" +
     "\\| --- \\| --- \\| --- \\| --- \\|\\r?\\n" +
@@ -445,6 +455,32 @@ function requiredErrataField(section, label, errors) {
     return undefined;
   }
   return match[1];
+}
+
+function requiredBoundedErrataField(section, label, errors) {
+  const matches = [
+    ...section.matchAll(
+      new RegExp("^- " + label + ":\\s*`([^`\\r\\n]*)`\\.\\s*$", "gim"),
+    ),
+  ];
+  if (matches.length !== 1) {
+    errors.push(
+      `Git-bound provenance erratum requires exactly one bounded ${label} field.`,
+    );
+    return undefined;
+  }
+  const value = matches[0][1];
+  if (
+    value.length < ERRATA_TEXT_MIN_LENGTH ||
+    value.length > ERRATA_TEXT_MAX_LENGTH ||
+    !/\S/.test(value)
+  ) {
+    errors.push(
+      `Git-bound provenance erratum ${label} must be non-empty, non-whitespace, and ${ERRATA_TEXT_MIN_LENGTH}-${ERRATA_TEXT_MAX_LENGTH} characters.`,
+    );
+    return undefined;
+  }
+  return value;
 }
 
 function originalSpecificationRecord(original) {
@@ -525,6 +561,8 @@ function validateGitBoundErratum(worktree, relative, body, section) {
     "Original provenance record",
     errors,
   );
+  requiredBoundedErrataField(section.text, "Reason", errors);
+  requiredBoundedErrataField(section.text, "Correction provenance", errors);
   if (originalPath !== relative)
     errors.push(
       `Git-bound provenance erratum original handoff path must be ${relative}.`,

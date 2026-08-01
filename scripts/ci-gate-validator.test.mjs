@@ -440,6 +440,8 @@ test("repository scan permits only a strict, append-only Git-bound provenance er
       "- Original handoff source commit: `" + source + "`.",
       "- Original candidate commit: `" + candidate + "`.",
       "- Original provenance record: `Specifications and contracts read`.",
+      "- Reason: `Correct immutable digest records only`.",
+      "- Correction provenance: `RECOVERY-FIXTURE-001 fixture evidence`.",
       "",
       "| Path | Source candidate | Git blob | Derived SHA-256 |",
       "| --- | --- | --- | --- |",
@@ -473,6 +475,59 @@ test("repository scan permits only a strict, append-only Git-bound provenance er
     "requires Original handoff source commit",
   );
   reject(valid + erratum(), "exactly one Git-bound provenance erratum");
+  reject(
+    valid.replace("- Reason: `Correct immutable digest records only`.\n", ""),
+    "requires exactly one bounded Reason field",
+  );
+  reject(
+    valid.replace(
+      "- Correction provenance: `RECOVERY-FIXTURE-001 fixture evidence`.\n",
+      "",
+    ),
+    "requires exactly one bounded Correction provenance field",
+  );
+  reject(
+    valid.replace(
+      "- Correction provenance: `RECOVERY-FIXTURE-001 fixture evidence`.\n",
+      "- Correction provenance: `   `.",
+    ),
+    "Correction provenance must be non-empty, non-whitespace",
+  );
+  reject(
+    valid.replace(
+      "- Reason: `Correct immutable digest records only`.",
+      "- Reason: `   `.",
+    ),
+    "Reason must be non-empty, non-whitespace",
+  );
+  reject(
+    valid.replace(
+      "- Reason: `Correct immutable digest records only`.",
+      "- Reason: `" + "r".repeat(281) + "`.",
+    ),
+    "Reason must be non-empty, non-whitespace",
+  );
+  reject(
+    valid.replace(
+      "- Correction provenance: `RECOVERY-FIXTURE-001 fixture evidence`.",
+      "- Correction provenance: `" + "p".repeat(281) + "`.",
+    ),
+    "Correction provenance must be non-empty, non-whitespace",
+  );
+  reject(
+    valid.replace(
+      "- Reason: `Correct immutable digest records only`.",
+      "- Reason: `Correct immutable digest records only`.\n- Reason: `Duplicate reason`.",
+    ),
+    "requires exactly one bounded Reason field",
+  );
+  reject(
+    valid.replace(
+      "- Correction provenance: `RECOVERY-FIXTURE-001 fixture evidence`.",
+      "- Correction provenance: `RECOVERY-FIXTURE-001 fixture evidence`.\n- Correction provenance: `Duplicate provenance`.",
+    ),
+    "requires exactly one bounded Correction provenance field",
+  );
   reject(
     valid.replace(
       "- Original provenance record: `Specifications and contracts read`.",

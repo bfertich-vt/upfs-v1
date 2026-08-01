@@ -47,7 +47,7 @@ prohibited_files:
   - contracts/**
   - specs/**
 acceptance_criteria:
-  - Every accepted provenance erratum contains a bounded, non-empty Reason field and a bounded, non-empty Correction-provenance field; neither may be omitted, blank, free-form extension text, duplicated, or used to bypass the strict allowlist.
+  - Every accepted provenance erratum contains exactly one allowlisted Reason field and exactly one allowlisted Correction provenance field, each non-empty, non-whitespace, and 3-280 characters; neither may be omitted, blank, free-form extension text, duplicated, oversized, or used to bypass the strict allowlist.
   - Parser rejects a formally otherwise-valid correction when either required field is absent, whitespace-only, oversized, duplicated, or uses unauthorized fields; each rejection is covered by a negative fixture.
   - Valid correction fixtures contain both fields and preserve exact append-only, raw-Git-byte, target-identity, and non-claim-changing semantics established by the original task.
   - Existing qualifying corrections and ordinary valid handoffs retain behavior; historical handoffs remain unedited.
