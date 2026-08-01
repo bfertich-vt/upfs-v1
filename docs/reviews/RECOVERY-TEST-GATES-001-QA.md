@@ -1,31 +1,26 @@
-# RECOVERY-TEST-GATES-001 independent QA/Security review
+# RECOVERY-TEST-GATES-001 v3 independent QA/Security review
 
-- Review result: **PASS** — corrective control-plane work only; this is not a production capability, production-readiness determination, or acceptance of historical task completions.
-- Reviewed task/candidate/handoff: `RECOVERY-TEST-GATES-001`; candidate `5268b99230e8ea970fd5d08f97b4443ddb9b54df`; author handoff `7cdb0438f97b845cc42f1254cfb9aba7336a3149`.
-- Reviewer role/provenance: Independent QA/Security; `agents/QA_SECURITY.md`; SHA-256 `c208308cd59ca962d1176d35606e560d3f4f302fcec8a054ec81036ed8e06efb`; agent thread `/root/qa_test_gate_repair_v2`.
-- Review worktree/branch: `C:\source\upfs-review-test-gates-001-v2`; `review/recovery-test-gates-001-v2`; started exactly at author handoff `7cdb0438f97b845cc42f1254cfb9aba7336a3149`.
-- Integration lineage: `git merge-base --is-ancestor 6ac4ca9 5268b99` exited `0`. The candidate is additive from accepted integration commit `6ac4ca9e859e1afb2177eaff7998ee11baae2f1b`; `git diff --diff-filter=D` reported no deletions. All eight implementation/test files plus the structured task record are explicitly authorized. The handoff is an authorized ninth file.
-- Governing files read: `AGENTS.md` `eb3f551dbfbf1656d29bf8dd126a8c95d4d67e3c117cc71c5f430c090f1ac47d`; `agents/HANDOFF_TEMPLATE.md` `9eee8fc9845bff968d43775a29df66e51c9738c74f685baed6d958643282abfe`; `agents/WORKTREES.md` `8ac05c7826d4e29f83db86d29bc6261110e6c921c61e1d9c312820efaacb01ab`; constitution `66809aff93fb19d7a3e1688facc8d6dacb9e53fb10e597cac8b0026ae2a534d7`; CI/CD `1b1812728d6304751fb3d976fae33f2dfe2633e299b24f4634f3d304cc68de73`; testing strategy `21600491c4c87f1474bcd2131fa0f814bf7da6a819fd6f8bdd7d25384c8d0cff`; task record `43f979e0d8ef9cecdb92de30c84d070f42aa3c5e9f549a3f1e736a41fcbf65c9`; author handoff `7c79f22842baf81eb12e90f05289742c95ef36fe3a37b7648c8c1543074cbf6e`.
+- Review result: **PASS** — this is corrective test-control work only. It does not establish a production capability, production readiness, or historical task completion.
+- Reviewed task, candidate, and author handoff: `RECOVERY-TEST-GATES-001`; candidate `3289b04a0dab5f33ef5eb18cc75305c42e620a4c`; author handoff `3f28b0265deee8a01aa6506fe4a8ef8a69739eff`.
+- Reviewer provenance: Independent QA/Security; `agents/QA_SECURITY.md`; SHA-256 `6cd277c714ad66f82e46f57cefc769ae6d6fbb3b082b77a8c8b3d9a9b3d00cc0`; agent thread `/root/qa_test_gate_repair_v3`.
+- Review worktree and branch: `C:\source\upfs-review-test-gates-001-v3`; `review/recovery-test-gates-001-v3`; started at the committed author handoff `3f28b0265deee8a01aa6506fe4a8ef8a69739eff`.
+- Governing inputs read: `AGENTS.md` `9d8465020d6f658294fba5a20462e62fdf2d67cf6e7d74fd665f7d753f86bac1`; constitution `e2225f3b041925d19dca4370cf0a8cdfaf677f0b18793ad31199be3b2e454f73`; CI/CD `f2e59231f95785d2990cabc64d1030f7d312bf86ae96917eb81d86c663501cfb`; testing strategy `349b29981df7101760a2a63cfc5d05732e3d8afa0d47e3c3b123d1305bb04172`; task record `43f979e0d8ef9cecdb92de30c84d070f42aa3c5e9f549a3f1e736a41fcbf65c9`; author handoff `7c79f22842baf81eb12e90f05289742c95ef36fe3a37b7648c8c1543074cbf6e`; and the prior v2 QA record.
 
-## Acceptance evidence
+## Lineage and scope
 
-- `npm ci --ignore-scripts` passed.
-- `node scripts/generate-public-docs.mjs --check` passed.
-- `node --test scripts/generate-public-docs.test.mjs` passed: 3/3.
-- Required focused tests passed: 12/12 across TASK-0015, TASK-0016, TASK-0030, and TASK-0040.
-- `npm test` passed: 831 passing, 0 failing, 1 documented opt-in skip (832 total).
-- A temporary intentional Node-test sentinel exited `1` and was removed; the test runner therefore does not silently convert a failing test into success.
-- `git status --porcelain=v1` was empty before and after the full suite; no tracked or untracked generated-output mutation remained. `git diff --check` passed.
+- `git merge-base --is-ancestor d0375f8 3f28b02` succeeded. The candidate is clean and additive from current integration `d0375f8810ce4e9fed19733ba25823ff3a5273fb`.
+- Candidate implementation scope is only `scripts/task-0030-acceptance.test.mjs` and the authorized structured task record; the author handoff is the authorized provenance addition. `git diff --diff-filter=D --name-only d0375f8...HEAD` produced no deletions, and `git diff --check` passed.
+- No product, credential, tenant, authorization, API/event/schema, workflow, CI configuration, or generated-contract artifact was changed. Historical evidence remains preserved.
 
-## Independent negative and security review
+## Acceptance and negative evidence
 
-- In an external temporary fixture, generator check rejected missing generated outputs (`exit 1`), accepted canonical CRLF output (`exit 0`), and rejected CRCRLF output (`exit 1`). The committed regression also rejects semantic documentation/SDK drift. EOL normalization is therefore limited to representation differences and remains fail-closed for content drift.
-- TASK-0016 now builds and cleans isolated synthetic fixtures; full-suite cleanliness confirms it does not race or mutate repository evidence. TASK-0030 reports `status: failed` and `NO-GO` when required evidence is absent. TASK-0040 binds only TASK-0033 through TASK-0039, excluding its own output.
-- No credentials, tenant data, authorization behavior, API/event/schema contracts, queue state, workflow state, or external configuration changed. Tenant isolation, replay/idempotency, failure, rollback, audit, contract-drift, and leakage risks are not newly applicable to this narrow control-plane change; existing full-suite authorization, tenant, replay, audit, and contract tests also passed.
-- Prior rejected-stream commits listed by the author handoff (`f7d4614`, `9af8333`, `bf32c99`, `d8e7b9f`, `a7715c9`, `7a44e96`, `7ceb4e5`, `7bfc90c`) remain reachable and were not altered.
+- `npm ci --ignore-scripts` passed (with an existing moderate dependency-audit advisory; dependencies and lockfiles are outside this candidate and remain a repository-wide security-gate item).
+- Direct TASK-0030 tests passed: 3/3. Their controlled complete fixture returns `passed / NO-GO_EXTERNAL_PREREQUISITES`; their missing-evidence fixture returns `failed / NO-GO`; and a performed-deployment claim returns `NO-GO` with a failed synthetic boundary.
+- With ordinary ignored artifacts present in the review checkout, TASK-0030 still uses only explicit temporary roots. The real-root evaluator remained `failed / NO-GO` even while a normal ignored native-PostgreSQL report was present; it reported that artifact as present and failed closed on the missing required evidence. This proves the test cannot be influenced by ignored repository artifacts.
+- `npm test` passed: 831 passing, 0 failing, 1 documented opt-in skip (832 total). `git status --porcelain=v1` and `git diff --check` were clean after test cleanup. A temporary external Node-test sentinel failed with exit code 1 and was removed, proving the runner does not convert a failure into success.
 
-## Handoff and corrective-forward assessment
+## Security and release-boundary assessment
 
-The author handoff supplies task, role digest, agent thread, isolated worktree/branch, candidate commit, source digests, authorized files, acceptance evidence, security analysis, rollback, limitations, and a pending-independent-review state. This review is the immutable distinct QA result required to close that state. Rollback is a revert of candidate `5268b99230e8ea970fd5d08f97b4443ddb9b54df`; no data or external-system state is involved.
+This change narrows only test fixture roots. It preserves fail-closed missing-evidence and deployment-claim behavior; it neither changes production/release semantics nor turns synthetic evidence into deployment evidence. Tenant-isolation, replay/idempotency, authorization, audit, rollback, contract-drift, and leakage behavior are not directly changed; the complete suite's existing negative coverage passed. Rollback is a revert of `3289b04a0dab5f33ef5eb18cc75305c42e620a4c`; no data or external-system state exists to roll back.
 
-Known baseline observation: `npm ci` reports one moderate dependency-audit advisory. This candidate did not modify dependencies or lockfiles, and the observation is not a test-gate regression; retain it for the repository-wide dependency-security gate rather than treating it as remediation acceptance.
+Known limitation: this proves deterministic corrective test behavior only. It is not proof of a real provider, durable transaction path, or production readiness.
