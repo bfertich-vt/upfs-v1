@@ -535,13 +535,13 @@ tasks:
     acceptance: [Offboarding revokes access, preserves required evidence, applies retention, and prevents cross-tenant leakage]
   - id: TASK-0080
     title: Implement managed-provider deprovisioning readiness gate
-    status: ready
+    status: complete
     dependencies: [TASK-0079]
     source: specs/09_cicd/delivery_pipeline.md; specs/10_security/security_baseline.md
     acceptance: [Deprovisioning checks bindings, rotation, revocation, evidence retention, and approval without changing production]
   - id: TASK-0081
     title: Implement pilot release train readiness board
-    status: pending
+    status: ready
     dependencies: [TASK-0080]
     source: specs/09_cicd/delivery_pipeline.md; docs/runbooks/controlled-pilot-runbook.md
     acceptance: [Release candidates, gates, owners, approvals, artifacts, rollback, and blockers are source-bound]
