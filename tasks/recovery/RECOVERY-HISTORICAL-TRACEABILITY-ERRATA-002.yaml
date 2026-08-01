@@ -1,0 +1,64 @@
+id: RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-002
+title: Append exact Git-bound provenance errata for two malformed historical handoffs
+status: candidate
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/governance/provenance-verification.md
+  - docs/handoffs/RECOVERY-CI-GATES-001.md
+  - docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md
+  - tasks/recovery/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-002.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-002-QA.md
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-002-QA
+authorized_files:
+  - tasks/recovery/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-002.yaml
+  - docs/handoffs/RECOVERY-CI-GATES-001.md
+  - docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md
+  - docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-002.md
+prohibited_files:
+  - docs/reviews/**
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - tasks/queue.yaml
+  - scripts/**
+  - package.json
+  - .github/**
+  - README.md
+  - START_HERE.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+acceptance_criteria:
+  - Each named historical handoff receives exactly one appended Git-bound provenance erratum v1 matching the parser allowlist byte-for-byte in shape and preserving the original Git-resolvable handoff as a literal prefix.
+  - Each erratum declares original handoff path/source commit/candidate/record, a bounded nonempty Reason, bounded nonempty Correction provenance, and a complete correction table covering every malformed original Specifications and contracts read path exactly once.
+  - Every correction row binds the original candidate, actual immutable Git blob, and SHA-256 over the raw Git blob bytes; no status, acceptance claim, test result, review state, risk, limitation, production classification, or QA result changes.
+  - `npm run traceability:check` and `npm run validate` pass with no provenance exceptions; all corrections are independently reproducible from Git objects.
+  - No parser, queue, product, workflow, matrix, README, START_HERE, specification, or unrelated historical handoff change occurs.
+  - Post-commit handoff is provenance complete and explicitly distinguishes correction of historical record syntax/digests from proof of product capability.
+required_tests:
+  - npm run traceability:check
+  - npm run validate
+  - npm test
+  - git diff --check
+security_requirements:
+  - Append-only raw-Git-byte provenance repair must fail closed; prohibit ambiguity, evidence erasure, claim changes, credential/data exposure, tenant leakage, and correction of otherwise-valid records.
+rollback:
+  - Revert only an independently accepted appended erratum/correction commit; never rewrite historical commits or discard rejection evidence.
+runtime_evidence_required: Git-object commands/results per table row, validator output, full validation/test output, clean diff, candidate handoff, and independent QA/Security review.
