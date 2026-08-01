@@ -407,12 +407,55 @@ export function validateHandoffSpecificationDigests(worktree, body) {
 
 function discoveredHandoffFiles(root, errors) {
   const relativeDirectory = "docs/handoffs";
-  const directory = path.join(root, relativeDirectory);
+  const rootReal = (() => {
+    try {
+      return fs.realpathSync.native(root);
+    } catch {
+      errors.push("repository root cannot be resolved for handoff provenance.");
+      return undefined;
+    }
+  })();
+  if (!rootReal) return [];
+  const directory = path.resolve(rootReal, relativeDirectory);
+  const relativeToRoot = path.relative(rootReal, directory);
+  if (relativeToRoot.startsWith("..") || path.isAbsolute(relativeToRoot)) {
+    errors.push(
+      `${relativeDirectory} is not a contained repository directory.`,
+    );
+    return [];
+  }
+  let directoryStats;
+  try {
+    directoryStats = fs.lstatSync(directory);
+  } catch {
+    errors.push(
+      `${relativeDirectory} is missing or cannot be safely enumerated.`,
+    );
+    return [];
+  }
+  if (!directoryStats.isDirectory() || directoryStats.isSymbolicLink()) {
+    errors.push(
+      `${relativeDirectory} must be a real contained directory, not a symbolic-link or reparse target.`,
+    );
+    return [];
+  }
+  const containedDirectory = resolveContained(
+    rootReal,
+    relativeDirectory,
+    `${relativeDirectory} directory`,
+    errors,
+  );
+  if (!containedDirectory || containedDirectory !== directory) {
+    errors.push(
+      `${relativeDirectory} cannot be safely enumerated as contained provenance.`,
+    );
+    return [];
+  }
   let entries;
   try {
     entries = fs.readdirSync(directory, { withFileTypes: true });
-  } catch (error) {
-    errors.push(`${relativeDirectory} cannot be enumerated: ${error.message}`);
+  } catch {
+    errors.push(`${relativeDirectory} cannot be safely enumerated.`);
     return [];
   }
   const files = [];

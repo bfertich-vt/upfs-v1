@@ -397,6 +397,73 @@ test("traceability command discovers malformed and wrong-digest repository hando
   assert.match(command.stderr, /malformed\.md:.*requires path\/digest pairs/i);
 });
 
+test("repository handoff discovery rejects unsafe directory roots before enumeration", () => {
+  const fixture = temp("upfs-handoff-directory-root-");
+  const outside = temp("upfs-handoff-directory-outside-");
+  let result = validateRepositoryHandoffSpecificationDigests(fixture);
+  assert.equal(result.status, "failed");
+  assert.ok(
+    result.errors.some((error) =>
+      error.includes("docs/handoffs is missing or cannot be safely enumerated"),
+    ),
+    result.errors.join(" | "),
+  );
+  fs.mkdirSync(path.join(fixture, "docs"), { recursive: true });
+  write(outside, "external.md", "no declared provenance\n");
+  fs.symlinkSync(
+    outside,
+    path.join(fixture, "docs", "handoffs"),
+    process.platform === "win32" ? "junction" : "dir",
+  );
+  result = validateRepositoryHandoffSpecificationDigests(fixture);
+  assert.equal(result.status, "failed");
+  assert.ok(
+    result.errors.some((error) =>
+      error.includes("docs/handoffs must be a real contained directory"),
+    ),
+    result.errors.join(" | "),
+  );
+  assert.ok(
+    result.errors.every((error) => !error.includes(outside)),
+    result.errors.join(" | "),
+  );
+
+  fs.rmSync(path.join(fixture, "docs", "handoffs"), {
+    force: true,
+    recursive: true,
+  });
+  fs.mkdirSync(path.join(fixture, "docs", "handoffs"), { recursive: true });
+  const internalTarget = path.join(fixture, "docs", "internal-handoffs");
+  fs.mkdirSync(internalTarget, { recursive: true });
+  fs.rmSync(path.join(fixture, "docs", "handoffs"), {
+    force: true,
+    recursive: true,
+  });
+  fs.symlinkSync(
+    internalTarget,
+    path.join(fixture, "docs", "handoffs"),
+    process.platform === "win32" ? "junction" : "dir",
+  );
+  result = validateRepositoryHandoffSpecificationDigests(fixture);
+  assert.equal(result.status, "failed");
+  assert.ok(
+    result.errors.some((error) =>
+      error.includes("docs/handoffs must be a real contained directory"),
+    ),
+    result.errors.join(" | "),
+  );
+
+  fs.rmSync(path.join(fixture, "docs", "handoffs"), {
+    force: true,
+    recursive: true,
+  });
+  fs.mkdirSync(path.join(fixture, "docs", "handoffs"), { recursive: true });
+  result = validateRepositoryHandoffSpecificationDigests(fixture);
+  assert.deepEqual(result, { status: "passed", errors: [] });
+  fs.rmSync(fixture, { force: true, recursive: true });
+  fs.rmSync(outside, { force: true, recursive: true });
+});
+
 test("traceability rejects headings-only, placeholders, repeated IDs, and nonexistent artifacts", () => {
   const fixture = temp("upfs-traceability-");
   assert.equal(validateTraceability(fixture).status, "failed");
