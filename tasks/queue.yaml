@@ -379,13 +379,13 @@ tasks:
     acceptance: [Support access requires case, reason, approval, step-up, scope, expiry, redaction, and complete audit]
   - id: TASK-0054
     title: Implement pilot access-review and joiner-mover-leaver evidence
-    status: ready
+    status: complete
     dependencies: [TASK-0053]
     source: specs/11_soc2/soc2_readiness.md; specs/10_security/security_baseline.md
     acceptance: [Periodic access review, least privilege, offboarding, exceptions, and remediation evidence are complete]
   - id: TASK-0055
     title: Implement pilot vulnerability and dependency remediation workflow
-    status: pending
+    status: ready
     dependencies: [TASK-0054]
     source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Pinned scans, severity thresholds, ownership, remediation deadlines, exceptions, and retest evidence fail closed]
