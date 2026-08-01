@@ -1,0 +1,1 @@
+{"schema_version":"upfs.pilot-scope.v1","version":"2026-07-31.1","immutable_ref":"manifest://pilot-scope/2026-07-31.1","cohorts":["synthetic-a"],"regions":["us-east-1"],"environments":["pilot"],"tenant_scope_ref":"tenant://synthetic","prohibited_data":["real-customer-data","production-credentials"],"retention_days":35,"pause_boundary_ref":"pause://pilot/1"}
