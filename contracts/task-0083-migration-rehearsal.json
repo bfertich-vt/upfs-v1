@@ -1,0 +1,19 @@
+{
+  "schema_version": "upfs.migration-rehearsal.v1",
+  "scope": { "tenant": "synthetic-tenant", "environment": "pilot" },
+  "source_refs": [
+    "specs/03_architecture/system_architecture.md",
+    "specs/12_testing/test_strategy.md"
+  ],
+  "migration": { "id": "upfs-v1.1-schema", "from_version": "v1.0", "to_version": "v1.1", "source_commit": "1234567890abcdef1234567890abcdef12345678" },
+  "expand": { "ref": "evidence://migration/expand", "status": "passed", "backward_compatible": true, "schema_version": "v1.1" },
+  "contract": { "ref": "evidence://migration/contract", "status": "passed", "legacy_removal_after_cutover": true, "schema_version": "v1.1" },
+  "rollback": { "ref": "evidence://migration/rollback", "status": "passed", "target_version": "v1.0", "preserves_legacy": true },
+  "corrective_forward": { "ref": "evidence://migration/corrective-forward", "status": "passed", "target_version": "v1.1.1", "no_data_loss": true },
+  "rls": { "ref": "evidence://migration/rls", "status": "passed", "tenant_isolation": true, "policy_version": "rls-v1" },
+  "outbox": { "ref": "evidence://migration/outbox", "status": "passed", "idempotent": true, "no_dual_write_loss": true },
+  "projection": { "ref": "evidence://migration/projection", "status": "passed", "candidate_version": "v2", "parity": true, "atomically_promoted": true },
+  "state": "blocked",
+  "deployment": "not-performed",
+  "digest": "2ed35bbecb93ae40feafd45572bc61818e7da2b2e1dcb4528f54a605e1e591e3"
+}
