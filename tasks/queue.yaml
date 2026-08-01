@@ -601,13 +601,13 @@ tasks:
     acceptance: [SLO changes require impact analysis, approval, route ownership, rollback, and immutable evidence]
   - id: TASK-0091
     title: Implement incident drill diversity and coverage review
-    status: ready
+    status: complete
     dependencies: [TASK-0090]
     source: docs/runbooks/controlled-pilot-runbook.md; specs/12_testing/test_strategy.md
     acceptance: [Health, security, dependency, tenant-isolation, data-quality, recovery, and release drills are covered]
   - id: TASK-0092
     title: Implement backup encryption and key lifecycle review
-    status: pending
+    status: ready
     dependencies: [TASK-0091]
     source: specs/03_architecture/system_architecture.md; specs/10_security/security_baseline.md
     acceptance: [Backup encryption, key references, rotation, expiry, restore usability, and revocation are evidenced]
