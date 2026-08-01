@@ -1,0 +1,1 @@
+{"schema_version":"upfs.pilot-consent.v1","version":"2026-07-31.1","stakeholders":[{"role":"security","owner":"security-owner","notice_ref":"notice://security/1"},{"role":"operations","owner":"ops-owner","notice_ref":"notice://operations/1"}],"acknowledgement_expiry":"2030-01-01T00:00:00Z","synthetic_only":true}
