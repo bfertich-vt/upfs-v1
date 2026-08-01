@@ -697,13 +697,13 @@ tasks:
     acceptance: [Public docs, examples, SDKs, contracts, versions, permissions, errors, and migration guidance remain synchronized]
   - id: TASK-0107
     title: Implement integrated v1.1 release-candidate rehearsal
-    status: ready
+    status: complete
     dependencies: [TASK-0106]
     source: specs/09_cicd/delivery_pipeline.md; specs/12_testing/test_strategy.md
     acceptance: [Security, migration, recovery, resilience, API, UI, documentation, and compliance gates execute in order]
   - id: TASK-0108
     title: Implement independent release-candidate evidence review
-    status: pending
+    status: ready
     dependencies: [TASK-0107]
     source: AGENTS.md; agents/SUPERVISOR.md; docs/compliance/pilot-go-no-go.md
     acceptance: [Independent review verifies source binding, mutation coverage, clean gates, no unsupported claims, and open blockers]
