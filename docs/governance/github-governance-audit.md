@@ -16,7 +16,17 @@ This audit records a read-only GitHub API inspection for `bfertich-vt/upfs-v1`, 
 
 ## Corrective change and verification requirement
 
-`CODEOWNERS` now assigns only the verified `@bfertich-vt` account. A post-commit, read-only request to the CODEOWNERS errors endpoint is required before this candidate can be accepted; zero errors is required. This local correction cannot enforce owner review while branch protection/rulesets are unavailable.
+`CODEOWNERS` now assigns only the verified `@bfertich-vt` account. The original post-commit request without a `ref` parameter returned the preserved default-branch result (the ten errors above) because the candidate had not been pushed. That failed/default-ref evidence is retained in the handoff and is not a failure of the candidate content.
+
+After the authorized normal push of `recovery/github-governance`, the ref-scoped, read-only validation request was:
+
+`GET https://api.github.com/repos/bfertich-vt/upfs-v1/codeowners/errors?ref=recovery%2Fgithub-governance`
+
+Executed as:
+
+`gh api -X GET 'repos/bfertich-vt/upfs-v1/codeowners/errors?ref=recovery%2Fgithub-governance'`
+
+Observed response: `{"errors":[]}`. This proves that GitHub accepts `CODEOWNERS` at the pushed branch ref as of the pushed `43d98be0814e46ead4d43a30d49074b86f6de84b` handoff tip. It does not enforce owner review while branch protection/rulesets are unavailable.
 
 ## Fail-closed position and external decision
 
