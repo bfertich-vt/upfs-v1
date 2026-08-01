@@ -361,13 +361,13 @@ tasks:
     acceptance: [Checklist gates are ordered, idempotent, auditable, reversible, and never imply deployment]
   - id: TASK-0051
     title: Implement pilot health and error-budget review evidence
-    status: ready
+    status: complete
     dependencies: [TASK-0050]
     source: docs/runbooks/controlled-pilot-runbook.md; specs/12_testing/test_strategy.md
     acceptance: [Availability, latency, freshness, lag, error budget, pause, and escalation calculations are reproducible]
   - id: TASK-0052
     title: Implement pilot ingestion freshness and reconciliation review
-    status: pending
+    status: ready
     dependencies: [TASK-0051]
     source: specs/03_architecture/system_architecture.md; specs/12_testing/test_strategy.md
     acceptance: [Ingestion, quarantine, canonical parity, projection lag, and reconciliation evidence is tenant-safe and immutable]
