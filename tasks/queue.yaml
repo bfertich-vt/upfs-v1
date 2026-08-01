@@ -391,13 +391,13 @@ tasks:
     acceptance: [Pinned scans, severity thresholds, ownership, remediation deadlines, exceptions, and retest evidence fail closed]
   - id: TASK-0056
     title: Implement pilot vendor and managed-provider review evidence
-    status: ready
+    status: complete
     dependencies: [TASK-0055]
     source: specs/11_soc2/soc2_readiness.md; specs/09_cicd/delivery_pipeline.md
     acceptance: [Provider scope, risk, review cadence, contract references, incidents, and exceptions are versioned]
   - id: TASK-0057
     title: Implement pilot change-management and emergency-change evidence
-    status: pending
+    status: ready
     dependencies: [TASK-0056]
     source: specs/11_soc2/soc2_readiness.md; specs/09_cicd/delivery_pipeline.md
     acceptance: [Review, approval, immutable artifact, rollback, corrective-forward, and retrospective evidence are enforced]
