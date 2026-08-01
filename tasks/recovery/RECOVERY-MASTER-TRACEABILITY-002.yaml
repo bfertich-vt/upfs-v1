@@ -1,0 +1,74 @@
+id: RECOVERY-MASTER-TRACEABILITY-002
+title: Build validator-conformant evidence-led master requirements traceability matrix
+status: candidate
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/01_product/vision_and_scope.md
+  - specs/03_architecture/system_architecture.md
+  - specs/05_apis/api_standards.md
+  - specs/06_ai/ai_runtime.md
+  - specs/07_workflows/workflow_runtime.md
+  - specs/08_policies/policy_system.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/MASTER_PLAN.md
+  - tasks/queue.yaml
+  - docs/governance/TASK-RECLASSIFICATION-007.md
+  - scripts/ci-gate-validator.mjs
+normative_sources:
+  - docs/MASTER_PLAN.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/01_product/vision_and_scope.md
+  - specs/03_architecture/system_architecture.md
+  - specs/05_apis/api_standards.md
+  - specs/06_ai/ai_runtime.md
+  - specs/07_workflows/workflow_runtime.md
+  - specs/08_policies/policy_system.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-QUEUE-RECLASSIFICATION-007
+authorized_files:
+  - tasks/recovery/RECOVERY-MASTER-TRACEABILITY-002.yaml
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - docs/handoffs/RECOVERY-MASTER-TRACEABILITY-002.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/handoffs/TASK-*.md
+  - docs/reviews/**
+  - docs/governance/TASK-RECLASSIFICATION-007.md
+  - scripts/**
+  - package.json
+  - .github/**
+  - README.md
+  - START_HERE.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+acceptance_criteria:
+  - Matrix has exactly the current validator's 13 required columns and at least 10 substantive rows; every row has a stable unique identifier and all evidence cells are either existing repository paths or precise supported absent-evidence form.
+  - Matrix includes every required source-section binding: MASTER_PLAN Outcome/Delivery-stages/V1-acceptance-themes; vision Initial-commercial-slice/Platform-planes/Explicit-non-goals-for-v1; architecture Data-path/Core-services/Multi-tenancy-and-scale/Reliability.
+  - Matrix includes exactly one binding for each TASK-0001–TASK-0110 using accepted queue reclassification classification and concrete task-specific evidence/provenance or supported absent evidence; no synthetic/reference/contract claim is upgraded to production.
+  - Matrix includes FDX-01 with explicit fdx-first, legacy, security, license, compatibility, and test review treatment, and truthfully identifies its unresolved decision/work.
+  - Matrix covers every product and control-plane requirement/gap in task input sources with source section, contracts, tests, runtime/security evidence, docs/provenance, classification, missing work, external dependency, and next authorized task.
+  - No fabricated paths, tests, provenance, runtime proof, or product/release claim; report known missing work/external dependencies precisely.
+  - Handoff is post-commit/candidate-bound and traceability reports no matrix-specific error.
+required_tests:
+  - npm run traceability:check
+  - npm test
+  - git diff --check
+security_requirements:
+  - Preserve tenant/security evidence limits and fail closed on unsupported capability claims; no sensitive data in matrix.
+rollback:
+  - Revert only accepted matrix change; preserve evidence history.
+runtime_evidence_required: Validator-conformant source/row counts, traceability output, classification/task-binding audit, clean diff, actual handoff, and independent QA/Security review.
