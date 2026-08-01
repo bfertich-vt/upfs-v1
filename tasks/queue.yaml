@@ -451,13 +451,13 @@ tasks:
     acceptance: [API, events, permissions, errors, generated SDK, examples, and version compatibility remain synchronized]
   - id: TASK-0066
     title: Implement pilot customer-console release acceptance gate
-    status: ready
+    status: complete
     dependencies: [TASK-0065]
     source: specs/02_ui/console_experience.md; docs/MASTER_PLAN.md
     acceptance: [Documented customer pages, accessibility, authorization, API mapping, redaction, and unavailable states are verified]
   - id: TASK-0067
     title: Implement pilot admin-console operational acceptance gate
-    status: pending
+    status: ready
     dependencies: [TASK-0066]
     source: specs/14_admin_control_plane/admin_control_plane.md; docs/MASTER_PLAN.md
     acceptance: [Admin modules expose only API-backed, scoped, redacted, approval-gated operations with audit evidence]
