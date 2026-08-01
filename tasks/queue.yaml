@@ -319,13 +319,13 @@ tasks:
     acceptance: [Rotation, overlap, expiry, revocation, and rollback evidence is synthetic and fail-closed]
   - id: TASK-0044
     title: Implement managed database target readiness and native rehearsal gate
-    status: ready
+    status: complete
     dependencies: [TASK-0043]
     source: specs/03_architecture/system_architecture.md; specs/12_testing/test_strategy.md
     acceptance: [Managed PostgreSQL target, migrations, RLS, backup, restore, and replay prerequisites are verified without production access]
   - id: TASK-0045
     title: Implement managed observability destination and alert-route readiness
-    status: pending
+    status: ready
     dependencies: [TASK-0044]
     source: specs/09_cicd/delivery_pipeline.md; specs/12_testing/test_strategy.md
     acceptance: [Tenant-safe metrics, logs, traces, SLO alerts, paging ownership, and retention references are verified]
