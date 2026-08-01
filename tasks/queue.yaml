@@ -625,13 +625,13 @@ tasks:
     acceptance: [Cross-tenant reads, writes, projections, exports, support, and recovery fail closed under injected faults]
   - id: TASK-0095
     title: Implement dependency degradation and recovery matrix
-    status: ready
+    status: complete
     dependencies: [TASK-0094]
     source: specs/12_testing/test_strategy.md; docs/runbooks/controlled-pilot-runbook.md
     acceptance: [Postgres, outbox, projection, Redis, provider, and model degradation have bounded recovery evidence]
   - id: TASK-0096
     title: Implement load-shape and saturation profile refresh
-    status: pending
+    status: ready
     dependencies: [TASK-0095]
     source: specs/12_testing/test_strategy.md
     acceptance: [Bounded tenants, concurrency, payloads, duration, saturation signals, and scaling actions are immutable]
