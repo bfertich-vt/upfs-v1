@@ -337,13 +337,13 @@ tasks:
     acceptance: [All managed adapter contracts compose into a truthful readiness report and fail closed on any mismatch]
   - id: TASK-0047
     title: Implement pilot tenant and environment enrollment controls
-    status: ready
+    status: complete
     dependencies: [TASK-0046]
     source: specs/04_schema/identity_tenant_model.md; specs/14_admin_control_plane/admin_control_plane.md
     acceptance: [Pilot enrollment is approval-gated, tenant-scoped, reversible, auditable, and synthetic until authorization]
   - id: TASK-0048
     title: Implement pilot scope, cohort, and data-boundary manifest
-    status: pending
+    status: ready
     dependencies: [TASK-0047]
     source: docs/compliance/pilot-go-no-go.md; specs/10_security/security_baseline.md
     acceptance: [Cohort, regions, environments, prohibited data, retention, and pause boundaries are versioned and checked]
