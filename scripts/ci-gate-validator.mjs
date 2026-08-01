@@ -507,12 +507,24 @@ function originalSpecificationRecord(original) {
   )?.[0];
 }
 
-function originalSpecificationRecords(record) {
-  return new Map(
-    [...record.matchAll(/`([^`]+)`\s*\(`([a-f0-9]{64})`\)/gi)].map(
-      ([, relative, digest]) => [relative, digest.toLowerCase()],
-    ),
-  );
+function classifySpecificationRecord(record) {
+  const value = record
+    .replace(/^- Specifications and contracts read:\s*/i, "")
+    .trim()
+    .replace(/\.\s*$/, "");
+  const pairs = [
+    ...value.matchAll(/`([^`\r\n]+)`\s*\(`([a-f0-9]{64})`\)/gi),
+  ].map(([, relative, digest]) => [relative, digest.toLowerCase()]);
+  if (!pairs.length) return { kind: "unpaired", records: new Map() };
+
+  const fullyPaired =
+    /^(?:`[^`\r\n]+`\s*\(`[a-f0-9]{64}`\)\s*;\s*)*`[^`\r\n]+`\s*\(`([a-f0-9]{64})`\)\s*$/i.test(
+      value,
+    );
+  return {
+    kind: fullyPaired ? "paired" : "partial",
+    records: new Map(pairs),
+  };
 }
 
 function legacyUnpairedErratum(original, relative, section, record) {
@@ -644,14 +656,20 @@ function validateGitBoundErratum(worktree, relative, body, section) {
     );
     return { status: "failed", errors };
   }
-  const originalRecords = originalSpecificationRecords(record);
+  const classification = classifySpecificationRecord(record);
   const legacyUnpaired = legacyUnpairedErratum(
     original,
     relative,
     section,
     record,
   );
-  if (!originalRecords.size && !legacyUnpaired)
+  if (classification.kind === "partial") {
+    errors.push(
+      "Git-bound provenance erratum original record contains partially paired or ambiguous entries and is not correctable.",
+    );
+    return { status: "failed", errors };
+  }
+  if (classification.kind === "unpaired" && !legacyUnpaired)
     errors.push(
       "Git-bound provenance erratum original record does not declare any correctable paths.",
     );
@@ -676,7 +694,7 @@ function validateGitBoundErratum(worktree, relative, body, section) {
   }
   const requiredPaths = legacyUnpaired
     ? new Set(LEGACY_UNPAIRED_ERRATUM.paths)
-    : new Set(originalRecords.keys());
+    : new Set(classification.records.keys());
   const rows = parseErrataRows(section.text, errors);
   const seen = new Set();
   for (const [relativePath, rowCandidate, blob, digest] of rows) {
@@ -719,7 +737,7 @@ function validateGitBoundErratum(worktree, relative, body, section) {
       );
     if (
       !legacyUnpaired &&
-      originalRecords.get(relativePath) === digest.toLowerCase()
+      classification.records.get(relativePath) === digest.toLowerCase()
     )
       errors.push(
         `Git-bound provenance erratum correction ${relativePath} does not change the malformed original value.`,

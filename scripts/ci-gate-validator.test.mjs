@@ -587,6 +587,132 @@ test("repository scan permits only a strict, append-only Git-bound provenance er
   fs.rmSync(fixture, { force: true, recursive: true });
 });
 
+test("provenance record classification rejects partial entries before erratum correction", () => {
+  const cases = [
+    {
+      name: "zero pairs",
+      record: "AGENTS.md digest unavailable.",
+      paths: [],
+      direct: "requires path/digest pairs",
+      scan: "does not declare any correctable paths",
+      accepted: false,
+    },
+    {
+      name: "one complete pair",
+      record: "`AGENTS.md` (`" + "0".repeat(64) + "`).",
+      paths: ["AGENTS.md"],
+      direct: "digest does not match Git blob bytes",
+      accepted: true,
+    },
+    {
+      name: "multiple complete pairs",
+      record:
+        "`AGENTS.md` (`" +
+        "0".repeat(64) +
+        "`); `agents/BACKEND.md` (`" +
+        "0".repeat(64) +
+        "`).",
+      paths: ["AGENTS.md", "agents/BACKEND.md"],
+      direct: "digest does not match Git blob bytes",
+      accepted: true,
+    },
+    {
+      name: "one pair plus unpaired entry",
+      record:
+        "`AGENTS.md` (`" +
+        "0".repeat(64) +
+        "`); `agents/BACKEND.md`; unpaired provenance.",
+      paths: ["AGENTS.md"],
+      direct: "digest does not match Git blob bytes",
+      scan: "partially paired or ambiguous entries",
+      accepted: false,
+    },
+    {
+      name: "multiple pairs plus unpaired entry",
+      record:
+        "`AGENTS.md` (`" +
+        "0".repeat(64) +
+        "`); `agents/BACKEND.md` (`" +
+        "0".repeat(64) +
+        "`); `specs/09_cicd/delivery_pipeline.md`.",
+      paths: ["AGENTS.md", "agents/BACKEND.md"],
+      direct: "digest does not match Git blob bytes",
+      scan: "partially paired or ambiguous entries",
+      accepted: false,
+    },
+  ];
+  for (const fixtureCase of cases) {
+    const fixture = temp("upfs-provenance-record-classification-");
+    git(fixture, ["init", "--initial-branch=recovery/record-classification"]);
+    git(fixture, ["config", "user.email", "fixture@example.test"]);
+    git(fixture, ["config", "user.name", "Fixture"]);
+    write(fixture, "AGENTS.md", "fixture agent instructions\n");
+    write(fixture, "agents/BACKEND.md", "fixture backend instructions\n");
+    git(fixture, ["add", "."]);
+    git(fixture, ["commit", "-m", "candidate source evidence"]);
+    const candidate = git(fixture, ["rev-parse", "HEAD"]);
+    const original = [
+      `- Commit: candidate \`${candidate}\`.`,
+      `- Specifications and contracts read: ${fixtureCase.record}`,
+      "- Results: preserved historical result.",
+      "",
+    ].join("\n");
+    const relative = "docs/handoffs/legacy.md";
+    const handoff = path.join(fixture, ...relative.split("/"));
+    write(fixture, relative, original);
+    git(fixture, ["add", relative]);
+    git(fixture, ["commit", `-m`, `preserve ${fixtureCase.name}`]);
+    const source = git(fixture, ["rev-parse", "HEAD"]);
+    const row = (entry) => {
+      const bytes = spawnSync(
+        "git",
+        ["-C", fixture, "show", `${candidate}:${entry}`],
+        { encoding: null },
+      ).stdout;
+      return `| \`${entry}\` | \`${candidate}\` | \`${git(fixture, ["rev-parse", `${candidate}:${entry}`])}\` | \`${crypto.createHash("sha256").update(bytes).digest("hex")}\` |`;
+    };
+    const erratum = [
+      "## Git-bound provenance erratum v1 — RECOVERY-FIXTURE-CLASSIFICATION-001",
+      "",
+      `- Original handoff path: \`${relative}\`.`,
+      `- Original handoff source commit: \`${source}\`.`,
+      `- Original candidate commit: \`${candidate}\`.`,
+      "- Original provenance record: `Specifications and contracts read`.",
+      "- Reason: `Correct immutable digest records only`.",
+      "- Correction provenance: `Classification boundary fixture evidence`.",
+      "",
+      "| Path | Source candidate | Git blob | Derived SHA-256 |",
+      "| --- | --- | --- | --- |",
+      ...fixtureCase.paths.map(row),
+      "",
+      "- Preservation statement: This erratum changes no historical task status, acceptance claim, test result, review state, risk, limitation, production-capability classification, or Independent QA/Security review result.",
+      "",
+    ].join("\n");
+    const direct = validateHandoffSpecificationDigests(fixture, original);
+    assert.equal(direct.status, "failed", fixtureCase.name);
+    assert.ok(
+      direct.errors.some((error) => error.includes(fixtureCase.direct)),
+      `${fixtureCase.name}: ${direct.errors.join(" | ")}`,
+    );
+    fs.writeFileSync(handoff, original + erratum);
+    const scan = validateRepositoryHandoffSpecificationDigests(fixture);
+    if (fixtureCase.accepted) {
+      assert.deepEqual(
+        scan,
+        { status: "passed", errors: [] },
+        fixtureCase.name,
+      );
+    } else {
+      assert.equal(scan.status, "failed", fixtureCase.name);
+      assert.ok(
+        scan.errors.some((error) => error.includes(fixtureCase.scan)),
+        `${fixtureCase.name}: ${scan.errors.join(" | ")}`,
+      );
+    }
+    fs.rmSync(fixture, { force: true, recursive: true });
+  }
+});
+
 test("repository scan permits only the exact legacy unpaired queue provenance correction", () => {
   const fixture = temp("upfs-legacy-unpaired-erratum-");
   git(root, ["clone", "--no-checkout", root, fixture]);
