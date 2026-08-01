@@ -15,6 +15,8 @@ for (const [name, mutate] of [
   ['rejects unreviewed boundary', value => { value.evidence.new_boundaries = 'missing'; }],
   ['rejects unreviewed abuse case', value => { value.evidence.abuse_cases = 'missing'; }],
   ['rejects unbounded residual risk', value => { value.evidence.residual_risks = 'accepted'; }],
+  ['rejects expired residual risk even with recomputed digest', value => { value.evidence.expires_at = '2020-01-01T00:00:00.000Z'; }],
+  ['rejects malformed residual risk expiry', value => { value.evidence.expires_at = '2027-07-31'; }],
   ['rejects untracked mitigation', value => { value.evidence.mitigations = 'missing'; }],
   ['rejects malformed owner', value => { value.evidence.owner = {}; }],
   ['rejects invalid approval', value => { value.evidence.approval_state = 'pending'; }],
