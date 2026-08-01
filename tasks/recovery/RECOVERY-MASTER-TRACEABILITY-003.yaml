@@ -1,0 +1,65 @@
+id: RECOVERY-MASTER-TRACEABILITY-003
+title: Complete constitution-section coverage in master-plan traceability matrix
+status: implementation_complete_pending_independent_qa
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/01_product/vision_and_scope.md
+  - specs/03_architecture/system_architecture.md
+  - specs/05_apis/api_standards.md
+  - specs/06_ai/ai_runtime.md
+  - specs/07_workflows/workflow_runtime.md
+  - specs/08_policies/policy_system.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/MASTER_PLAN.md
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - docs/handoffs/RECOVERY-MASTER-TRACEABILITY-002.md
+  - docs/handoffs/RECOVERY-MASTER-TRACEABILITY-002-QA.md
+  - scripts/ci-gate-validator.mjs
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+dependencies:
+  - RECOVERY-MASTER-TRACEABILITY-002-QA
+authorized_files:
+  - tasks/recovery/RECOVERY-MASTER-TRACEABILITY-003.yaml
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - docs/handoffs/RECOVERY-MASTER-TRACEABILITY-003.md
+prohibited_files:
+  - scripts/**
+  - tasks/queue.yaml
+  - docs/handoffs/RECOVERY-MASTER-TRACEABILITY-002.md
+  - docs/handoffs/RECOVERY-MASTER-TRACEABILITY-002-QA.md
+  - docs/reviews/**
+  - package.json
+  - .github/**
+  - README.md
+  - START_HERE.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+acceptance_criteria:
+  - The matrix traces every substantive requirement in all six sections of specs/00_constitution/engineering_constitution.md, with one or more truthful requirement rows per section and all 13 mandatory evidence columns.
+  - Added rows use current repository evidence or the validator-supported precise absent-evidence form; they do not invent production capability, runtime evidence, tests, ownership, or acceptance.
+  - Existing master-plan, vision, architecture, FDX-first/legacy decision, and TASK-0001–TASK-0110 coverage remains intact and valid.
+  - Each added row states security/tenant-isolation evidence, classification, missing work, external dependency, and next authorized task truthfully.
+  - The RECOVERY-MASTER-TRACEABILITY-002-QA rejection is directly addressed, and no unrelated files or historical evidence are changed.
+  - Post-commit handoff is provenance complete and candidate validation has no matrix-origin failure.
+required_tests:
+  - npm run traceability:check
+  - npm test
+  - git diff --check
+security_requirements:
+  - Preserve fail-closed evidence semantics; do not mask security, tenant-isolation, leakage, governance, or provenance gaps as implemented.
+rollback:
+  - Revert only an independently accepted matrix correction; preserve rejection evidence and history.
+runtime_evidence_required: Matrix section-to-row mapping, validator output, complete tests, clean diff, candidate handoff, and independent QA/Security review.
