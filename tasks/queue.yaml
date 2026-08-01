@@ -253,13 +253,13 @@ tasks:
     acceptance: [Protected environment manifests and policy/drift checks are versioned and fail closed]
   - id: TASK-0033
     title: Harden managed-integration adapter contracts for protected environments
-    status: ready
+    status: complete
     dependencies: [TASK-0032]
     source: Stage 9 managed provider requirements; specs/09_cicd/delivery_pipeline.md
     acceptance: [Provider identity, environment binding, rotation, health, and drift contracts are versioned and fail closed]
   - id: TASK-0034
     title: Produce protected deployment promotion and rollback evidence
-    status: pending
+    status: ready
     dependencies: [TASK-0033]
     source: Stage 9 immutable promotion and rollback requirements; specs/09_cicd/delivery_pipeline.md
     acceptance: [Canary/cell promotion, approval, verification, rollback, and corrective-forward evidence is reproducible]
