@@ -1,0 +1,64 @@
+id: RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-005
+title: Permit only the immutable CI historical partially paired provenance correction
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/governance/provenance-verification.md
+  - docs/handoffs/RECOVERY-CI-GATES-001.md
+  - tasks/recovery/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-002.yaml
+  - tasks/recovery/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-004.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-004-QA.md
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-004-QA
+authorized_files:
+  - tasks/recovery/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-005.yaml
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-005.md
+prohibited_files:
+  - docs/handoffs/RECOVERY-CI-GATES-001.md
+  - docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md
+  - docs/reviews/**
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - tasks/queue.yaml
+  - package.json
+  - .github/**
+  - README.md
+  - START_HERE.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+acceptance_criteria:
+  - The validator permits exactly one additional append-only correction mode only when original handoff path is docs/handoffs/RECOVERY-CI-GATES-001.md, immutable source commit is 4ae7e95f0af88e21dde526be44443846a8d8d9a6, candidate is 90208c69504893c7a01cbcd51a8eb35caf21f5e3, and original record classification is the exact known eight-path partially paired form.
+  - This mode still requires the entire v1 allowlisted metadata, bounded Reason and Correction provenance, exact scope statement, literal original prefix, complete correction table for all and only eight original declared paths, original candidate, actual Git blobs/raw-byte SHA-256, and no claim-changing text.
+  - Every other partially paired record is rejected, including a one-byte/text/path/candidate/source variation of the special record; generic paired and exact queue unpaired modes remain unchanged.
+  - Tests prove the exact source is accepted only with valid correction fixture and all near-match/partial/ambiguous/identity/table/bounded-field/freeform/prefix/claim mutations reject.
+  - No historical handoff change is made; post-commit handoff is provenance complete and full validation has no new error.
+required_tests:
+  - node --test scripts/ci-gate-validator.test.mjs
+  - npm test
+  - npm run traceability:check
+  - git diff --check
+security_requirements:
+  - This is an exact immutable exception, never a general partial-record bypass; preserve fail-closed provenance, tenant isolation, no credential/data exposure, no claim/evidence erasure.
+rollback:
+  - Revert only independently accepted parser exception; preserve source records, rejection evidence, and history.
+runtime_evidence_required: Exact Git-object source identity and mutation evidence, focused/full tests, traceability/diff output, candidate handoff, and independent QA/Security review.
