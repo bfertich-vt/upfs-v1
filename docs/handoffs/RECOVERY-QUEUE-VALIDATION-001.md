@@ -21,3 +21,25 @@
 - Known limitations: The control exposes historical deficiencies but deliberately does not fabricate evidence, reclassify tasks, alter product behavior, or resolve descriptor-level time-of-check/time-of-use races for a hostile concurrent filesystem writer.
 - External prerequisites: Independent QA/Security review from a separate clean review worktree.
 - Independent reviewer and review result: Pending fresh Independent QA/Security review; no PASS is claimed.
+
+## Git-bound provenance erratum v1 — RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-003
+
+- Original handoff path: `docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md`.
+- Original handoff source commit: `e7c81bf1a38726e0ac8ebf84c969219c21758aea`.
+- Original candidate commit: `2ec8213fe000a0b78c68c588eb10768a39116be3`.
+- Original provenance record: `Specifications and contracts read`.
+- Reason: `Legacy record lists sources without path digest pairs`.
+- Correction provenance: `Git object derivation for immutable queue handoff source`.
+
+| Path | Source candidate | Git blob | Derived SHA-256 |
+| --- | --- | --- | --- |
+| `AGENTS.md` | `2ec8213fe000a0b78c68c588eb10768a39116be3` | `99e50e2f3590aac292a3608192346fe207765e1e` | `9d8465020d6f658294fba5a20462e62fdf2d67cf6e7d74fd665f7d753f86bac1` |
+| `agents/BACKEND.md` | `2ec8213fe000a0b78c68c588eb10768a39116be3` | `0ff4c7fec07f3e54fb361a399655f7b8981da712` | `171397b8a57a3b8e561e106b277e6eeb761e4a736641d5430af4759225d8c784` |
+| `agents/WORKTREES.md` | `2ec8213fe000a0b78c68c588eb10768a39116be3` | `52dee22c57967e8efc1b7ec4b5b29387ede083c1` | `f96d64f56121b250069da37cf1c93eb6b05d91622f5e09e1f907629a6d7d72d1` |
+| `agents/HANDOFF_TEMPLATE.md` | `2ec8213fe000a0b78c68c588eb10768a39116be3` | `ec9815efb847ad5ef1ac4813957b51ae44b14645` | `4768090523a85bc8528d6604c01cfc43ce4567bc361a7075551d6521e28a9de4` |
+| `specs/00_constitution/engineering_constitution.md` | `2ec8213fe000a0b78c68c588eb10768a39116be3` | `736626a809bd94d332d696a7b9122f7d69304316` | `e2225f3b041925d19dca4370cf0a8cdfaf677f0b18793ad31199be3b2e454f73` |
+| `specs/09_cicd/delivery_pipeline.md` | `2ec8213fe000a0b78c68c588eb10768a39116be3` | `4fa6ad4c19b94bda2d5255d65240bdbf9eb246a8` | `f2e59231f95785d2990cabc64d1030f7d312bf86ae96917eb81d86c663501cfb` |
+| `specs/12_testing/test_strategy.md` | `2ec8213fe000a0b78c68c588eb10768a39116be3` | `c3cc9bd303b720b6b6abb58b7d20edb08f9896bf` | `349b29981df7101760a2a63cfc5d05732e3d8afa0d47e3c3b123d1305bb04172` |
+| `tasks/queue.yaml` | `2ec8213fe000a0b78c68c588eb10768a39116be3` | `2400cceab2085f8a74672a52cbcb5271a5a003af` | `f832f8ed1999a93513a0f1e7f27e0875c7487ad1d8739366c35330515b60aeb5` |
+
+- Preservation statement: This erratum changes no historical task status, acceptance claim, test result, review state, risk, limitation, production-capability classification, or Independent QA/Security review result.

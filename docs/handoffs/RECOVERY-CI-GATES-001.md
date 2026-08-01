@@ -21,3 +21,25 @@
 - Known limitations: This is a repository control-plane change, not a production capability or certification. It does not create a provider connector, durable product persistence, a customer console, or an approved release.
 - External prerequisites: Separate Independent QA/Security reviewer; independent acceptance and integration by the supervisor; subsequent recovery tasks for queue reclassification/provenance, traceability, skills, and real accessibility artifacts; GitHub plan support for protected-branch enforcement.
 - Independent reviewer and review result: Pending fresh Independent QA/Security review from the committed candidate; no PASS is claimed.
+
+## Git-bound provenance erratum v1 — RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-005
+
+- Original handoff path: `docs/handoffs/RECOVERY-CI-GATES-001.md`.
+- Original handoff source commit: `4ae7e95f0af88e21dde526be44443846a8d8d9a6`.
+- Original candidate commit: `90208c69504893c7a01cbcd51a8eb35caf21f5e3`.
+- Original provenance record: `Specifications and contracts read`.
+- Reason: `Immutable historical partial-record digest repair`.
+- Correction provenance: `Raw Git object derivation for the fixed CI source`.
+
+| Path | Source candidate | Git blob | Derived SHA-256 |
+| --- | --- | --- | --- |
+| `AGENTS.md` | `90208c69504893c7a01cbcd51a8eb35caf21f5e3` | `99e50e2f3590aac292a3608192346fe207765e1e` | `9d8465020d6f658294fba5a20462e62fdf2d67cf6e7d74fd665f7d753f86bac1` |
+| `agents/BACKEND.md` | `90208c69504893c7a01cbcd51a8eb35caf21f5e3` | `0ff4c7fec07f3e54fb361a399655f7b8981da712` | `171397b8a57a3b8e561e106b277e6eeb761e4a736641d5430af4759225d8c784` |
+| `agents/WORKTREES.md` | `90208c69504893c7a01cbcd51a8eb35caf21f5e3` | `52dee22c57967e8efc1b7ec4b5b29387ede083c1` | `f96d64f56121b250069da37cf1c93eb6b05d91622f5e09e1f907629a6d7d72d1` |
+| `agents/HANDOFF_TEMPLATE.md` | `90208c69504893c7a01cbcd51a8eb35caf21f5e3` | `ec9815efb847ad5ef1ac4813957b51ae44b14645` | `4768090523a85bc8528d6604c01cfc43ce4567bc361a7075551d6521e28a9de4` |
+| `specs/00_constitution/engineering_constitution.md` | `90208c69504893c7a01cbcd51a8eb35caf21f5e3` | `736626a809bd94d332d696a7b9122f7d69304316` | `e2225f3b041925d19dca4370cf0a8cdfaf677f0b18793ad31199be3b2e454f73` |
+| `specs/09_cicd/delivery_pipeline.md` | `90208c69504893c7a01cbcd51a8eb35caf21f5e3` | `4fa6ad4c19b94bda2d5255d65240bdbf9eb246a8` | `f2e59231f95785d2990cabc64d1030f7d312bf86ae96917eb81d86c663501cfb` |
+| `specs/10_security/security_baseline.md` | `90208c69504893c7a01cbcd51a8eb35caf21f5e3` | `337c9b7972f8dc34b1fe0d3af83f35df9516f9a6` | `53699772fd569cabb0b0ab31c21b59e10fdb538fde1a38952ce07b2305220add` |
+| `specs/12_testing/test_strategy.md` | `90208c69504893c7a01cbcd51a8eb35caf21f5e3` | `c3cc9bd303b720b6b6abb58b7d20edb08f9896bf` | `349b29981df7101760a2a63cfc5d05732e3d8afa0d47e3c3b123d1305bb04172` |
+
+- Preservation statement: This erratum changes no historical task status, acceptance claim, test result, review state, risk, limitation, production-capability classification, or Independent QA/Security review result.
