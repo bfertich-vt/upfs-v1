@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { parseDocument } from "yaml";
+import { QueueValidationError, validateQueueDocument } from "./queue-validator.mjs";
 
 const root = process.argv[2] ? path.resolve(process.argv[2]) : process.cwd();
 const artifactDir = path.join(root, "artifacts");
@@ -175,12 +176,7 @@ function validateYamlContracts() {
 }
 
 function validateQueueBaseline() {
-  const queue = readUtf8("tasks/queue.yaml");
-  assert(queue.includes("id: TASK-0001"), "Task queue must include TASK-0001.");
-  const hasReady = queue.includes("status: ready");
-  const terminal = !hasReady && !queue.includes("status: blocked") && [...queue.matchAll(/status:\s+(\w+)/g)].every((match) => match[1] === "complete");
-  assert(hasReady || terminal, "Task queue must have a ready task or be explicitly terminal with every task complete.");
-  recordCheck("task-queue", { state: terminal ? "terminal" : "active" });
+  recordCheck("task-queue", validateQueueDocument(readUtf8("tasks/queue.yaml"), root));
 }
 
 function validateWorkflowPins() {
@@ -201,7 +197,7 @@ function validateWorkflowPins() {
   });
 }
 
-function writeReport(status, errorMessage = null) {
+function writeReport(status, errorMessage = null, errors = []) {
   fs.mkdirSync(artifactDir, { recursive: true });
   const report = {
     status,
@@ -218,6 +214,9 @@ function writeReport(status, errorMessage = null) {
   if (errorMessage) {
     report.error = errorMessage;
   }
+  if (errors.length) {
+    report.errors = errors;
+  }
 
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
 }
@@ -233,7 +232,7 @@ try {
   writeReport("passed");
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
-  writeReport("failed", message);
+  writeReport("failed", message, error instanceof QueueValidationError ? error.errors : []);
   console.error(message);
   process.exit(1);
 }

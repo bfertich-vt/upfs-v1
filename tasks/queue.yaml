@@ -265,37 +265,37 @@ tasks:
     acceptance: [Canary/cell promotion, approval, verification, rollback, and corrective-forward evidence is reproducible]
   - id: TASK-0035
     title: Complete observability, alerting, and incident operations evidence
-      status: complete
+    status: complete
     dependencies: [TASK-0034]
     source: Stage 9 operational readiness and incident requirements; specs/12_testing/test_strategy.md
     acceptance: [Tenant-safe telemetry, SLO alerts, incident detection/pause/abort/recovery, and audit evidence are verified]
   - id: TASK-0036
     title: Complete native backup/restore and disaster-recovery evidence binding
-      status: complete
+    status: complete
     dependencies: [TASK-0035]
     source: Stage 9 DR and recovery requirements; specs/03_architecture/system_architecture.md
     acceptance: [Backup integrity, restore references, RPO/RTO, failover, and corrective-forward evidence are bound and fail closed]
   - id: TASK-0037
     title: Execute bounded environment-sized resilience rehearsal
-      status: complete
+    status: complete
     dependencies: [TASK-0036]
     source: Stage 9 load/soak/chaos requirements; specs/12_testing/test_strategy.md
     acceptance: [Synthetic load, soak, dependency failure, projection lag, isolation, and recovery scenarios produce immutable evidence]
   - id: TASK-0038
     title: Synchronize public release, documentation, SDK, and migration evidence
-      status: complete
+    status: complete
     dependencies: [TASK-0037]
     source: Stage 8/9 public documentation and release synchronization; specs/13_docs/documentation_platform.md
     acceptance: [Contracts, generated docs/SDK, release notes, examples, migration guidance, and versions pass drift checks]
   - id: TASK-0039
     title: Complete final security, compliance, and readiness assessment
-      status: complete
+    status: complete
     dependencies: [TASK-0038]
     source: v1 acceptance themes; specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Security, tenant isolation, control evidence, vulnerabilities, and unsupported-claim checks are complete]
   - id: TASK-0040
     title: Assemble formal controlled-pilot go/no-go handoff
-      status: complete
+    status: complete
     dependencies: [TASK-0039]
     source: Stage 9 pilot and measured-rollout requirements; docs/compliance/pilot-go-no-go.md
     acceptance: [All evidence is indexed, external prerequisites are explicit, and final decision is truthful with no deployment or certification claim]

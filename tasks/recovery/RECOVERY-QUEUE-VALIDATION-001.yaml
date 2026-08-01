@@ -1,0 +1,52 @@
+task_id: RECOVERY-QUEUE-VALIDATION-001
+title: Repair structural queue and handoff validation
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/HANDOFF_TEMPLATE.md
+  - agents/WORKTREES.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/12_testing/test_strategy.md
+  - docs/MASTER_PLAN.md
+  - docs/REPOSITORY_GOVERNANCE.md
+  - tasks/queue.yaml
+normative_sources:
+  - AGENTS.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/12_testing/test_strategy.md
+dependencies: []
+authorized_files:
+  - tasks/queue.yaml
+  - scripts/validate-repository.mjs
+  - scripts/queue-validator.mjs
+  - scripts/queue-validator.test.mjs
+  - tasks/recovery/RECOVERY-QUEUE-VALIDATION-001.yaml
+  - docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md
+prohibited_files:
+  - README.md
+  - START_HERE.md
+  - .github/workflows/**
+  - CODEOWNERS
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+  - docs/handoffs/TASK-*.md
+acceptance_criteria:
+  - Queue YAML parses and reports every structural violation without a type error.
+  - Completed tasks require an exact, substantive, non-duplicated template and provenance handoff with independent QA PASS.
+  - TASK-0021, TASK-0022, and TASK-0109 evidence defects fail closed.
+  - Task inputs and exact handoffs reject traversal and external symlink or reparse targets before content is read.
+required_tests:
+  - node --test scripts/queue-validator.test.mjs
+  - node scripts/validate-repository.mjs .
+  - npm test
+security_requirements: Reject repository traversal and external symlink or reparse targets; do not change product or tenant runtime behavior.
+rollback: Revert only by a separately reviewed corrective commit; retain historical evidence.
+runtime_evidence_required: Focused tests and a full aggregate validation report.
