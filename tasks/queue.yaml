@@ -277,13 +277,13 @@ tasks:
     acceptance: [Backup integrity, restore references, RPO/RTO, failover, and corrective-forward evidence are bound and fail closed]
   - id: TASK-0037
     title: Execute bounded environment-sized resilience rehearsal
-      status: ready
+      status: complete
     dependencies: [TASK-0036]
     source: Stage 9 load/soak/chaos requirements; specs/12_testing/test_strategy.md
     acceptance: [Synthetic load, soak, dependency failure, projection lag, isolation, and recovery scenarios produce immutable evidence]
   - id: TASK-0038
     title: Synchronize public release, documentation, SDK, and migration evidence
-    status: pending
+      status: ready
     dependencies: [TASK-0037]
     source: Stage 8/9 public documentation and release synchronization; specs/13_docs/documentation_platform.md
     acceptance: [Contracts, generated docs/SDK, release notes, examples, migration guidance, and versions pass drift checks]
