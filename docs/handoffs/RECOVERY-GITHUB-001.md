@@ -50,6 +50,17 @@ This task does not process tenant data or change application authorization. It p
 - **Reviewer:** unknown; independent QA/Security review has not yet occurred.
 - **Review result:** pending; candidate is not accepted or eligible for integration.
 
+## Corrective-forward verification record
+
+- **Original implementation candidate:** `cdfa8550229d72fe636154decf2d03843fe4ca99`.
+- **Original rejection/limitation:** the default-ref request `GET /repos/bfertich-vt/upfs-v1/codeowners/errors` was run after the local candidate commit and correctly returned the preserved remote default-branch result of ten unknown-owner errors. It could not validate an unpushed local branch; this evidence is retained above.
+- **Final corrective-forward candidate:** `fa2d764f3efa43e0408ba48ae5b5d1f73174047d` on `recovery/github-governance`.
+- **Authorized branch publication:** normal, non-force push only: `git push -u origin recovery/github-governance`, followed by `git push origin recovery/github-governance`. No other branch, default branch, PR, rule, protection, or visibility state was changed.
+- **Branch/ref validation command:** `gh api -X GET 'repos/bfertich-vt/upfs-v1/codeowners/errors?ref=recovery%2Fgithub-governance'`.
+- **API URL:** `https://api.github.com/repos/bfertich-vt/upfs-v1/codeowners/errors?ref=recovery%2Fgithub-governance`.
+- **Result:** `{"errors":[]}` after the branch was pushed at `43d98be`, and again after `fa2d764` was pushed. GitHub therefore accepts the candidate CODEOWNERS content at this branch ref.
+- **Remaining reviewer state:** a fresh independent QA/Security agent must review `fa2d764` from a separate worktree and then separately review this subsequent handoff record. This validation does not resolve the 403 branch-protection/ruleset plan blocker, provide a human PR review, or authorize a merge.
+
 ## Known limitations, external prerequisites, and corrective-forward plan
 
 - GitHub protection and rulesets endpoints return 403 for this private repository under the current plan. Account owner decision: upgrade to a plan supporting protection/rulesets or make an explicit, security-reviewed repository visibility decision.
