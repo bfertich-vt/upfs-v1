@@ -1,0 +1,64 @@
+id: RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-004
+title: Reject partially paired provenance records from all correction modes
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/governance/provenance-verification.md
+  - tasks/recovery/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-003.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-003.md
+  - docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-003-QA.md
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-003-QA
+authorized_files:
+  - tasks/recovery/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-004.yaml
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-004.md
+prohibited_files:
+  - docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md
+  - docs/handoffs/RECOVERY-CI-GATES-001.md
+  - docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-003-QA.md
+  - docs/reviews/**
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - tasks/queue.yaml
+  - package.json
+  - .github/**
+  - README.md
+  - START_HERE.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+acceptance_criteria:
+  - A partially paired original Specifications and contracts read record is rejected by every correction mode before any correction table is accepted; it cannot fall through paired or unpaired parsing.
+  - The unpaired legacy mode remains restricted to exactly the immutable queue source record and only a fully unpaired invalid original record; ordinary paired corrections retain their strict behavior.
+  - Tests prove rejection of zero/one/multiple/partial pair combinations and all prior unpaired-mode negative cases, while accepted fixtures for valid paired and exact queue unpaired corrections still pass.
+  - No historical handoff or product/queue/workflow/matrix/CI documentation change occurs; QA finding 972f75d is directly addressed without weakening fail-closed provenance controls.
+  - Post-commit handoff and validation are provenance complete with no new candidate-origin error.
+required_tests:
+  - node --test scripts/ci-gate-validator.test.mjs
+  - npm test
+  - npm run traceability:check
+  - git diff --check
+security_requirements:
+  - Fail closed for ambiguity or partial records; prohibit evidence erasure, scope/claim bypass, tenant leakage, and credential/data exposure.
+rollback:
+  - Revert only independently accepted parser remediation; retain rejected candidate and QA evidence.
+runtime_evidence_required: Boundary-mutation matrix, focused/full tests, traceability/diff output, candidate handoff, and independent QA/Security review.
