@@ -25,15 +25,15 @@ prohibited_files:
   - specs/**
 acceptance_criteria:
   - CODEOWNERS contains only verified GitHub owners.
-  - GitHub CODEOWNERS errors API returns no errors after the candidate is committed.
+  - GitHub CODEOWNERS errors API returns no errors when queried against the pushed candidate branch ref.
   - Audit records the pre-correction error count, verified owner, PR #1 review state, and protection/ruleset API results.
   - Audit preserves the fail-closed no-merge position and documents the external plan decision.
   - Independent QA/Security review is performed from the committed candidate state.
 required_tests:
-  - Read-only GitHub CODEOWNERS errors API query after commit.
+  - Read-only GitHub CODEOWNERS errors API query with `ref=recovery/github-governance` after the authorized normal branch push.
   - File-scope inspection against authorized files.
 security_requirements:
-  - No GitHub settings mutation, push, merge, token disclosure, or reduction of required governance controls.
+  - No GitHub settings mutation, merge, token disclosure, or reduction of required governance controls; one normal push of this corrective branch is permitted solely to validate its ref.
   - Preserve independent review and protected-branch requirements as release blockers.
 rollback: Revert the candidate commit through a separately reviewed corrective commit; do not rewrite history.
 runtime_evidence_required: GitHub API response URLs/results and independent QA report.
