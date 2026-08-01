@@ -553,13 +553,13 @@ tasks:
     acceptance: [SBOM, provenance, signatures, dependency pins, digests, and source commits are mutually bound]
   - id: TASK-0083
     title: Implement migration compatibility and rollback rehearsal v1.1
-    status: ready
+    status: complete
     dependencies: [TASK-0082]
     source: specs/03_architecture/system_architecture.md; specs/12_testing/test_strategy.md
     acceptance: [Expand/contract migration, rollback, corrective-forward, RLS, outbox, and projection evidence are reproducible]
   - id: TASK-0084
     title: Implement schema and contract backward-compatibility gate
-    status: pending
+    status: ready
     dependencies: [TASK-0083]
     source: specs/04_schema/identity_tenant_model.md; specs/05_apis/api_standards.md
     acceptance: [Breaking schema/API/event changes fail closed without versioned migration and compatibility evidence]
