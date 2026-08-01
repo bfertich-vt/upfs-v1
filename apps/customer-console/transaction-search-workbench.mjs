@@ -69,10 +69,10 @@ export function createSearchWorkbench({ root, api, limit = DEFAULT_LIMIT, onStat
     else if (state.status === 'success') status.textContent = `${state.data.length} transaction${state.data.length === 1 ? '' : 's'} loaded.`;
     root.append(status);
     if (state.status === 'success' || (state.status === 'empty' && state.data.length)) {
-      const table = document.createElement('table'); table.setAttribute('aria-label', 'Transaction results');
-      const header = document.createElement('tr'); ['Date', 'Amount', 'Currency', 'Account', 'Evidence'].forEach((label) => { const th = document.createElement('th'); th.scope = 'col'; th.textContent = label; header.append(th); });
+      const table = document.createElement('table'); table.setAttribute('aria-label', 'Redacted transaction results');
+      const header = document.createElement('tr'); ['Date', 'Currency', 'Evidence'].forEach((label) => { const th = document.createElement('th'); th.scope = 'col'; th.textContent = label; header.append(th); });
       const thead = document.createElement('thead'); thead.append(header); table.append(thead); const body = document.createElement('tbody');
-      state.data.forEach((item) => { const row = document.createElement('tr'); [item.posted_at, item.amount, item.currency, item.account_id].forEach((value) => { const cell = document.createElement('td'); cell.textContent = escapeText(value); row.append(cell); }); const evidence = document.createElement('td'); evidence.textContent = (item.evidence_refs || []).map(escapeText).join(', ') || 'None'; row.append(evidence); body.append(row); }); table.append(body); root.append(table);
+      state.data.forEach((item) => { const row = document.createElement('tr'); [item.posted_at, item.currency].forEach((value) => { const cell = document.createElement('td'); cell.textContent = escapeText(value); row.append(cell); }); const evidence = document.createElement('td'); evidence.textContent = (item.evidence_refs || []).map(escapeText).join(', ') || 'None'; row.append(evidence); body.append(row); }); table.append(body); root.append(table);
     }
     const meta = document.createElement('small'); if (state.consistency) meta.textContent = `Projection: ${state.consistency}; watermark ${state.watermark}.`; root.append(meta);
     if (state.nextCursor) { const more = document.createElement('button'); more.type = 'button'; more.textContent = state.loadingMore ? 'Loading…' : 'Load more'; more.disabled = state.loadingMore; more.addEventListener('click', () => search(state.query, state.nextCursor)); root.append(more); }
