@@ -349,13 +349,13 @@ tasks:
     acceptance: [Cohort, regions, environments, prohibited data, retention, and pause boundaries are versioned and checked]
   - id: TASK-0049
     title: Implement pilot consent and communication evidence workflow
-    status: ready
+    status: complete
     dependencies: [TASK-0048]
     source: specs/11_soc2/soc2_readiness.md; docs/compliance/pilot-go-no-go.md
     acceptance: [Required stakeholder notices, approvals, acknowledgements, and expiry are tracked without contacting external parties]
   - id: TASK-0050
     title: Implement pilot launch checklist and dry-run coordinator
-    status: pending
+    status: ready
     dependencies: [TASK-0049]
     source: docs/runbooks/controlled-pilot-runbook.md; specs/09_cicd/delivery_pipeline.md
     acceptance: [Checklist gates are ordered, idempotent, auditable, reversible, and never imply deployment]
