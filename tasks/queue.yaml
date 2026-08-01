@@ -307,13 +307,13 @@ tasks:
     acceptance: [Every missing managed resource, credential, approval, owner, expiry, and evidence reference is enumerated and fail-closed]
   - id: TASK-0042
     title: Implement managed provider onboarding and reference verification workflow
-    status: ready
+    status: complete
     dependencies: [TASK-0041]
     source: specs/09_cicd/delivery_pipeline.md; infra/deployment-environment.json
     acceptance: [Provider onboarding validates identity, environment binding, rotation, health, and immutable references without exposing secrets]
   - id: TASK-0043
     title: Implement protected signing-key and secret rotation rehearsal
-    status: pending
+    status: ready
     dependencies: [TASK-0042]
     source: specs/09_cicd/delivery_pipeline.md; specs/10_security/security_baseline.md
     acceptance: [Rotation, overlap, expiry, revocation, and rollback evidence is synthetic and fail-closed]
