@@ -1,0 +1,65 @@
+id: RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-002
+title: Fail closed when provenance errata omit bounded reason and correction provenance
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/governance/provenance-verification.md
+  - tasks/recovery/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-001.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-001.md
+  - docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-001-QA.md
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-001-QA
+authorized_files:
+  - tasks/recovery/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-002.yaml
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-002.md
+prohibited_files:
+  - docs/handoffs/RECOVERY-CI-GATES-001.md
+  - docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md
+  - docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-001-QA.md
+  - docs/reviews/**
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - tasks/queue.yaml
+  - package.json
+  - .github/**
+  - README.md
+  - START_HERE.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+acceptance_criteria:
+  - Every accepted provenance erratum contains a bounded, non-empty Reason field and a bounded, non-empty Correction-provenance field; neither may be omitted, blank, free-form extension text, duplicated, or used to bypass the strict allowlist.
+  - Parser rejects a formally otherwise-valid correction when either required field is absent, whitespace-only, oversized, duplicated, or uses unauthorized fields; each rejection is covered by a negative fixture.
+  - Valid correction fixtures contain both fields and preserve exact append-only, raw-Git-byte, target-identity, and non-claim-changing semantics established by the original task.
+  - Existing qualifying corrections and ordinary valid handoffs retain behavior; historical handoffs remain unedited.
+  - The QA rejection at docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-001-QA.md is addressed directly, without weakening security/provenance validation.
+  - Handoff is post-commit and provenance complete; candidate validation passes except documented inherited historical correction/matrix failures.
+required_tests:
+  - node --test scripts/ci-gate-validator.test.mjs
+  - npm test
+  - npm run traceability:check
+  - git diff --check
+security_requirements:
+  - Fail closed on malformed correction fields; preserve immutable append-only provenance and prohibit erasure, ambiguity, claim changing, credential/data exposure, tenant leakage, and unrelated bypass.
+rollback:
+  - Revert only an independently accepted corrective parser commit; preserve historical handoffs, the rejected QA evidence, and all history.
+runtime_evidence_required: Exact negative mutation results for every bounded-field failure, focused and full tests, traceability output, clean diff, candidate handoff, and distinct QA/Security review.
