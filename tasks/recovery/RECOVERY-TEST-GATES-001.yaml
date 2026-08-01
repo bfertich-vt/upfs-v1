@@ -52,6 +52,7 @@ acceptance:
   - Check mode rejects missing output, CRCRLF malformed output, and semantic documentation or SDK drift.
   - TASK-0016 uses explicit isolated synthetic fixtures and cannot race or depend on generated historical artifacts.
   - TASK-0030 reports failed NO-GO when required historical evidence is absent, as required by fail-closed delivery and testing contracts.
+  - TASK-0030 tests use only explicit temporary evidence roots and cannot observe ignored repository artifacts.
   - TASK-0040 binds only predecessor evidence TASK-0033 through TASK-0039 and never its own output.
   - npm ci --ignore-scripts, direct generator check, focused tests, and npm test pass from the clean stream.
   - Tests leave no tracked or untracked generated-output mutation.
