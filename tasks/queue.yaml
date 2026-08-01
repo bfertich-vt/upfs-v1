@@ -421,13 +421,13 @@ tasks:
     acceptance: [DR exercise schedule, owners, scenarios, results, failures, remediation, and immutable references are tracked]
   - id: TASK-0061
     title: Implement pilot capacity and environment-sizing review
-    status: ready
+    status: complete
     dependencies: [TASK-0060]
     source: specs/12_testing/test_strategy.md; docs/runbooks/controlled-pilot-runbook.md
     acceptance: [Capacity assumptions, tenant dimensions, thresholds, saturation, scaling actions, and review evidence are reproducible]
   - id: TASK-0062
     title: Implement pilot cost and resource-bound review
-    status: pending
+    status: ready
     dependencies: [TASK-0061]
     source: specs/12_testing/test_strategy.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Synthetic cost/resource bounds, anomaly thresholds, owners, and pause actions are checked without real billing access]
