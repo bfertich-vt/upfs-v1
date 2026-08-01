@@ -715,7 +715,7 @@ tasks:
     acceptance: [All TASK-0071–0108 artifacts, tests, controls, risks, owners, and external prerequisites are indexed]
   - id: TASK-0110
     title: Assemble v1.1 release-candidate go/no-go decision
-    status: ready
+    status: complete
     dependencies: [TASK-0109]
     source: docs/compliance/pilot-go-no-go.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Final continuation/pause/stop decision is reproducible, approval-gated, source-bound, truthful, and makes no certification or production claim]
