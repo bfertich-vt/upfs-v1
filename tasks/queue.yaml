@@ -367,13 +367,13 @@ tasks:
     acceptance: [Availability, latency, freshness, lag, error budget, pause, and escalation calculations are reproducible]
   - id: TASK-0052
     title: Implement pilot ingestion freshness and reconciliation review
-    status: ready
+    status: complete
     dependencies: [TASK-0051]
     source: specs/03_architecture/system_architecture.md; specs/12_testing/test_strategy.md
     acceptance: [Ingestion, quarantine, canonical parity, projection lag, and reconciliation evidence is tenant-safe and immutable]
   - id: TASK-0053
     title: Implement pilot support-access review and expiry enforcement
-    status: pending
+    status: ready
     dependencies: [TASK-0052]
     source: specs/04_schema/identity_tenant_model.md; specs/14_admin_control_plane/admin_control_plane.md
     acceptance: [Support access requires case, reason, approval, step-up, scope, expiry, redaction, and complete audit]
