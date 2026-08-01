@@ -1,0 +1,1 @@
+{"schema_version":"upfs.pilot-launch.v1","gates":["scope","consent","providers","backup","observability","rollback"],"synthetic_only":true}
