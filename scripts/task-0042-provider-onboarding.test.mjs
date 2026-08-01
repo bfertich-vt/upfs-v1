@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {evaluateProviderOnboarding} from './task-0042-provider-onboarding.mjs';
+const good=()=>({providers:['postgresql','secrets','observability','backup'].map(service=>({service,provider:`external-managed-${service}`,environment:'pilot',managed:true,health:{reachable:true,authenticated:true},reference:`${service}://ref`,version:'v1'}))});
+test('provider onboarding passes complete synthetic binding',()=>assert.equal(evaluateProviderOnboarding({bindings:good()}).status,'passed'));
+for(const m of [x=>{x.providers[0].provider='synthetic'},x=>{x.providers[1].environment='production'},x=>{x.providers[2].health.reachable=false},x=>{x.providers[3].version=''},x=>{x.providers[0].secret_value='bad'}])test('provider onboarding fails closed',()=>{const x=good();m(x);assert.equal(evaluateProviderOnboarding({bindings:x}).status,'failed');});
