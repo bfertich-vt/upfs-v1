@@ -403,13 +403,13 @@ tasks:
     acceptance: [Review, approval, immutable artifact, rollback, corrective-forward, and retrospective evidence are enforced]
   - id: TASK-0058
     title: Implement pilot incident communications and postmortem workflow
-    status: ready
+    status: complete
     dependencies: [TASK-0057]
     source: docs/runbooks/controlled-pilot-runbook.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Incident severity, timeline, notices, decisions, postmortem, corrective actions, and retention are auditable]
   - id: TASK-0059
     title: Implement pilot backup and restore review cadence
-    status: pending
+    status: ready
     dependencies: [TASK-0058]
     source: specs/03_architecture/system_architecture.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Backup integrity, restore sampling, RPO/RTO, retention, encryption, and corrective-forward reviews are bound]
