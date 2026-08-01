@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {evaluatePostgres} from './task-0044-postgres-readiness.mjs';
+const good=()=>({managed:true,provider:'external-managed-postgresql',tls:true,encrypted:true,migrations_applied:true,rls_enabled:true,rls_forced:true,backup_enabled:true,backup_integrity:true,restore_verified:true,schema_probe:true,checkpoint_replay:true,outbox_replay:true});
+test('postgres readiness passes complete synthetic gate',()=>assert.equal(evaluatePostgres({target:good()}).status,'passed'));
+for(const m of [x=>{x.managed=false},x=>{x.rls_forced=false},x=>{x.backup_integrity=false},x=>{x.restore_verified=false},x=>{x.outbox_replay=false},x=>{x.password='bad'}])test('postgres gate fails closed',()=>{const x=good();m(x);assert.equal(evaluatePostgres({target:x}).status,'failed');});
