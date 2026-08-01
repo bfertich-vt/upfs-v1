@@ -1,0 +1,23 @@
+# RECOVERY-QUEUE-RECLASSIFICATION-007 handoff
+
+- Task and scope: RECOVERY-QUEUE-RECLASSIFICATION-007 requires immutable verbatim evidence excerpts for every frozen historical task.
+- Agent role: Schema/Search/AI.
+- Role-file path and digest: agents/SCHEMA_SEARCH_AI.md sha256 8b05d11c936e7d0eac9ea63cf5b34cc594b620205292054bfcd6e01046050d9d.
+- Agent thread ID: /root/schema_queue_reclassification_v006.
+- Worktree and branch: worktree C:\source\upfs-recovery-queue-reclassification-007; branch recovery/queue-reclassification-007.
+- Commit: candidate `9fc2d266dfbb5e291ec4c0fc25dc7c1e9d2ae722`.
+- Files changed: tasks/recovery/RECOVERY-QUEUE-RECLASSIFICATION-007.yaml; tasks/queue.yaml; scripts/queue-validator.mjs; scripts/queue-validator.test.mjs; docs/governance/TASK-RECLASSIFICATION-007.md; docs/handoffs/RECOVERY-QUEUE-RECLASSIFICATION-007.md.
+- Specifications and contracts read: `AGENTS.md` (`9d8465020d6f658294fba5a20462e62fdf2d67cf6e7d74fd665f7d753f86bac1`); `agents/SCHEMA_SEARCH_AI.md` (`8b05d11c936e7d0eac9ea63cf5b34cc594b620205292054bfcd6e01046050d9d`); `agents/WORKTREES.md` (`f96d64f56121b250069da37cf1c93eb6b05d91622f5e09e1f907629a6d7d72d1`); `agents/HANDOFF_TEMPLATE.md` (`4768090523a85bc8528d6604c01cfc43ce4567bc361a7075551d6521e28a9de4`); `specs/00_constitution/engineering_constitution.md` (`e2225f3b041925d19dca4370cf0a8cdfaf677f0b18793ad31199be3b2e454f73`); `specs/09_cicd/delivery_pipeline.md` (`f2e59231f95785d2990cabc64d1030f7d312bf86ae96917eb81d86c663501cfb`); `specs/10_security/security_baseline.md` (`53699772fd569cabb0b0ab31c21b59e10fdb538fde1a38952ce07b2305220add`); `specs/12_testing/test_strategy.md` (`349b29981df7101760a2a63cfc5d05732e3d8afa0d47e3c3b123d1305bb04172`); `docs/MASTER_PLAN.md` (`2c04b5d43422ede9fd1900ada5005062dfe71a8a91829625ac1d9701c108fdec`); `tasks/recovery/RECOVERY-QUEUE-RECLASSIFICATION-007.yaml` (`9bec855d09859d2bf8385782c04e4e8d436a542f8b8ed32823f91e62117c8c4e`).
+- Acceptance criteria: All 110 historical report and queue rows require a nonempty verbatim immutable excerpt; freeze retains all structural and evidence gates; TASK-0021, TASK-0022, and TASK-0109 remain unsupported completion claims with valid excerpts.
+- Tests and commands run: node --test scripts/queue-validator.test.mjs — 11 pass, 0 fail; npm run queue:check — passed; 110-row Git-byte excerpt audit — 110 records, 0 invalid; git diff --check 82362e1..9fc2d26 — passed.
+- Negative tests: Omitted, null, empty, fabricated, nonmatching, and queue-omitted excerpts fail closed; frozen mismatch, unsafe path, missing inputs/source/acceptance, duplicate/missing report rows, and production-proof bypass fail closed.
+- Contracts/migrations: Queue evidence-validation control only; no API, event, schema, product, or database migration.
+- Security and tenant-isolation analysis: No tenant runtime change. Immutable excerpt omission/null paths are rejected, preventing control-plane provenance concealment.
+- Audit/evidence behavior: 110 immutable Git artifact hashes and nonempty excerpts are validated; all historical tasks remain blocked and Unsupported completion claim.
+- Results: Candidate is ready for a fresh independent QA/Security review; it is not accepted or integrated.
+- Rollback/corrective-forward plan: Revert only an independently accepted integration commit; retain rejected historical evidence and correct forward on a fresh role-bound branch.
+- Documentation updated: docs/governance/TASK-RECLASSIFICATION-007.md and this handoff.
+- Known risks and follow-ups: Independent QA must rerun the full 110-row artifact/hash/excerpt audit and omitted/null mutations.
+- Known limitations: No production, release, provider, tenant-runtime, or external system capability is claimed.
+- External prerequisites: Independent QA/Security review; separate recovery blockers, if any, remain outside this candidate.
+- Independent reviewer and review result: Pending distinct Independent QA/Security review; no implementation author self-approval.
