@@ -439,13 +439,13 @@ tasks:
     acceptance: [Retention, legal hold, deletion, quarantine, audit, and restore interactions are explicit and fail closed]
   - id: TASK-0064
     title: Implement privacy and sensitive-data handling review
-    status: ready
+    status: complete
     dependencies: [TASK-0063]
     source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Sensitive payload redaction, minimization, access, export, and incident review evidence is verified]
   - id: TASK-0065
     title: Implement pilot API contract and SDK compatibility gate
-    status: pending
+    status: ready
     dependencies: [TASK-0064]
     source: specs/05_apis/api_standards.md; specs/13_docs/documentation_platform.md
     acceptance: [API, events, permissions, errors, generated SDK, examples, and version compatibility remain synchronized]
