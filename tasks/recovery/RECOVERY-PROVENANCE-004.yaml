@@ -1,0 +1,64 @@
+id: RECOVERY-PROVENANCE-004
+title: Clean provenance validation and non-self-referential review chain
+state: in_progress
+role: Backend
+role_file: agents/BACKEND.md
+scope: >-
+  Backend-owned, documentation and local-test-only corrective-forward recovery.
+  Establish a self-contained canonical Git-byte hashing command and a truthful
+  candidate-to-handoff-to-independent-QA-report model. Product work and roadmap
+  activation remain frozen.
+allowed_files:
+  - docs/governance/provenance-verification.md
+  - scripts/provenance-command.test.mjs
+  - tasks/recovery/RECOVERY-PROVENANCE-004.yaml
+  - docs/handoffs/RECOVERY-PROVENANCE-004.md
+prohibited_files:
+  - tasks/queue.yaml
+  - README.md
+  - START_HERE.md
+  - .github
+  - apps
+  - services
+  - contracts
+  - specs
+  - product source, UI, schema, deployment, and workflow files
+acceptance_criteria:
+  - The documented PowerShell command executes literally without interpolation or parsing errors.
+  - The command returns lowercase SHA-256 over canonical Git blob bytes.
+  - A regression test executes the exact documented command through an external PowerShell script.
+  - The control requires a distinct implementation candidate, author handoff with QA pending, and QA-authored immutable report without a self-review requirement.
+  - Missing historical evidence is recorded as unknown or unsupported rather than fabricated.
+  - This structured input parses as YAML and the implementation candidate precedes its separate handoff.
+required_sources:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/HANDOFF_TEMPLATE.md
+  - agents/WORKTREES.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/12_testing/test_strategy.md
+  - docs/governance/provenance-verification.md
+  - tasks/recovery/RECOVERY-PROVENANCE-001.yaml
+  - tasks/recovery/RECOVERY-PROVENANCE-003.yaml
+  - docs/handoffs/RECOVERY-PROVENANCE-003.md
+security_and_tenant_isolation: >-
+  Documentation and local-test-only. This task changes no authorization, tenant
+  scope, secrets, customer data, providers, persistence, API, deployment, or
+  runtime behavior. It must fail closed for absent evidence and must not weaken
+  validation or fabricate historical proof.
+required_tests:
+  - npm ci --ignore-scripts
+  - node --test scripts/provenance-command.test.mjs
+  - Node YAML parse of tasks/recovery/RECOVERY-PROVENANCE-004.yaml
+  - git diff --check
+rollback: >-
+  Corrective-forward only. Preserve the authoritative baseline and all prior
+  recovery artifacts. Record defects in a new commit; do not amend, reset,
+  force-push, rewrite history, or discard evidence.
+handoff_requirements:
+  - task ID, exact scope, role-file path and canonical committed-byte digest
+  - agent thread ID, worktree, branch, owned files, candidate and handoff commits
+  - sources/specifications/contracts read, acceptance criteria, commands/results, and negative cases
+  - security, tenant-isolation, audit/evidence, limitations, external prerequisites, and rollback analysis
+  - independent QA/Security reviewer is pending until a distinct immutable QA-authored report records the result
