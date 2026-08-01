@@ -619,13 +619,13 @@ tasks:
     acceptance: [Restore points respect retention/legal hold/deletion and produce immutable reconciliation evidence]
   - id: TASK-0094
     title: Implement tenant-isolation chaos regression suite
-    status: ready
+    status: complete
     dependencies: [TASK-0093]
     source: specs/04_schema/identity_tenant_model.md; specs/12_testing/test_strategy.md
     acceptance: [Cross-tenant reads, writes, projections, exports, support, and recovery fail closed under injected faults]
   - id: TASK-0095
     title: Implement dependency degradation and recovery matrix
-    status: pending
+    status: ready
     dependencies: [TASK-0094]
     source: specs/12_testing/test_strategy.md; docs/runbooks/controlled-pilot-runbook.md
     acceptance: [Postgres, outbox, projection, Redis, provider, and model degradation have bounded recovery evidence]
