@@ -1,0 +1,1 @@
+{"schema_version":"upfs.audit-evidence-review.v1","records":[{"id":"audit-1","tenant_scope":"tenant-synthetic","action":"sensitive-read","actor":"operator","immutable":true,"evidence_ref":"evidence://audit/1","hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}],"expected_sensitive_actions":["sensitive-read"],"deployment":"not-performed"}
