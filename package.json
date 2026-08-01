@@ -8,10 +8,31 @@
     "yaml": "2.8.1"
   },
   "devDependencies": {
-    "embedded-postgres": "18.4.0-beta.17"
+    "embedded-postgres": "18.4.0-beta.17",
+    "eslint": "9.32.0",
+    "prettier": "3.6.2",
+    "typescript": "5.8.3"
   },
   "scripts": {
-    "test": "node --test scripts/*.test.mjs services/*.test.mjs",
+    "test": "node --test scripts/*.test.mjs services/*.test.mjs apps/**/*.test.mjs",
+    "format:check": "prettier --check package.json package-lock.json .github/workflows/*.yml scripts/ci-gate-validator.mjs scripts/ci-gate-validator.test.mjs scripts/embedded-postgres-ci-gate.mjs scripts/embedded-postgres-ci-gate.test.mjs scripts/format-committed-candidate-check.mjs tasks/recovery/RECOVERY-CI-GATES-001.yaml",
+    "format:committed": "node scripts/format-committed-candidate-check.mjs",
+    "lint": "eslint --no-config-lookup --rule no-constant-binary-expression:error scripts/**/*.mjs services/**/*.mjs apps/**/*.mjs",
+    "static:check": "tsc --noEmit --allowJs false packages/sdk-generated/index.ts",
+    "contracts:check": "node scripts/generate-public-docs.mjs --check",
+    "generated:check": "node scripts/generate-public-docs.mjs --check",
+    "migration:check": "node scripts/embedded-postgres-ci-gate.mjs",
+    "tenant-isolation:check": "node --test services/postgres-persistence.test.mjs services/transaction-outbox.test.mjs",
+    "documentation:check": "node scripts/generate-public-docs.mjs --check",
+    "policy:check": "node --test services/policy-workflow.test.mjs",
+    "prompt:check": "node --test services/governed-chat.test.mjs",
+    "skill:check": "node scripts/ci-gate-validator.mjs --capabilities skill",
+    "accessibility:check": "node scripts/ci-gate-validator.mjs --capabilities accessibility",
+    "security:dependencies": "npm audit --audit-level=high",
+    "queue:check": "node scripts/validate-repository.mjs",
+    "provenance:check": "node --test scripts/provenance-command.test.mjs",
+    "traceability:check": "node scripts/ci-gate-validator.mjs --traceability",
+    "ci:gates": "node scripts/ci-gate-validator.mjs",
     "rehearsal:postgres:embedded": "node scripts/task-0014-embedded-postgres.mjs"
   }
 }

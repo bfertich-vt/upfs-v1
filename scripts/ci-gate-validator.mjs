@@ -1,0 +1,709 @@
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import process from "node:process";
+import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
+import { parseDocument } from "yaml";
+
+const REQUIRED_VALIDATE_COMMANDS = [
+  "npm ci --ignore-scripts",
+  "npm run ci:gates",
+  "npm test",
+  "npm run format:check",
+  "npm run lint",
+  "npm run static:check",
+  "npm run contracts:check",
+  "npm run generated:check",
+  "npm run migration:check",
+  "npm run tenant-isolation:check",
+  "npm run documentation:check",
+  "npm run policy:check",
+  "npm run prompt:check",
+  "npm run skill:check",
+  "npm run accessibility:check",
+  "npm run queue:check",
+  "npm run provenance:check",
+  "npm run traceability:check",
+];
+const REQUIRED_NPM_SCRIPTS = [
+  "test",
+  "format:check",
+  "lint",
+  "static:check",
+  "contracts:check",
+  "generated:check",
+  "migration:check",
+  "tenant-isolation:check",
+  "documentation:check",
+  "policy:check",
+  "prompt:check",
+  "skill:check",
+  "accessibility:check",
+  "security:dependencies",
+  "queue:check",
+  "provenance:check",
+  "traceability:check",
+  "ci:gates",
+];
+const COMMON_ACTIONS = {
+  "actions/checkout": "11bd71901bbe5b1630ceea73d27597364c9af683",
+  "actions/setup-node": "49933ea5288caeca8642d1e84afbd3f7d6820020",
+};
+const VALIDATE_ACTIONS = {
+  ...COMMON_ACTIONS,
+  "actions/upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",
+};
+const SECURITY_ACTIONS = {
+  ...COMMON_ACTIONS,
+  "aquasecurity/trivy-action": "ed142fd0673e97e23eac54620cfb913e5ce36c25",
+};
+const TRACEABILITY_COLUMNS = [
+  "Source file and section",
+  "Requirement",
+  "Current implementation files",
+  "Contracts",
+  "Tests",
+  "Runtime evidence",
+  "Security and tenant-isolation evidence",
+  "Documentation",
+  "Agent/QA provenance",
+  "Classification",
+  "Missing work",
+  "External dependency",
+  "Next authorized task",
+];
+const CLASSIFICATIONS = new Set([
+  "Proven production implementation",
+  "Proven reference implementation",
+  "Contract/interface only",
+  "Synthetic rehearsal only",
+  "External prerequisite",
+  "Incomplete",
+  "Unsupported completion claim",
+]);
+const ABSENT_EVIDENCE =
+  /^(?:not implemented|not applicable|external prerequisite):\s+.{8,}$/i;
+const PLACEHOLDER =
+  /^(?:n\/?a|none|unknown|tbd|todo|placeholder|example|x|-|not implemented)$/i;
+
+function read(root, relative, errors) {
+  try {
+    return fs.readFileSync(path.join(root, relative), "utf8");
+  } catch (error) {
+    errors?.push(`${relative} cannot be read: ${error.message}`);
+    return "";
+  }
+}
+
+function parseYaml(root, relative, errors) {
+  const raw = read(root, relative, errors);
+  if (!raw) return {};
+  const document = parseDocument(raw);
+  if (document.errors.length) {
+    errors.push(
+      `${relative} is not valid YAML: ${document.errors.map((error) => error.message).join("; ")}`,
+    );
+    return {};
+  }
+  return document.toJS({ maxAliasCount: 100 }) ?? {};
+}
+
+function commands(workflow) {
+  return (workflow.jobs ? Object.values(workflow.jobs) : [])
+    .flatMap((job) => (Array.isArray(job?.steps) ? job.steps : []))
+    .map((step) => step?.run)
+    .filter((run) => typeof run === "string")
+    .flatMap((run) =>
+      run
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean),
+    );
+}
+
+function enabledForPr(workflow) {
+  return (
+    workflow?.on &&
+    Object.prototype.hasOwnProperty.call(workflow.on, "pull_request")
+  );
+}
+
+function pinnedActions(raw, relative, requiredActions, errors) {
+  const matches = [
+    ...raw.matchAll(
+      /^\s*(?:-\s*)?uses:\s*([^@\s]+)@([^\s#]+)(?:\s+#\s*(.+))?\s*$/gim,
+    ),
+  ];
+  const found = new Map(
+    matches.map((match) => [match[1], { ref: match[2], comment: match[3] }]),
+  );
+  for (const [action, expected] of Object.entries(requiredActions)) {
+    const actual = found.get(action);
+    if (!actual) errors.push(`${relative} must use ${action}.`);
+    else if (actual.ref !== expected || !/^[a-f0-9]{40}$/i.test(actual.ref)) {
+      errors.push(
+        `${relative} must pin ${action} to immutable commit ${expected}; found ${actual.ref}.`,
+      );
+    } else if (!actual.comment?.trim()) {
+      errors.push(
+        `${relative} must annotate ${action}'s immutable pin with its reviewed version.`,
+      );
+    }
+  }
+  for (const { ref } of found.values()) {
+    if (!/^[a-f0-9]{40}$/i.test(ref))
+      errors.push(`${relative} contains a mutable action reference: ${ref}.`);
+  }
+}
+
+export function validateCiGates(root = process.cwd()) {
+  const errors = [];
+  const validateRelative = ".github/workflows/validate.yml";
+  const securityRelative = ".github/workflows/security.yml";
+  const validateRaw = read(root, validateRelative, errors);
+  const securityRaw = read(root, securityRelative, errors);
+  const validate = parseYaml(root, validateRelative, errors);
+  const security = parseYaml(root, securityRelative, errors);
+  let packageJson = {};
+  try {
+    packageJson = JSON.parse(read(root, "package.json", errors));
+  } catch (error) {
+    errors.push(`package.json is not valid JSON: ${error.message}`);
+  }
+
+  if (!enabledForPr(validate))
+    errors.push(`${validateRelative} must run on pull requests.`);
+  if (!enabledForPr(security))
+    errors.push(`${securityRelative} must run on pull requests.`);
+  for (const command of REQUIRED_VALIDATE_COMMANDS) {
+    if (!commands(validate).includes(command))
+      errors.push(`${validateRelative} must execute ${command}.`);
+  }
+  for (const command of [
+    "npm ci --ignore-scripts",
+    "npm run security:dependencies",
+  ]) {
+    if (!commands(security).includes(command))
+      errors.push(`${securityRelative} must execute ${command}.`);
+  }
+  for (const script of REQUIRED_NPM_SCRIPTS) {
+    if (
+      typeof packageJson.scripts?.[script] !== "string" ||
+      !packageJson.scripts[script].trim()
+    ) {
+      errors.push(`package.json must define executable ${script} script.`);
+    }
+  }
+  if (!/apps\/\*\*\/\*\.test\.mjs/.test(packageJson.scripts?.test ?? "")) {
+    errors.push("npm test must discover application tests under apps/.");
+  }
+  pinnedActions(validateRaw, validateRelative, VALIDATE_ACTIONS, errors);
+  pinnedActions(securityRaw, securityRelative, SECURITY_ACTIONS, errors);
+  if (
+    !/scanners:\s*vuln,secret/.test(securityRaw) ||
+    !/exit-code:\s*["']?1/.test(securityRaw)
+  ) {
+    errors.push(
+      `${securityRelative} must run fail-closed vulnerability and secret scanning.`,
+    );
+  }
+  return { status: errors.length ? "failed" : "passed", errors };
+}
+
+function meaningful(value) {
+  return (
+    typeof value === "string" &&
+    value.trim().length >= 3 &&
+    !PLACEHOLDER.test(value.trim())
+  );
+}
+
+function resolveContained(root, relative, label, errors) {
+  if (
+    typeof relative !== "string" ||
+    !relative.trim() ||
+    path.isAbsolute(relative)
+  ) {
+    errors.push(`${label} must be a nonempty repository-relative path.`);
+    return undefined;
+  }
+  const rootReal = fs.realpathSync.native(root);
+  const candidate = path.resolve(rootReal, relative);
+  const relativeToRoot = path.relative(rootReal, candidate);
+  if (relativeToRoot.startsWith("..") || path.isAbsolute(relativeToRoot)) {
+    errors.push(`${label} escapes the repository root: ${relative}.`);
+    return undefined;
+  }
+  if (!fs.existsSync(candidate)) {
+    errors.push(
+      `${label} is missing or resolves outside the repository: ${relative}.`,
+    );
+    return undefined;
+  }
+  const real = fs.realpathSync.native(candidate);
+  if (
+    !real ||
+    (real !== rootReal && !real.startsWith(`${rootReal}${path.sep}`))
+  ) {
+    errors.push(
+      `${label} is missing or resolves outside the repository: ${relative}.`,
+    );
+    return undefined;
+  }
+  return real;
+}
+
+function splitPathReferences(value) {
+  return value
+    .split(/(?:<br\s*\/?>|;|,)/i)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => part.replace(/^`|`$/g, "").split(/[#:]/, 1)[0].trim())
+    .filter(Boolean);
+}
+
+function requireEvidenceField(
+  root,
+  value,
+  column,
+  rowNumber,
+  classification,
+  errors,
+) {
+  if (!meaningful(value)) {
+    errors.push(
+      `traceability row ${rowNumber} has a placeholder or empty ${column}.`,
+    );
+    return;
+  }
+  if (ABSENT_EVIDENCE.test(value)) {
+    if (
+      [
+        "Proven production implementation",
+        "Proven reference implementation",
+      ].includes(classification)
+    ) {
+      errors.push(
+        `traceability row ${rowNumber} cannot use absent evidence for ${column} with ${classification}.`,
+      );
+    }
+    return;
+  }
+  const references = splitPathReferences(value);
+  if (!references.length) {
+    errors.push(
+      `traceability row ${rowNumber} ${column} must name a concrete contained artifact or a precise absent-evidence declaration.`,
+    );
+    return;
+  }
+  for (const relative of references)
+    resolveContained(
+      root,
+      relative,
+      `traceability row ${rowNumber} ${column}`,
+      errors,
+    );
+}
+
+export function validateTraceability(root = process.cwd()) {
+  const relative = "docs/MASTER_PLAN_TRACEABILITY.md";
+  const errors = [];
+  const body = read(root, relative, errors);
+  if (!body)
+    return {
+      status: "failed",
+      errors: errors.length
+        ? errors
+        : [`${relative} is required before CI traceability can pass.`],
+    };
+  const lines = body
+    .split(/\r?\n/)
+    .filter((line) => line.trim().startsWith("|"));
+  const header = lines.find((line) =>
+    TRACEABILITY_COLUMNS.every((column) => line.includes(column)),
+  );
+  if (!header)
+    errors.push(
+      `${relative} must contain the complete traceability table header.`,
+    );
+  const rows = lines
+    .filter((line) => !line.includes("---") && line !== header)
+    .map((line) =>
+      line
+        .split("|")
+        .slice(1, -1)
+        .map((cell) => cell.trim()),
+    );
+  if (rows.length < 10)
+    errors.push(
+      `${relative} must contain at least ten substantive requirement rows; found ${rows.length}.`,
+    );
+  const identifiers = new Set();
+  const normalizedBindings = new Set();
+  rows.forEach((row, index) => {
+    const rowNumber = index + 1;
+    if (row.length !== TRACEABILITY_COLUMNS.length) {
+      errors.push(
+        `${relative} row ${rowNumber} has ${row.length} fields; expected ${TRACEABILITY_COLUMNS.length}.`,
+      );
+      return;
+    }
+    const [
+      source,
+      requirement,
+      implementation,
+      contracts,
+      tests,
+      runtime,
+      security,
+      documentation,
+      provenance,
+      classification,
+      missing,
+      external,
+      next,
+    ] = row;
+    const normalizedBinding = [
+      requirement
+        ?.replace(/^([A-Z][A-Z0-9_-]*-\d{2,})\b/, "")
+        .replace(/\d+/g, "#"),
+      implementation,
+      contracts,
+      tests,
+      runtime,
+      security,
+      documentation,
+      provenance,
+      classification,
+      missing?.replace(/\d+/g, "#"),
+      external?.replace(/\d+/g, "#"),
+      next?.replace(/\d+/g, "#"),
+    ]
+      .map((value) => (value ?? "").trim().toLowerCase())
+      .join("\u001f");
+    if (normalizedBindings.has(normalizedBinding)) {
+      errors.push(
+        `${relative} row ${rowNumber} duplicates a normalized requirement-to-evidence binding; unique IDs alone are not traceability.`,
+      );
+    } else normalizedBindings.add(normalizedBinding);
+    if (
+      !meaningful(source) ||
+      !/^([\w./-]+\.(?:md|ya?ml|json|mjs|ts|sql))(?:#|:)[^\s].+$/i.test(source)
+    ) {
+      errors.push(
+        `${relative} row ${rowNumber} source must identify a real versioned source file and nonempty section.`,
+      );
+    } else {
+      resolveContained(
+        root,
+        source.split(/[#:]/, 1)[0],
+        `traceability row ${rowNumber} source`,
+        errors,
+      );
+    }
+    const match = /^([A-Z][A-Z0-9_-]*-\d{2,})\b/.exec(requirement ?? "");
+    if (!match)
+      errors.push(
+        `${relative} row ${rowNumber} requirement must begin with a stable requirement identifier.`,
+      );
+    else if (identifiers.has(match[1]))
+      errors.push(`${relative} repeats requirement identifier ${match[1]}.`);
+    else identifiers.add(match[1]);
+    if (!CLASSIFICATIONS.has(classification))
+      errors.push(
+        `${relative} row ${rowNumber} uses an unrecognized classification: ${classification}.`,
+      );
+    for (const [value, column] of [
+      [implementation, "Current implementation files"],
+      [contracts, "Contracts"],
+      [tests, "Tests"],
+      [runtime, "Runtime evidence"],
+      [security, "Security and tenant-isolation evidence"],
+      [documentation, "Documentation"],
+      [provenance, "Agent/QA provenance"],
+    ]) {
+      requireEvidenceField(
+        root,
+        value,
+        column,
+        rowNumber,
+        classification,
+        errors,
+      );
+    }
+    for (const [value, column] of [
+      [missing, "Missing work"],
+      [external, "External dependency"],
+      [next, "Next authorized task"],
+    ]) {
+      if (!meaningful(value))
+        errors.push(
+          `${relative} row ${rowNumber} has a placeholder or empty ${column}.`,
+        );
+    }
+  });
+  return { status: errors.length ? "failed" : "passed", errors };
+}
+
+function sha256(file) {
+  return crypto
+    .createHash("sha256")
+    .update(fs.readFileSync(file))
+    .digest("hex");
+}
+
+function requiredString(record, field, label, errors) {
+  if (!meaningful(record?.[field]))
+    errors.push(`${label} requires substantive ${field}.`);
+  return record?.[field];
+}
+
+function validateSkillRegistry(root, errors) {
+  const relative = "registries/skills/index.yaml";
+  const registry = parseYaml(root, relative, errors);
+  if (registry.schema_version !== 1)
+    errors.push("governed skill registry must declare schema_version: 1.");
+  const skills = registry.skills;
+  if (!Array.isArray(skills) || skills.length === 0) {
+    errors.push(
+      "governed skill registry must declare at least one evaluated skill; an empty directory or index is not evidence.",
+    );
+    return;
+  }
+  const identities = new Set();
+  for (const [index, skill] of skills.entries()) {
+    const label = `skill registry entry ${index + 1}`;
+    if (!skill || typeof skill !== "object" || Array.isArray(skill)) {
+      errors.push(`${label} must be an object.`);
+      continue;
+    }
+    const id = requiredString(skill, "id", label, errors);
+    const version = requiredString(skill, "version", label, errors);
+    const digest = requiredString(skill, "digest", label, errors);
+    requiredString(skill, "owner", label, errors);
+    if (!/^[a-z][a-z0-9-]{2,63}$/.test(id ?? ""))
+      errors.push(`${label} id must be a stable lowercase identifier.`);
+    if (!/^\d+\.\d+\.\d+$/.test(version ?? ""))
+      errors.push(`${label} version must be semantic version x.y.z.`);
+    if (!/^[a-f0-9]{64}$/i.test(digest ?? ""))
+      errors.push(`${label} digest must be a SHA-256 hex digest.`);
+    const identity = `${id}@${version}`;
+    if (identities.has(identity))
+      errors.push(`${label} duplicates skill identity ${identity}.`);
+    else identities.add(identity);
+
+    const policy = skill.policy;
+    if (!policy || typeof policy !== "object" || Array.isArray(policy)) {
+      errors.push(
+        `${label} policy must be an object with a contained artifact and digest.`,
+      );
+    } else {
+      const policyPath = requiredString(
+        policy,
+        "path",
+        `${label} policy`,
+        errors,
+      );
+      const policyDigest = requiredString(
+        policy,
+        "digest",
+        `${label} policy`,
+        errors,
+      );
+      const policyFile = resolveContained(
+        root,
+        policyPath,
+        `${label} policy artifact`,
+        errors,
+      );
+      if (!/^[a-f0-9]{64}$/i.test(policyDigest ?? ""))
+        errors.push(`${label} policy digest must be a SHA-256 hex digest.`);
+      if (
+        policyFile &&
+        /^[a-f0-9]{64}$/i.test(policyDigest ?? "") &&
+        sha256(policyFile) !== policyDigest
+      )
+        errors.push(`${label} policy digest does not match artifact.`);
+      if (policyFile) {
+        const policyDocument = parseDocument(
+          fs.readFileSync(policyFile, "utf8"),
+        );
+        const policyData = policyDocument.toJS() ?? {};
+        if (
+          policyDocument.errors.length ||
+          policyData.schema_version !== 1 ||
+          !Array.isArray(policyData.rules) ||
+          !policyData.rules.length
+        ) {
+          errors.push(
+            `${label} policy artifact must be valid schema-versioned YAML with nonempty rules.`,
+          );
+        }
+      }
+    }
+
+    const evaluation = skill.evaluation;
+    if (
+      !evaluation ||
+      typeof evaluation !== "object" ||
+      Array.isArray(evaluation)
+    ) {
+      errors.push(
+        `${label} evaluation must be an object with contained evaluated evidence.`,
+      );
+    } else {
+      const evaluationPath = requiredString(
+        evaluation,
+        "path",
+        `${label} evaluation`,
+        errors,
+      );
+      const evaluationDigest = requiredString(
+        evaluation,
+        "digest",
+        `${label} evaluation`,
+        errors,
+      );
+      const evaluationFile = resolveContained(
+        root,
+        evaluationPath,
+        `${label} evaluation artifact`,
+        errors,
+      );
+      if (!/^[a-f0-9]{64}$/i.test(evaluationDigest ?? ""))
+        errors.push(`${label} evaluation digest must be a SHA-256 hex digest.`);
+      if (
+        evaluationFile &&
+        /^[a-f0-9]{64}$/i.test(evaluationDigest ?? "") &&
+        sha256(evaluationFile) !== evaluationDigest
+      )
+        errors.push(`${label} evaluation digest does not match artifact.`);
+      if (evaluationFile) {
+        const evidence = parseDocument(fs.readFileSync(evaluationFile, "utf8"));
+        const data = evidence.toJS() ?? {};
+        if (
+          evidence.errors.length ||
+          data.schema_version !== 1 ||
+          data.skill_id !== id ||
+          data.skill_version !== version ||
+          data.status !== "passed" ||
+          !Number.isInteger(data.assertions) ||
+          data.assertions < 1 ||
+          !Number.isInteger(data.cases) ||
+          data.cases < 1 ||
+          !/^\d{4}-\d{2}-\d{2}T/.test(data.executed_at ?? "")
+        ) {
+          errors.push(
+            `${label} evaluation artifact must be schema-versioned, bound to the skill identity, passed, timestamped, and report positive cases/assertions.`,
+          );
+        }
+      }
+    }
+  }
+}
+
+function parseAccessibilityCommand(command) {
+  if (
+    typeof command !== "string" ||
+    !/^node\s+([A-Za-z0-9_./-]+\.mjs)$/.test(command.trim())
+  )
+    return undefined;
+  return /^node\s+([A-Za-z0-9_./-]+\.mjs)$/.exec(command.trim())?.[1];
+}
+
+function validateAccessibilityTarget(root, errors) {
+  const target = "apps/customer-console";
+  const packageRelative = `${target}/package.json`;
+  const packageText = read(root, packageRelative, errors);
+  if (!packageText) {
+    errors.push(
+      "runnable customer-console accessibility target is absent; a synthetic TASK-0086 rehearsal is not a real accessibility gate.",
+    );
+    return;
+  }
+  let applicationPackage;
+  try {
+    applicationPackage = JSON.parse(packageText);
+  } catch (error) {
+    errors.push(`${packageRelative} is not valid JSON: ${error.message}`);
+    return;
+  }
+  const script = applicationPackage.scripts?.["test:accessibility"];
+  const relativeScript = parseAccessibilityCommand(script);
+  if (!relativeScript) {
+    errors.push(
+      "customer-console test:accessibility must be the allowlisted form `node relative-script.mjs`; shell commands, package managers, and external executables are prohibited.",
+    );
+    return;
+  }
+  const appRoot = resolveContained(
+    root,
+    target,
+    "customer-console root",
+    errors,
+  );
+  if (!appRoot) return;
+  const scriptFile = resolveContained(
+    appRoot,
+    relativeScript,
+    "customer-console accessibility script",
+    errors,
+  );
+  if (!scriptFile) return;
+  const result = spawnSync(process.execPath, [scriptFile], {
+    cwd: appRoot,
+    encoding: "utf8",
+    timeout: 30_000,
+    windowsHide: true,
+  });
+  if (result.error || result.status !== 0) {
+    errors.push(
+      `customer-console accessibility command failed: ${result.error?.message ?? `exit ${result.status}`}.`,
+    );
+    return;
+  }
+  const output = `${result.stdout}\n${result.stderr}`.trim();
+  const assertionMatch =
+    /\b(\d+)\s+(?:accessibility\s+)?(?:assertions?|tests?)\s+passed\b/i.exec(
+      output,
+    );
+  if (!assertionMatch || Number(assertionMatch[1]) < 1 || output.length < 12) {
+    errors.push(
+      "customer-console accessibility command must emit nontrivial positive assertion/test output.",
+    );
+  }
+}
+
+export function validateRuntimeCapabilities(
+  root = process.cwd(),
+  requested = [],
+) {
+  const errors = [];
+  const names = requested.length ? requested : ["skill", "accessibility"];
+  for (const name of names) {
+    if (name === "skill") validateSkillRegistry(root, errors);
+    else if (name === "accessibility")
+      validateAccessibilityTarget(root, errors);
+    else errors.push(`unknown runtime capability gate: ${name}.`);
+  }
+  return { status: errors.length ? "failed" : "passed", errors };
+}
+
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href
+) {
+  const capabilityIndex = process.argv.indexOf("--capabilities");
+  const result =
+    capabilityIndex >= 0
+      ? validateRuntimeCapabilities(
+          process.cwd(),
+          process.argv.slice(capabilityIndex + 1),
+        )
+      : process.argv.includes("--traceability")
+        ? validateTraceability()
+        : validateCiGates();
+  for (const error of result.errors) console.error(error);
+  if (result.status !== "passed") process.exitCode = 1;
+}

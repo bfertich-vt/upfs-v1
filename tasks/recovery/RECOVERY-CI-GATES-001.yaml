@@ -1,0 +1,34 @@
+id: RECOVERY-CI-GATES-001
+title: Enforce complete repository CI gate wiring without masking recovery blockers
+status: in_progress
+role: Backend
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/MASTER_PLAN.md
+  - docs/REPOSITORY_GOVERNANCE.md
+  - package.json
+  - package-lock.json
+  - .github/workflows/validate.yml
+  - .github/workflows/security.yml
+source: specs/09_cicd/delivery_pipeline.md; specs/10_security/security_baseline.md; specs/12_testing/test_strategy.md; docs/REPOSITORY_GOVERNANCE.md
+acceptance:
+  - npm test discovers scripts, services, and every apps/**/*.test.mjs file.
+  - Validate and security workflows install with npm ci --ignore-scripts and use immutable reviewed GitHub Action commit pins.
+  - CI executes actual formatting, lint, static/type, contract/generated drift, migration, tenant-isolation, documentation, policy, prompt, skill, accessibility, dependency-security, queue/handoff, provenance, and traceability commands.
+  - CI gate wiring fails closed when a required command is removed or an action pin becomes mutable.
+  - Traceability validation rejects headings-only or placeholder matrices, repeated requirement IDs, and uncontained/missing evidence artifacts.
+  - Skill validation requires a schema-bound nonempty registry, digest-verified policy artifacts, and timestamped evaluated evidence; accessibility validation securely executes a contained allowlisted test script that reports positive assertions.
+  - Queue and traceability gates remain explicit failing recovery prerequisites until reclassification and traceability work supplies required current evidence; no allowlist or green bypass is introduced.
+security_requirements:
+  - No credentials or production data may be added.
+  - Secret and dependency scans must fail closed for high or critical findings.
+  - Tenant-isolation checks must remain executable in CI.
+rollback:
+  - Revert the accepted candidate commit and re-run npm ci --ignore-scripts plus the gate commands; no data or external state is modified.
