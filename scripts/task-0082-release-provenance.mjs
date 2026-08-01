@@ -1,0 +1,14 @@
+import crypto from 'node:crypto';import fs from 'node:fs';import path from 'node:path';import {fileURLToPath} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');const sha=x=>crypto.createHash('sha256').update(JSON.stringify(x)).digest('hex');const hex=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);const commit=x=>typeof x==='string'&&/^[a-f0-9]{40}$/.test(x);const ref=x=>typeof x==='string'&&x.startsWith('evidence://');
+const content=x=>({scope:x.scope,source_refs:x.source_refs,release:x.release,artifact:x.artifact,dependency_pins:x.dependency_pins,dependency_digest:x.dependency_digest,sbom:x.sbom,provenance:x.provenance,signatures:x.signatures,state:x.state,deployment:x.deployment});
+export function evaluateReleaseProvenance({contract,synthetic_only=true}={}){const checks=[];const add=(name,ok)=>checks.push({name,status:ok?'passed':'failed'});const c=contract;const pins=Array.isArray(c?.dependency_pins)&&c.dependency_pins.length>0?c.dependency_pins:[];const dep=sha(pins);const source=['specs/09_cicd/delivery_pipeline.md','specs/10_security/security_baseline.md'];const r=c?.release;const a=c?.artifact;const s=c?.sbom;const p=c?.provenance;const sigs=Array.isArray(c?.signatures)?c.signatures:[];
+ add('boundary',synthetic_only&&c?.deployment==='not-performed'&&c?.state==='blocked');
+ add('source',JSON.stringify(c?.source_refs)===JSON.stringify(source)&&source.every(x=>fs.existsSync(path.join(root,x))));
+ add('identity',c?.schema_version==='upfs.release-provenance.v1'&&c?.scope?.tenant&&c?.scope?.environment&&r?.id&&commit(r.source_commit)&&ref(a?.ref)&&hex(a?.digest));
+ add('dependencies',pins.length>0&&new Set(pins.map(x=>x.name)).size===pins.length&&pins.every(x=>x?.name&&x?.version&&hex(x?.digest))&&c?.dependency_digest===dep);
+ add('sbom',ref(s?.ref)&&hex(s?.digest)&&s?.artifact_digest===a?.digest&&s?.source_commit===r?.source_commit&&s?.dependency_digest===dep);
+ add('provenance',ref(p?.ref)&&hex(p?.digest)&&p?.release_id===r?.id&&p?.artifact_digest===a?.digest&&p?.sbom_digest===s?.digest&&p?.source_commit===r?.source_commit&&p?.dependency_digest===dep);
+ add('signatures',sigs.length>0&&sigs.every(x=>ref(x?.ref)&&x?.algorithm==='sha256'&&x?.verified===true&&x?.release_id===r?.id&&x?.artifact_digest===a?.digest&&x?.sbom_digest===s?.digest&&x?.provenance_digest===p?.digest&&x?.source_commit===r?.source_commit&&x?.dependency_digest===dep));
+ add('integrity',c?.digest===sha(content(c)));return{status:checks.every(x=>x.status==='passed')?'passed':'failed',decision:'NO-GO_EXTERNAL_PREREQUISITES',checks};
+}
+if(process.argv[1]&&path.resolve(process.argv[1])===path.resolve(fileURLToPath(import.meta.url))){const contract=JSON.parse(fs.readFileSync(path.join(root,'contracts/task-0082-release-provenance.json')));fs.writeFileSync(path.join(root,'artifacts/task-0082-release-provenance.json'),JSON.stringify(evaluateReleaseProvenance({contract}),null,2)+'\n');}

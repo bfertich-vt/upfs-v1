@@ -1,0 +1,23 @@
+{
+  "schema_version": "upfs.release-provenance.v1",
+  "scope": { "tenant": "synthetic-tenant", "environment": "pilot" },
+  "source_refs": [
+    "specs/09_cicd/delivery_pipeline.md",
+    "specs/10_security/security_baseline.md"
+  ],
+  "release": { "id": "release-0082", "source_commit": "0123456789abcdef0123456789abcdef01234567" },
+  "artifact": { "ref": "evidence://release/artifact-0082", "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+  "dependency_pins": [
+    { "name": "yaml", "version": "2.8.1", "digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
+    { "name": "embedded-postgres", "version": "18.4.0-beta.17", "digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" }
+  ],
+  "dependency_digest": "f17592acaf88575aab5f95c8d1e45fd019f2ab0f75751e4c6c9a49b6f4d79e34",
+  "sbom": { "ref": "evidence://release/sbom-0082", "digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "artifact_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "source_commit": "0123456789abcdef0123456789abcdef01234567", "dependency_digest": "f17592acaf88575aab5f95c8d1e45fd019f2ab0f75751e4c6c9a49b6f4d79e34" },
+  "provenance": { "ref": "evidence://release/provenance-0082", "digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "release_id": "release-0082", "artifact_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "sbom_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "source_commit": "0123456789abcdef0123456789abcdef01234567", "dependency_digest": "f17592acaf88575aab5f95c8d1e45fd019f2ab0f75751e4c6c9a49b6f4d79e34" },
+  "signatures": [
+    { "ref": "evidence://release/signature-0082", "algorithm": "sha256", "verified": true, "release_id": "release-0082", "artifact_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "sbom_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "provenance_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "source_commit": "0123456789abcdef0123456789abcdef01234567", "dependency_digest": "f17592acaf88575aab5f95c8d1e45fd019f2ab0f75751e4c6c9a49b6f4d79e34" }
+  ],
+  "state": "blocked",
+  "deployment": "not-performed",
+  "digest": "5fc80b7bf855f4a80de2c57cc5c28859b381404c33219f3564bc0c8c6316af0c"
+}
