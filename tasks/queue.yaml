@@ -559,13 +559,13 @@ tasks:
     acceptance: [Expand/contract migration, rollback, corrective-forward, RLS, outbox, and projection evidence are reproducible]
   - id: TASK-0084
     title: Implement schema and contract backward-compatibility gate
-    status: ready
+    status: complete
     dependencies: [TASK-0083]
     source: specs/04_schema/identity_tenant_model.md; specs/05_apis/api_standards.md
     acceptance: [Breaking schema/API/event changes fail closed without versioned migration and compatibility evidence]
   - id: TASK-0085
     title: Implement SDK consumer compatibility rehearsal
-    status: pending
+    status: ready
     dependencies: [TASK-0084]
     source: specs/13_docs/documentation_platform.md; specs/05_apis/api_standards.md
     acceptance: [Generated SDK, examples, pagination, errors, auth, permissions, and versioned consumers remain compatible]
