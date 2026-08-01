@@ -325,13 +325,13 @@ tasks:
     acceptance: [Managed PostgreSQL target, migrations, RLS, backup, restore, and replay prerequisites are verified without production access]
   - id: TASK-0045
     title: Implement managed observability destination and alert-route readiness
-    status: ready
+    status: complete
     dependencies: [TASK-0044]
     source: specs/09_cicd/delivery_pipeline.md; specs/12_testing/test_strategy.md
     acceptance: [Tenant-safe metrics, logs, traces, SLO alerts, paging ownership, and retention references are verified]
   - id: TASK-0046
     title: Execute external-readiness contract integration rehearsal
-    status: pending
+    status: ready
     dependencies: [TASK-0045]
     source: specs/09_cicd/delivery_pipeline.md; docs/compliance/pilot-go-no-go.md
     acceptance: [All managed adapter contracts compose into a truthful readiness report and fail closed on any mismatch]
