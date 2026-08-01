@@ -1,0 +1,65 @@
+id: RECOVERY-QUEUE-RECLASSIFICATION-007
+title: Require immutable evidence excerpts for every frozen historical task
+status: candidate
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/MASTER_PLAN.md
+  - tasks/queue.yaml
+  - scripts/queue-validator.mjs
+  - scripts/queue-validator.test.mjs
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-QUEUE-RECLASSIFICATION-006
+  - RECOVERY-WORKFLOW-TRIVY-PIN-002
+authorized_files:
+  - tasks/recovery/RECOVERY-QUEUE-RECLASSIFICATION-007.yaml
+  - tasks/queue.yaml
+  - scripts/queue-validator.mjs
+  - scripts/queue-validator.test.mjs
+  - docs/governance/TASK-RECLASSIFICATION-007.md
+  - docs/handoffs/RECOVERY-QUEUE-RECLASSIFICATION-007.md
+prohibited_files:
+  - docs/handoffs/TASK-*.md
+  - docs/reviews/**
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - package.json
+  - .github/**
+  - scripts/validate-repository.mjs
+  - README.md
+  - START_HERE.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+acceptance_criteria:
+  - Every one of 110 immutable historical evidence records has a nonempty exact evidence_excerpt that occurs in the cited Git blob whose declared SHA-256 matches; omission, null, empty, fabricated absence phrase, stale digest, or nonmatching excerpt is rejected.
+  - Recovery freeze remains validated and blocks only promotion; all queue structural/input/source/acceptance/path/classification/report/production-proof checks remain unconditional.
+  - TASK-0021, TASK-0022, and TASK-0109 each contain valid immutable excerpts and truthful unsupported completion classifications.
+  - Mutation coverage proves every failure reported by QA c53728 and 3af8a97 fails closed, including omitted excerpt/null-coalescing bypass and EOF formatting check.
+  - Candidate handoff is post-implementation, parser-valid, candidate-bound, truthful, and formatting-clean; no product/release claim or historic artifact edit.
+required_tests:
+  - node --test scripts/queue-validator.test.mjs
+  - npm run queue:check
+  - npm run validate
+  - npm test
+  - npm run traceability:check
+  - git diff --check
+security_requirements:
+  - Fail closed on all missing or fabricated immutable evidence and preserve tenant/customer/credential secrecy.
+rollback:
+  - Revert only independently accepted commits and preserve rejected evidence/history.
+runtime_evidence_required: 110 excerpt/hash validations, mutation results, full gates, exact external blockers, handoff provenance, and independent QA/Security report.

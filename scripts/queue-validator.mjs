@@ -1,8 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { parseDocument } from "yaml";
 
 const STATUSES = new Set(["planned", "ready", "in_progress", "blocked", "complete", "superseded"]);
+const RECLASSIFICATION_REPORT = "docs/governance/TASK-RECLASSIFICATION-007.md";
+const HISTORICAL_CLASSIFICATIONS = new Set(["Proven production implementation", "Proven reference implementation", "Contract/interface only", "Synthetic rehearsal only", "External prerequisite", "Incomplete", "Unsupported completion claim"]);
 export const HANDOFF_FIELDS = [
   "Task and scope:", "Agent role:", "Role-file path and digest:", "Agent thread ID:", "Worktree and branch:", "Commit:", "Files changed:", "Specifications and contracts read:", "Acceptance criteria:", "Tests and commands run:", "Negative tests:", "Contracts/migrations:", "Security and tenant-isolation analysis:", "Audit/evidence behavior:", "Results:", "Rollback/corrective-forward plan:", "Documentation updated:", "Known risks and follow-ups:", "Known limitations:", "External prerequisites:", "Independent reviewer and review result:",
 ];
@@ -21,6 +25,7 @@ const object = (value) => value !== null && typeof value === "object" && !Array.
 const substantive = (value) => typeof value === "string" && value.trim().length > 0 && !PLACEHOLDER.test(value.trim());
 const inside = (root, candidate) => candidate === root || candidate.startsWith(`${root}${path.sep}`);
 const normative = (value) => typeof value === "string" && /(?:\bAGENTS\.md\b|docs\/MASTER_PLAN\.md|specs\/[A-Za-z0-9_/-]+\.md|contracts\/[A-Za-z0-9_/-]+\.(?:yaml|json))/i.test(value);
+const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex");
 
 function fields(body, label) {
   const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -59,6 +64,83 @@ function containedFile(root, candidate, description, errors) {
     return null;
   }
   return realTarget;
+}
+
+function repositoryRelative(root, rel, description, errors) {
+  if (typeof rel !== "string" || !rel.trim()) {
+    errors.push(`${description} must be a non-empty repository-relative path.`);
+    return null;
+  }
+  const normalized = rel.replace(/\\/g, "/");
+  const lexical = path.resolve(root, normalized);
+  if (path.isAbsolute(normalized) || normalized.split("/").includes("..") || !inside(root, lexical)) {
+    errors.push(`${description} must not escape the repository.`);
+    return null;
+  }
+  return { normalized, lexical };
+}
+
+function immutableArtifact(root, artifact, commit, description, errors) {
+  const safe = repositoryRelative(root, artifact, description, errors);
+  if (!safe || !/^[a-f0-9]{40}$/i.test(commit || "")) {
+    if (safe && !/^[a-f0-9]{40}$/i.test(commit || "")) errors.push(`${description} must identify a 40-character immutable Git commit.`);
+    return null;
+  }
+  try {
+    return execFileSync("git", ["show", `${commit}:${safe.normalized}`], { cwd: root });
+  } catch {
+    errors.push(`${description} cannot be resolved at immutable commit ${commit}.`);
+    return null;
+  }
+}
+
+function readReclassificationReport(root, errors) {
+  const report = containedFile(root, path.join(root, RECLASSIFICATION_REPORT), RECLASSIFICATION_REPORT, errors);
+  if (!report) return null;
+  const body = fs.readFileSync(report, "utf8");
+  const match = body.match(/```json\s*\n([\s\S]*?)\n```/);
+  if (!match) {
+    errors.push(`${RECLASSIFICATION_REPORT} must contain one JSON evidence-record code block.`);
+    return null;
+  }
+  try { return JSON.parse(match[1]); } catch { errors.push(`${RECLASSIFICATION_REPORT} contains invalid JSON evidence records.`); return null; }
+}
+
+function validateHistoricalReclassification(root, tasks, errors, frozen) {
+  const historical = [...tasks.values()].filter((task) => /^TASK-\d{4}$/.test(task.id));
+  const requiresReport = frozen || historical.some((task) => task.report_row || task.classification || task.historical_evidence);
+  if (!requiresReport) return;
+  const report = readReclassificationReport(root, errors);
+  if (!object(report) || report.version !== 1 || !Array.isArray(report.records)) {
+    errors.push(`${RECLASSIFICATION_REPORT} must provide version: 1 and records.`);
+    return;
+  }
+  const records = new Map();
+  for (const record of report.records) {
+    if (!object(record) || typeof record.id !== "string" || !/^TASK-\d{4}$/.test(record.id)) { errors.push(`${RECLASSIFICATION_REPORT} contains an invalid record ID.`); continue; }
+    if (records.has(record.id)) { errors.push(`${RECLASSIFICATION_REPORT} duplicates ${record.id}.`); continue; }
+    records.set(record.id, record);
+    if (!HISTORICAL_CLASSIFICATIONS.has(record.classification)) errors.push(`${RECLASSIFICATION_REPORT} ${record.id} has an unknown classification.`);
+    const bytes = immutableArtifact(root, record.artifact, record.artifact_commit, `${RECLASSIFICATION_REPORT} ${record.id}.artifact`, errors);
+    if (bytes && (!/^[a-f0-9]{64}$/i.test(record.artifact_sha256 || "") || sha256(bytes) !== record.artifact_sha256)) errors.push(`${RECLASSIFICATION_REPORT} ${record.id} has a stale or incorrect artifact SHA-256.`);
+    if (typeof record.evidence_excerpt !== "string" || !record.evidence_excerpt.trim()) errors.push(`${RECLASSIFICATION_REPORT} ${record.id} has an absent evidence excerpt.`);
+    else if (/\b(?:no|none|absent|missing)\b[^\n]*(?:command|test|result|evidence)/i.test(record.evidence_excerpt)) errors.push(`${RECLASSIFICATION_REPORT} ${record.id} contains a fabricated no-evidence assertion.`);
+    else if (bytes && !bytes.toString("utf8").includes(record.evidence_excerpt)) errors.push(`${RECLASSIFICATION_REPORT} ${record.id} excerpt is absent from its immutable artifact.`);
+    if (typeof record.limitation !== "string" || !record.limitation.includes(record.id)) errors.push(`${RECLASSIFICATION_REPORT} ${record.id} needs a task-specific limitation.`);
+  }
+  if (records.size !== historical.length) errors.push(`${RECLASSIFICATION_REPORT} must contain exactly ${historical.length} task records.`);
+  for (const task of historical) {
+    const record = records.get(task.id);
+    if (!record) { errors.push(`${task.id} is absent from ${RECLASSIFICATION_REPORT}.`); continue; }
+    if (task.status !== "blocked") errors.push(`${task.id} must remain blocked during historical-evidence recovery.`);
+    if (task.classification !== record.classification || task.report_row !== task.id) errors.push(`${task.id} has a queue/report classification binding mismatch.`);
+    const evidence = task.historical_evidence;
+    if (!object(evidence) || typeof evidence.evidence_excerpt !== "string" || !evidence.evidence_excerpt.trim() || evidence.artifact !== record.artifact || evidence.artifact_sha256 !== record.artifact_sha256 || evidence.artifact_commit !== record.artifact_commit || evidence.evidence_excerpt !== record.evidence_excerpt) errors.push(`${task.id} has a queue/report immutable-evidence mismatch.`);
+    if (task.classification === "Proven production implementation") {
+      const proof = task.production_proof;
+      if (!object(proof) || !substantive(proof.runtime) || !substantive(proof.security) || !substantive(proof.tenant_isolation) || !substantive(proof.independent_qa)) errors.push(`${task.id} cannot claim proven production implementation without runtime, security, tenant-isolation, and independent-QA proof.`);
+    }
+  }
 }
 
 function validateInput(root, input, taskId, errors) {
@@ -112,6 +194,8 @@ export function validateQueueDocument(content, root) {
   const queue = doc.toJS({ maxAliasCount: 100 });
   if (!object(queue) || queue.version !== 1 || !Array.isArray(queue.tasks) || !queue.tasks.length) throw new QueueValidationError(["tasks/queue.yaml must contain version: 1 and a non-empty tasks list."]);
   const errors = [];
+  const recoveryFrozen = queue.recovery_freeze === true;
+  if (Object.hasOwn(queue, "recovery_freeze") && queue.recovery_freeze !== true) errors.push("recovery_freeze must be literal true when present; recovery may not silently disable validation.");
   const tasks = new Map();
   for (const task of queue.tasks) {
     if (!object(task) || typeof task.id !== "string" || !/^TASK-\d{4}$/.test(task.id)) { errors.push("every task must have an id matching TASK-0000."); continue; }
@@ -134,10 +218,12 @@ export function validateQueueDocument(content, root) {
   const visiting = new Set(); const visited = new Set();
   function visit(id, chain = []) { if (visiting.has(id)) { errors.push(`dependency cycle: ${[...chain, id].join(" -> ")}`); return; } if (visited.has(id)) return; visiting.add(id); const deps = Array.isArray(tasks.get(id).dependencies) ? tasks.get(id).dependencies : []; for (const dep of deps) if (typeof dep === "string" && tasks.has(dep)) visit(dep, [...chain, id]); visiting.delete(id); visited.add(id); }
   for (const id of tasks.keys()) visit(id);
+  validateHistoricalReclassification(root, tasks, errors, recoveryFrozen);
   for (const [id, task] of tasks) if (task.status === "complete") validateHandoff(root, id, errors);
   const hasReady = [...tasks.values()].some((task) => task.status === "ready");
   const terminal = [...tasks.values()].every((task) => ["complete", "superseded"].includes(task.status));
-  if (!hasReady && !terminal) errors.push("Task queue must have a ready task or have only terminal tasks.");
+  const fullyFrozen = recoveryFrozen && [...tasks.values()].every((task) => task.status === "blocked");
+  if (!hasReady && !terminal && !fullyFrozen) errors.push("Task queue must have a ready task or have only terminal tasks unless it is explicitly frozen for recovery.");
   if (errors.length) throw new QueueValidationError(errors);
   return { state: terminal ? "terminal" : "active", tasks: tasks.size };
 }
