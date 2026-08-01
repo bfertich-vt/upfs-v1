@@ -655,13 +655,13 @@ tasks:
     acceptance: [Citations, authorization, redaction, prompt bounds, model failure, and no-write/no-truth claims remain enforced]
   - id: TASK-0100
     title: Implement workflow and policy simulation regression gate
-    status: ready
+    status: complete
     dependencies: [TASK-0099]
     source: specs/14_admin_control_plane/admin_control_plane.md; specs/05_apis/api_standards.md
     acceptance: [Policy decisions, approval quorum, idempotency, concurrency, audit, export, and recovery remain fail closed]
   - id: TASK-0101
     title: Implement compliance control-library evidence refresh
-    status: pending
+    status: ready
     dependencies: [TASK-0100]
     source: docs/compliance/control-library.json; specs/11_soc2/soc2_readiness.md
     acceptance: [Control owners, frequency, systems, procedures, evidence, reviewers, exceptions, remediation, and retention synchronize]
