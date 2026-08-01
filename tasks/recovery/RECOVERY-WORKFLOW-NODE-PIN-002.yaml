@@ -1,0 +1,60 @@
+id: RECOVERY-WORKFLOW-NODE-PIN-002
+title: Validate immutable CI Node pin semantically rather than by YAML quote style
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - .github/workflows/validate.yml
+  - scripts/validate-repository.mjs
+  - scripts/validate-repository.test.mjs
+  - package.json
+normative_sources:
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-WORKFLOW-NODE-PIN-001
+authorized_files:
+  - tasks/recovery/RECOVERY-WORKFLOW-NODE-PIN-002.yaml
+  - scripts/validate-repository.mjs
+  - scripts/validate-repository.test.mjs
+  - docs/handoffs/RECOVERY-WORKFLOW-NODE-PIN-002.md
+prohibited_files:
+  - .github/**
+  - package.json
+  - tasks/queue.yaml
+  - docs/reviews/**
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - README.md
+  - START_HERE.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+acceptance_criteria:
+  - Repository validation enforces that validate.yml semantically supplies exact Node version 24.16.0 to pinned actions/setup-node, regardless of YAML quote choice accepted by the formatter.
+  - Validation rejects missing node-version, a different version, unpinned setup-node, malformed with-block structure, or a non-setup-node source.
+  - The change removes only the quote-style false conflict; it does not relax action SHA, Node value, CI installation, or security-gate requirements.
+  - Formatter and CI gate checks can both pass with the canonical formatted workflow.
+  - Handoff is post-commit/provenance-complete and validation-clean.
+required_tests:
+  - node --test scripts/validate-repository.test.mjs
+  - npm run format:check
+  - npm run ci:gates
+  - npm run validate
+  - npm test
+  - git diff --check
+security_requirements:
+  - Preserve immutable action pins and all validation/security gates; no credentials, tenant/customer data, or shell execution changes.
+rollback:
+  - Revert only independently accepted corrective commits; retain conflicting historical evidence. Do not rewrite history.
+runtime_evidence_required: Positive/mutation validation evidence, format/CI/full tests, truthful baseline queue failure output, real handoff provenance, and independent QA/Security report.

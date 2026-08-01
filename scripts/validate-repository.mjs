@@ -1,8 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { pathToFileURL } from "node:url";
 import { parseDocument } from "yaml";
-import { QueueValidationError, validateQueueDocument } from "./queue-validator.mjs";
+import {
+  QueueValidationError,
+  validateQueueDocument,
+} from "./queue-validator.mjs";
 
 const root = process.argv[2] ? path.resolve(process.argv[2]) : process.cwd();
 const artifactDir = path.join(root, "artifacts");
@@ -64,8 +68,8 @@ function assert(condition, message) {
   }
 }
 
-function readUtf8(relPath) {
-  return fs.readFileSync(path.join(root, relPath), "utf8");
+function readUtf8(relPath, validationRoot = root) {
+  return fs.readFileSync(path.join(validationRoot, relPath), "utf8");
 }
 
 function recordCheck(name, details) {
@@ -73,7 +77,9 @@ function recordCheck(name, details) {
 }
 
 function ensureRequiredFiles() {
-  const missing = requiredFiles.filter((relPath) => !fs.existsSync(path.join(root, relPath)));
+  const missing = requiredFiles.filter(
+    (relPath) => !fs.existsSync(path.join(root, relPath)),
+  );
   assert(missing.length === 0, `Missing required files: ${missing.join(", ")}`);
   recordCheck("required-files", { count: requiredFiles.length });
 }
@@ -99,7 +105,10 @@ function validateMarkdownLinks() {
     }
   }
 
-  assert(linkFailures.length === 0, `Broken local links:\n${linkFailures.join("\n")}`);
+  assert(
+    linkFailures.length === 0,
+    `Broken local links:\n${linkFailures.join("\n")}`,
+  );
   recordCheck("docs-links", { markdown_files: markdownFiles.length });
 }
 
@@ -108,9 +117,18 @@ function validateJsonContracts() {
     JSON.parse(readUtf8(relPath));
   }
 
-  const transactionSchema = JSON.parse(readUtf8("contracts/schemas/transaction.schema.json"));
-  assert(transactionSchema.type === "object", "Transaction schema must define an object payload.");
-  assert(Array.isArray(transactionSchema.required) && transactionSchema.required.includes("tenant_id"), "Transaction schema must require tenant_id.");
+  const transactionSchema = JSON.parse(
+    readUtf8("contracts/schemas/transaction.schema.json"),
+  );
+  assert(
+    transactionSchema.type === "object",
+    "Transaction schema must define an object payload.",
+  );
+  assert(
+    Array.isArray(transactionSchema.required) &&
+      transactionSchema.required.includes("tenant_id"),
+    "Transaction schema must require tenant_id.",
+  );
   recordCheck("json-contracts", { files: jsonContractFiles.length });
 }
 
@@ -124,7 +142,11 @@ function findExternalRefs(node, refs = []) {
 
   if (node && typeof node === "object") {
     for (const [key, value] of Object.entries(node)) {
-      if (key === "$ref" && typeof value === "string" && !value.startsWith("#")) {
+      if (
+        key === "$ref" &&
+        typeof value === "string" &&
+        !value.startsWith("#")
+      ) {
         refs.push(value.split("#")[0]);
       } else {
         findExternalRefs(value, refs);
@@ -138,7 +160,9 @@ function findExternalRefs(node, refs = []) {
 function parseYamlContract(relPath) {
   const doc = parseDocument(readUtf8(relPath));
   if (doc.errors.length > 0) {
-    throw new Error(`${relPath} YAML parse errors: ${doc.errors.map((error) => error.message).join("; ")}`);
+    throw new Error(
+      `${relPath} YAML parse errors: ${doc.errors.map((error) => error.message).join("; ")}`,
+    );
   }
   return doc.toJS({ maxAliasCount: 100 });
 }
@@ -146,29 +170,62 @@ function parseYamlContract(relPath) {
 function validateYamlContracts() {
   const publicApi = parseYamlContract("contracts/openapi/public-api.yaml");
   const adminApi = parseYamlContract("contracts/openapi/admin-api.yaml");
-  const platformEvents = parseYamlContract("contracts/asyncapi/platform-events.yaml");
+  const platformEvents = parseYamlContract(
+    "contracts/asyncapi/platform-events.yaml",
+  );
 
   for (const [name, document] of [
     ["public-api", publicApi],
     ["admin-api", adminApi],
   ]) {
-    assert(typeof document.openapi === "string" && document.openapi.startsWith("3."), `${name} must declare an OpenAPI 3.x version.`);
-    assert(document.info?.title && document.info?.version, `${name} must include info.title and info.version.`);
-    assert(document.paths && typeof document.paths === "object" && Object.keys(document.paths).length > 0, `${name} must declare at least one path.`);
+    assert(
+      typeof document.openapi === "string" && document.openapi.startsWith("3."),
+      `${name} must declare an OpenAPI 3.x version.`,
+    );
+    assert(
+      document.info?.title && document.info?.version,
+      `${name} must include info.title and info.version.`,
+    );
+    assert(
+      document.paths &&
+        typeof document.paths === "object" &&
+        Object.keys(document.paths).length > 0,
+      `${name} must declare at least one path.`,
+    );
   }
 
-  assert(typeof platformEvents.asyncapi === "string" && platformEvents.asyncapi.startsWith("3."), "platform-events must declare an AsyncAPI 3.x version.");
-  assert(platformEvents.info?.title && platformEvents.info?.version, "platform-events must include info.title and info.version.");
-  assert(platformEvents.channels && Object.keys(platformEvents.channels).length > 0, "platform-events must define at least one channel.");
-  assert(platformEvents.operations && Object.keys(platformEvents.operations).length > 0, "platform-events must define at least one operation.");
+  assert(
+    typeof platformEvents.asyncapi === "string" &&
+      platformEvents.asyncapi.startsWith("3."),
+    "platform-events must declare an AsyncAPI 3.x version.",
+  );
+  assert(
+    platformEvents.info?.title && platformEvents.info?.version,
+    "platform-events must include info.title and info.version.",
+  );
+  assert(
+    platformEvents.channels && Object.keys(platformEvents.channels).length > 0,
+    "platform-events must define at least one channel.",
+  );
+  assert(
+    platformEvents.operations &&
+      Object.keys(platformEvents.operations).length > 0,
+    "platform-events must define at least one operation.",
+  );
 
   for (const relPath of yamlContractFiles) {
     const document = parseYamlContract(relPath);
     const refs = findExternalRefs(document);
 
     for (const refTarget of refs) {
-      const resolved = path.resolve(path.dirname(path.join(root, relPath)), refTarget);
-      assert(fs.existsSync(resolved), `${relPath} references a missing file: ${refTarget}`);
+      const resolved = path.resolve(
+        path.dirname(path.join(root, relPath)),
+        refTarget,
+      );
+      assert(
+        fs.existsSync(resolved),
+        `${relPath} references a missing file: ${refTarget}`,
+      );
     }
   }
 
@@ -176,19 +233,79 @@ function validateYamlContracts() {
 }
 
 function validateQueueBaseline() {
-  recordCheck("task-queue", validateQueueDocument(readUtf8("tasks/queue.yaml"), root));
+  recordCheck(
+    "task-queue",
+    validateQueueDocument(readUtf8("tasks/queue.yaml"), root),
+  );
 }
 
-function validateWorkflowPins() {
-  const validateWorkflow = readUtf8(".github/workflows/validate.yml");
-  const securityWorkflow = readUtf8(".github/workflows/security.yml");
-  const packageJson = JSON.parse(readUtf8("package.json"));
+export function validateNodeWorkflowPin(validateWorkflow) {
+  const document = parseDocument(validateWorkflow);
 
-  assert(validateWorkflow.includes("node-version: '24.16.0'"), "validate workflow must pin the Node.js version.");
-  assert(validateWorkflow.includes("npm ci --ignore-scripts"), "validate workflow must install pinned validator dependencies.");
-  assert(packageJson.dependencies?.yaml === "2.8.1", "package.json must pin yaml 2.8.1.");
-  assert(securityWorkflow.includes("aquasecurity/trivy-action@v0.36.0"), "security workflow must pin Trivy.");
-  assert(securityWorkflow.includes("version: v0.69.3"), "security workflow must pin the Trivy tool version.");
+  assert(
+    document.errors.length === 0,
+    `validate workflow must be valid YAML: ${document.errors.map((error) => error.message).join("; ")}`,
+  );
+  const workflow = document.toJS({ maxAliasCount: 100 }) ?? {};
+  const steps = Object.values(workflow.jobs ?? {}).flatMap((job) =>
+    Array.isArray(job?.steps) ? job.steps : [],
+  );
+  const setupNodeSteps = steps.filter(
+    (step) =>
+      typeof step?.uses === "string" &&
+      step.uses.split("@", 1)[0] === "actions/setup-node",
+  );
+
+  assert(
+    setupNodeSteps.length > 0,
+    "validate workflow must use pinned actions/setup-node.",
+  );
+  for (const step of setupNodeSteps) {
+    assert(
+      step.uses ===
+        "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+      "validate workflow must pin actions/setup-node to the reviewed immutable commit.",
+    );
+    assert(
+      step.with && typeof step.with === "object" && !Array.isArray(step.with),
+      "validate workflow pinned actions/setup-node must declare a mapping with node-version.",
+    );
+    assert(
+      step.with["node-version"] === "24.16.0",
+      "validate workflow pinned actions/setup-node must supply exact Node.js version 24.16.0.",
+    );
+  }
+}
+
+export function validateWorkflowPins(validationRoot = root) {
+  const validateWorkflow = readUtf8(
+    ".github/workflows/validate.yml",
+    validationRoot,
+  );
+  const securityWorkflow = readUtf8(
+    ".github/workflows/security.yml",
+    validationRoot,
+  );
+  const packageJson = JSON.parse(readUtf8("package.json", validationRoot));
+
+  validateNodeWorkflowPin(validateWorkflow);
+
+  assert(
+    validateWorkflow.includes("npm ci --ignore-scripts"),
+    "validate workflow must install pinned validator dependencies.",
+  );
+  assert(
+    packageJson.dependencies?.yaml === "2.8.1",
+    "package.json must pin yaml 2.8.1.",
+  );
+  assert(
+    securityWorkflow.includes("aquasecurity/trivy-action@v0.36.0"),
+    "security workflow must pin Trivy.",
+  );
+  assert(
+    securityWorkflow.includes("version: v0.69.3"),
+    "security workflow must pin the Trivy tool version.",
+  );
   recordCheck("workflow-pins", {
     validate_node: "24.16.0",
     yaml_parser: packageJson.dependencies.yaml,
@@ -221,7 +338,7 @@ function writeReport(status, errorMessage = null, errors = []) {
   fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
 }
 
-try {
+export function validateRepository() {
   walk(root);
   ensureRequiredFiles();
   validateMarkdownLinks();
@@ -230,9 +347,23 @@ try {
   validateQueueBaseline();
   validateWorkflowPins();
   writeReport("passed");
-} catch (error) {
-  const message = error instanceof Error ? error.message : String(error);
-  writeReport("failed", message, error instanceof QueueValidationError ? error.errors : []);
-  console.error(message);
-  process.exit(1);
+}
+
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href &&
+  !process.env.NODE_TEST_CONTEXT
+) {
+  try {
+    validateRepository();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    writeReport(
+      "failed",
+      message,
+      error instanceof QueueValidationError ? error.errors : [],
+    );
+    console.error(message);
+    process.exitCode = 1;
+  }
 }
