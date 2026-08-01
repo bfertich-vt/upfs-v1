@@ -1,0 +1,4 @@
+import test from 'node:test'; import assert from 'node:assert/strict'; import {evaluateReleaseSync} from './task-0038-release-sync.mjs';
+const good=()=>({generatorCheck:true,docs:{api_reference:true,authentication:true,errors:true},sdk:{typed:true,operations:23,contract_version:'v1'},releaseNotes:{version:'1.0.0',changes:['sync'],limitations:['external prerequisites']},examples:{synthetic_only:true,runnable:true},migration:{expand_contract:true,rollback:true,rehearsal:true}});
+test('release synchronization passes',()=>assert.equal(evaluateReleaseSync(good()).status,'passed'));
+for(const m of [x=>{x.generatorCheck=false},x=>{x.docs.errors=false},x=>{x.sdk.contract_version=''},x=>delete x.releaseNotes.limitations,x=>{x.examples.synthetic_only=false},x=>{x.migration.rollback=false}])test('release synchronization fails closed',()=>{const x=good();m(x);assert.equal(evaluateReleaseSync(x).status,'failed');});
