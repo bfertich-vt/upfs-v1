@@ -1,0 +1,57 @@
+task_id: RECOVERY-PUBLIC-GOVERNANCE-002
+title: Prepare a potential public-repository transition and authorized Codex QA/Security evidence-review model
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+scope: >-
+  Documentation-only, read-only disclosure audit and future-facing GitHub-governance
+  preparation. This task does not change repository visibility, GitHub settings, branch
+  protection, rulesets, CI, CODEOWNERS, product code, credentials, or task queue state.
+normative_sources:
+  - AGENTS.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/REPOSITORY_GOVERNANCE.md
+  - docs/governance/github-governance-audit.md
+dependencies:
+  - RECOVERY-GITHUB-001
+authorized_files:
+  - tasks/recovery/RECOVERY-PUBLIC-GOVERNANCE-002.yaml
+  - docs/governance/public-disclosure-audit-2026-08-02.md
+  - docs/governance/github-governance-audit.md
+  - docs/handoffs/RECOVERY-PUBLIC-GOVERNANCE-002.md
+prohibited_files:
+  - tasks/queue.yaml
+  - CODEOWNERS
+  - .github/**
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+  - README.md
+  - START_HERE.md
+acceptance_criteria:
+  - A complete read-only disclosure audit is recorded before any repository-visibility action.
+  - The audit distinguishes detected secrets/customer data from the author-email and license/legal disclosure decisions.
+  - The audit preserves the no-merge posture for PR #1 and records that final user confirmation is still required before any public transition.
+  - Future-facing governance text accurately permits a distinct, role-bound Codex QA/Security evidence review without calling it human review or asserting GitHub approval equivalence.
+  - A future fresh independent QA/Security review is required from the committed candidate state in an isolated worktree.
+required_tests:
+  - Structural YAML parse.
+  - npm run queue:check.
+  - npm run traceability:check.
+  - npm run validate.
+  - git diff --check.
+security_requirements:
+  - Documentation-only work; no secret, credential, customer, tenant, provider, runtime, or GitHub-setting action.
+  - Retain only redacted aggregate audit evidence; do not record credential-shaped values or financial records.
+  - Do not change visibility, publish branches, create pull requests, alter protection/rulesets, or create/read secrets.
+rollback: >-
+  Correct forward or revert through a separately reviewed commit only. Preserve audit evidence
+  and history; do not rewrite history, delete branches, or discard evidence.
+runtime_evidence_required: >-
+  Read-only audit scope/results, the exact repository/ref observations, and a fresh independent
+  QA/Security review binding the committed candidate state.

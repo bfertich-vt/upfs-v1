@@ -34,7 +34,11 @@ Observed response: `{"errors":[]}`. This proves that GitHub accepts `CODEOWNERS`
 
 ## Fail-closed position and external decision
 
-The account owner must either upgrade the repository plan to enable protected-branch/ruleset enforcement or make a deliberate public-repository decision after assessing confidentiality and security impact. Until GitHub API evidence proves protected-branch enforcement for the actual default branch `codex/task-0001-baseline`, valid reviewer ownership, and independent human review of a small, appropriately scoped corrective PR, governance remains blocked. Do not merge PR #1, do not use it as evidence of review, and do not represent the repository as release-candidate complete.
+The account owner selected a potential public-repository path, subject to the separate read-only [public-disclosure audit](public-disclosure-audit-2026-08-02.md) and final confirmation. That audit is complete, but it pauses for an author-email disclosure decision, license/redistribution disposition, and final visibility confirmation. No visibility change is authorized by this document.
+
+Future repository evidence review may be performed by an **independent role-bound Codex QA/Security agent** when the reviewer reads `agents/QA_SECURITY.md`, starts from the committed candidate in an isolated worktree, records complete provenance, and is distinct from the author and any remediator. This is an authorized repository-evidence review model, not a human review, and it must never be described as one. It does not automatically satisfy GitHub approval requirements. After a public transition, a small independently reviewed corrective PR must test whether GitHub counts the authorized Codex review under the configured approval requirement; a negative result is a technical blocker that must be recorded and escalated.
+
+Until GitHub API evidence proves protected-branch enforcement for the actual default branch `codex/task-0001-baseline`, valid reviewer ownership, and a successful protected-flow verification of the applicable approval rule, governance remains blocked. Do not merge PR #1, do not use it as evidence of review, and do not represent the repository as release-candidate complete.
 
 ## Safe integration proposal
 
