@@ -34,6 +34,11 @@ test('API errors preserve permission and retry classification without leaking pa
   await assert.rejects(api.search({ query: 'x' }), (error) => error.status === 403 && error.code === 'forbidden' && error.retryable === false);
 });
 
+test('search API never exposes server error text', async () => {
+  const api = createSearchApi({ fetchImpl: async () => ({ ok: false, status: 503, json: async () => ({ code: 'unavailable', message: 'tenant-a account 123456 must-not-leak' }) }) });
+  await assert.rejects(api.search({ query: 'x' }), (error) => error.status === 503 && error.message === 'search_unavailable');
+});
+
 test('API server failures are retryable', async () => {
   const api = createSearchApi({ fetchImpl: async () => ({ ok: false, status: 503, json: async () => ({ code: 'unavailable' }) }) });
   await assert.rejects(api.search({ query: 'x' }), (error) => error.status === 503 && error.retryable === true);

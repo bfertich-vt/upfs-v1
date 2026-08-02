@@ -1,0 +1,65 @@
+id: TASK-0123-ACCESSIBILITY-CONSOLE
+title: Establish a runnable accessibility capability target for the customer console
+state: in_progress
+role: Frontend
+role_file: agents/FRONTEND.md
+scope: >-
+  Correct the hosted accessibility-gate failure by packaging and exercising the
+  existing API-backed customer console, not a synthetic rehearsal. The target
+  validates semantic structure, keyboard-native controls, live states, and
+  forbidden-state non-leak behavior using synthetic API responses only.
+allowed_files:
+  - apps/customer-console/
+  - tasks/recovery/TASK-0123-ACCESSIBILITY-CONSOLE.yaml
+  - docs/customer-console-accessibility.md
+  - docs/handoffs/TASK-0123-ACCESSIBILITY-CONSOLE.md
+prohibited_files:
+  - .github/
+  - CODEOWNERS
+  - README.md
+  - START_HERE.md
+  - tasks/queue.yaml
+  - services/
+  - contracts/
+  - infra/
+acceptance_criteria:
+  - Customer-console is a package-backed runnable target, exercised by the existing CI capability validator.
+  - The target exercises actual console shell and transaction-workbench modules, not TASK-0086 or another synthetic rehearsal.
+  - Tests assert HTML language/viewport structure, landmark and heading semantics, labels, native keyboard controls, loading and empty state announcements, and safe 403 states.
+  - Forbidden state output contains no synthetic tenant identifier, account number, financial value, or server response message.
+  - Missing or broken package target fails the existing accessibility capability gate closed.
+required_sources:
+  - AGENTS.md
+  - agents/FRONTEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/01_product/vision_and_scope.md
+  - specs/02_ui/console_experience.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/PRODUCTION_BACKLOG.md
+  - tasks/queue.yaml
+  - GitHub Actions run 30751972325 failure log
+required_tests:
+  - npm ci --ignore-scripts
+  - npm run accessibility:check
+  - npm test
+  - npm run lint
+  - npm run format:check
+  - npm run static:check
+  - npm run ci:gates
+  - npm run validate
+  - git diff --check
+security_and_tenant_isolation: >-
+  The console calls only authenticated supported API routes and never sends a
+  client tenant identifier. The accessibility target uses synthetic fixtures;
+  it proves error messages are safe replacements and no tenant, account, or
+  financial response fields render in forbidden state.
+rollback: >-
+  Correct forward only after independent QA. Revert only this accepted target
+  as one commit if needed; never weaken or bypass a failing accessibility gate.
+handoff_requirements:
+  - Record role-file digest, agent thread, worktree, branch, candidate commit, owned files, sources, test results, negative cases, security analysis, limitations, rollback, and independent QA result.
+  - Do not claim a deployed console, a full production console, or an assistive-technology certification.

@@ -1,0 +1,10 @@
+{
+  "name": "@upfs/customer-console",
+  "private": true,
+  "version": "0.1.0",
+  "description": "UPFS customer console accessibility target.",
+  "license": "UNLICENSED",
+  "scripts": {
+    "test:accessibility": "node scripts/accessibility.mjs"
+  }
+}

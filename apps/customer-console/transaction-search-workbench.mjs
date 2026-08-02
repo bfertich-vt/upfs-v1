@@ -23,7 +23,7 @@ export function createSearchApi({ fetchImpl = globalThis.fetch, baseUrl = '' } =
       let body;
       try { body = await response.json(); } catch { body = {}; }
       if (!response.ok) {
-        const error = new Error(body?.message || body?.code || `search_failed_${response.status}`);
+        const error = new Error(response.status === 403 ? 'search_forbidden' : 'search_unavailable');
         error.status = response.status; error.code = body?.code; error.retryable = response.status >= 500;
         throw error;
       }
