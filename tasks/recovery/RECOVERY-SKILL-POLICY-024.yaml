@@ -1,0 +1,69 @@
+id: RECOVERY-SKILL-POLICY-024
+title: Fail closed for reference-only governed skill policy semantics
+state: in_progress
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+scope: >-
+  Correct the rejected skill-registry control-plane candidate by semantically
+  enforcing the bounded contract/reference, zero-tool, and deny-by-default
+  constraints. This creates no production AI runtime capability.
+allowed_files:
+  - registries/skills/**
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - tasks/recovery/RECOVERY-SKILL-POLICY-024.yaml
+  - docs/handoffs/RECOVERY-SKILL-POLICY-024.md
+prohibited_files:
+  - tasks/queue.yaml
+  - .github/**
+  - README.md
+  - START_HERE.md
+  - services/**
+  - apps/**
+  - contracts/**
+  - infra/**
+  - specs/**
+  - docs/reviews/**
+  - package.json
+  - package-lock.json
+acceptance_criteria:
+  - The exact lower-case tracked registry path contains a schema-versioned evaluated contract/reference entry.
+  - The validator rejects digest-consistent definition changes that declare any tools, permissions, or tool aliases.
+  - The validator rejects digest-consistent policy changes that omit or permit tool use, tenant/customer data, or authoritative decisions.
+  - The validator requires contract/reference classification and reference release state in both index and typed definition artifacts.
+  - The validator retains malformed, missing, wrong-case, link, artifact-digest, schema, identity, and evaluation checks.
+  - No production model integration, provider access, tenant data, credentials, API behavior, deployment, or authorization runtime is added or changed.
+required_sources:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/06_ai/ai_runtime.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/reviews/RECOVERY-SKILL-REGISTRY-023-QA.md at commit 6807e6fc9fbbb623cf4aa69526a25d7a017b7016
+security_and_tenant_isolation: >-
+  Deny by default: this reference-only contract has zero tools and permissions,
+  and policy must deny tool calls, tenant/customer data, and authorization,
+  financial-truth, or workflow-state decisions. No tenant runtime behavior is
+  modified; all fixtures are synthetic repository-control-plane metadata.
+required_tests:
+  - npm ci --ignore-scripts
+  - node --test scripts/ci-gate-validator.test.mjs
+  - npm run skill:check
+  - npm run ci:gates
+  - npm test
+  - npm run validate
+  - git diff --check
+  - Digest-consistent zero-tool, tool-alias, permissive-policy, missing-policy-subject, schema, reference-state, and digest negative replays
+rollback: >-
+  Corrective-forward only. Preserve rejected candidate and review evidence.
+  Revert only an independently accepted commit with a separately reviewed
+  corrective commit; do not reset, force-push, delete branches, or represent
+  this reference contract as production AI capability.
+handoff_requirements:
+  - Task ID, role, role-file path and digest, agent thread ID, worktree, branch, owned files, candidate commit, and handoff commit
+  - Sources/contracts read, acceptance evidence, commands/results, negative cases, security and tenant analysis, limitations, external prerequisites, and rollback
+  - Independent QA/Security review by a distinct role-bound Codex agent before acceptance or integration

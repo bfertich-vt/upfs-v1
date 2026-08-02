@@ -1,0 +1,14 @@
+schema_version: 1
+rules:
+  - id: deny-tool-access
+    effect: deny
+    subject: tool_call
+    reason: Reference-only contracts have no allowlisted tools.
+  - id: deny-tenant-data
+    effect: deny
+    subject: tenant_or_customer_data
+    reason: Repository governance evidence cannot include customer data.
+  - id: deny-authoritative-decisions
+    effect: deny
+    subject: authorization_financial_truth_workflow_state
+    reason: Skills cannot authorize, establish financial truth, or own workflow state.

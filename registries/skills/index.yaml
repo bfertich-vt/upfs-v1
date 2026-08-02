@@ -1,0 +1,17 @@
+schema_version: 1
+skills:
+  - id: recovery-governance-audit
+    version: 1.0.0
+    digest: e219892c0ad794e1b14dfe258da698903918dd9d7c7d7e46ec741872ef9d607a
+    owner: platform-governance
+    classification: contract/reference
+    release_state: reference
+    definition:
+      path: registries/skills/definitions/recovery-governance-audit.yaml
+      digest: e219892c0ad794e1b14dfe258da698903918dd9d7c7d7e46ec741872ef9d607a
+    policy:
+      path: registries/skills/policies/recovery-governance-audit.yaml
+      digest: 19624181b67bae5f3dc7ef2223443c5bd3e91a7658fd94f0a30d523b82aef843
+    evaluation:
+      path: registries/skills/evaluations/recovery-governance-audit.yaml
+      digest: 1dd81bb6a4a878dd7d42e10a6dbe6654ceea3542be134688c861043433f693f9

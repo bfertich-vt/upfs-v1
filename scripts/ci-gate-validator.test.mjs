@@ -270,10 +270,15 @@ function writeTraceabilityFixture(fixture) {
 }
 
 function writeCapabilityFixture(fixture) {
+  const definition = write(
+    fixture,
+    "registries/skills/definitions/example.yaml",
+    "schema_version: 1\nid: example-skill\nversion: 1.0.0\nclassification: contract/reference\nowner: platform-control\nrelease_state: reference\ninputs:\n  type: object\noutputs:\n  type: object\npermissions: []\ntools: []\nrollback_target: disable\n",
+  );
   const policy = write(
     fixture,
     "registries/skills/policies/example.yaml",
-    "schema_version: 1\nrules:\n  - id: deny-untrusted\n    effect: deny\n",
+    "schema_version: 1\nrules:\n  - id: deny-tool\n    effect: deny\n    subject: tool_call\n  - id: deny-data\n    effect: deny\n    subject: tenant_or_customer_data\n  - id: deny-authoritative\n    effect: deny\n    subject: authorization_financial_truth_workflow_state\n",
   );
   const evaluation = write(
     fixture,
@@ -283,7 +288,7 @@ function writeCapabilityFixture(fixture) {
   write(
     fixture,
     "registries/skills/index.yaml",
-    `schema_version: 1\nskills:\n  - id: example-skill\n    version: 1.0.0\n    digest: ${"a".repeat(64)}\n    owner: platform-control\n    policy:\n      path: registries/skills/policies/example.yaml\n      digest: ${digest(policy)}\n    evaluation:\n      path: registries/skills/evaluations/example.yaml\n      digest: ${digest(evaluation)}\n`,
+    `schema_version: 1\nskills:\n  - id: example-skill\n    version: 1.0.0\n    digest: ${digest(definition)}\n    owner: platform-control\n    classification: contract/reference\n    release_state: reference\n    definition:\n      path: registries/skills/definitions/example.yaml\n      digest: ${digest(definition)}\n    policy:\n      path: registries/skills/policies/example.yaml\n      digest: ${digest(policy)}\n    evaluation:\n      path: registries/skills/evaluations/example.yaml\n      digest: ${digest(evaluation)}\n`,
   );
   write(
     fixture,
@@ -1575,6 +1580,124 @@ test("runtime capability gates reject empty, unbound, and unsafe placeholder art
   assert.ok(
     result.errors.some((error) =>
       error.includes("nontrivial positive assertion"),
+    ),
+  );
+});
+
+test("skill capability gate rejects digest-consistent policy and zero-tool bypasses", () => {
+  const fixture = temp("upfs-skill-policy-");
+  writeCapabilityFixture(fixture);
+  const definition = path.join(
+    fixture,
+    "registries/skills/definitions/example.yaml",
+  );
+  const policy = path.join(fixture, "registries/skills/policies/example.yaml");
+  const registry = path.join(fixture, "registries/skills/index.yaml");
+
+  function refreshDigest(file) {
+    const oldDigest = /digest: ([a-f0-9]{64})/.exec(
+      fs.readFileSync(registry, "utf8"),
+    )?.[1];
+    assert.ok(oldDigest);
+    fs.writeFileSync(
+      registry,
+      fs.readFileSync(registry, "utf8").replaceAll(oldDigest, digest(file)),
+    );
+  }
+
+  fs.appendFileSync(definition, "tool_aliases: [unrestricted-network]\n");
+  refreshDigest(definition);
+  let result = validateRuntimeCapabilities(fixture, ["skill"]);
+  assert.equal(result.status, "failed");
+  assert.ok(
+    result.errors.some((error) => error.includes("zero permissions/tools")),
+  );
+
+  fs.writeFileSync(
+    definition,
+    fs
+      .readFileSync(definition, "utf8")
+      .replace("tool_aliases: [unrestricted-network]\n", "")
+      .replace("tools: []", "tools: [unrestricted-network]"),
+  );
+  refreshDigest(definition);
+  result = validateRuntimeCapabilities(fixture, ["skill"]);
+  assert.equal(result.status, "failed");
+  assert.ok(
+    result.errors.some((error) => error.includes("zero permissions/tools")),
+  );
+
+  fs.writeFileSync(
+    policy,
+    fs
+      .readFileSync(policy, "utf8")
+      .replace(
+        "effect: deny\n    subject: tool_call",
+        "effect: allow\n    subject: tool_call",
+      ),
+  );
+  const policyText = fs.readFileSync(policy, "utf8");
+  const oldPolicyDigest =
+    /policies\/example\.yaml\n      digest: ([a-f0-9]{64})/.exec(
+      fs.readFileSync(registry, "utf8"),
+    )?.[1];
+  assert.ok(oldPolicyDigest);
+  fs.writeFileSync(
+    registry,
+    fs.readFileSync(registry, "utf8").replace(oldPolicyDigest, digest(policy)),
+  );
+  assert.ok(policyText.includes("effect: allow"));
+  result = validateRuntimeCapabilities(fixture, ["skill"]);
+  assert.equal(result.status, "failed");
+  assert.ok(
+    result.errors.some((error) => error.includes("explicitly deny tools")),
+  );
+
+  const permissivePolicyDigest =
+    /policies\/example\.yaml\n      digest: ([a-f0-9]{64})/.exec(
+      fs.readFileSync(registry, "utf8"),
+    )?.[1];
+  assert.ok(permissivePolicyDigest);
+  fs.writeFileSync(
+    policy,
+    fs
+      .readFileSync(policy, "utf8")
+      .replace(
+        "effect: allow\n    subject: tool_call",
+        "effect: deny\n    subject: tool_call",
+      )
+      .replace(
+        /  - id: deny-authoritative[\s\S]*?authorization_financial_truth_workflow_state\n/,
+        "",
+      ),
+  );
+  fs.writeFileSync(
+    registry,
+    fs
+      .readFileSync(registry, "utf8")
+      .replace(permissivePolicyDigest, digest(policy)),
+  );
+  result = validateRuntimeCapabilities(fixture, ["skill"]);
+  assert.equal(result.status, "failed");
+  assert.ok(
+    result.errors.some((error) => error.includes("authoritative decisions")),
+  );
+
+  fs.writeFileSync(
+    registry,
+    fs
+      .readFileSync(registry, "utf8")
+      .replace(
+        "classification: contract/reference",
+        "classification: production",
+      )
+      .replace("release_state: reference", "release_state: released"),
+  );
+  result = validateRuntimeCapabilities(fixture, ["skill"]);
+  assert.equal(result.status, "failed");
+  assert.ok(
+    result.errors.some((error) =>
+      error.includes("classified contract/reference"),
     ),
   );
 });

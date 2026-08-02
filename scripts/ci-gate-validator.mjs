@@ -269,6 +269,18 @@ function resolveContained(root, relative, label, errors) {
     );
     return undefined;
   }
+  const components = path.relative(rootReal, candidate).split(path.sep);
+  let current = rootReal;
+  for (const component of components) {
+    current = path.join(current, component);
+    const stat = fs.lstatSync(current);
+    if (stat.isSymbolicLink()) {
+      errors.push(
+        `${label} must not traverse a symbolic-link or junction: ${relative}.`,
+      );
+      return undefined;
+    }
+  }
   const real = fs.realpathSync.native(candidate);
   if (
     !real ||
@@ -280,6 +292,30 @@ function resolveContained(root, relative, label, errors) {
     return undefined;
   }
   return real;
+}
+
+function requireExactPathCase(root, relative, label, errors) {
+  const rootReal = fs.realpathSync.native(root);
+  let current = rootReal;
+  for (const component of relative.split(/[\\/]/)) {
+    let entries;
+    try {
+      entries = fs.readdirSync(current, { withFileTypes: true });
+    } catch (error) {
+      errors.push(
+        `${label} cannot inspect normalized path case: ${error.message}`,
+      );
+      return false;
+    }
+    if (!entries.some((entry) => entry.name === component)) {
+      errors.push(
+        `${label} must exist at exact normalized lowercase path ${relative}.`,
+      );
+      return false;
+    }
+    current = path.join(current, component);
+  }
+  return true;
 }
 
 function splitPathReferences(value) {
@@ -1551,6 +1587,19 @@ function requiredString(record, field, label, errors) {
 
 function validateSkillRegistry(root, errors) {
   const relative = "registries/skills/index.yaml";
+  const registryFile = resolveContained(
+    root,
+    relative,
+    "governed skill registry",
+    errors,
+  );
+  const exactPath = requireExactPathCase(
+    root,
+    relative,
+    "governed skill registry",
+    errors,
+  );
+  if (!registryFile || !exactPath) return;
   const registry = parseYaml(root, relative, errors);
   if (registry.schema_version !== 1)
     errors.push("governed skill registry must declare schema_version: 1.");
@@ -1572,6 +1621,10 @@ function validateSkillRegistry(root, errors) {
     const version = requiredString(skill, "version", label, errors);
     const digest = requiredString(skill, "digest", label, errors);
     requiredString(skill, "owner", label, errors);
+    if (skill.classification !== "contract/reference")
+      errors.push(`${label} must be classified contract/reference.`);
+    if (skill.release_state !== "reference")
+      errors.push(`${label} must declare release_state: reference.`);
     if (!/^[a-z][a-z0-9-]{2,63}$/.test(id ?? ""))
       errors.push(`${label} id must be a stable lowercase identifier.`);
     if (!/^\d+\.\d+\.\d+$/.test(version ?? ""))
@@ -1582,6 +1635,99 @@ function validateSkillRegistry(root, errors) {
     if (identities.has(identity))
       errors.push(`${label} duplicates skill identity ${identity}.`);
     else identities.add(identity);
+
+    const definition = skill.definition;
+    if (
+      !definition ||
+      typeof definition !== "object" ||
+      Array.isArray(definition)
+    ) {
+      errors.push(
+        `${label} definition must be an object with a contained typed contract and digest.`,
+      );
+    } else {
+      const definitionPath = requiredString(
+        definition,
+        "path",
+        `${label} definition`,
+        errors,
+      );
+      const definitionDigest = requiredString(
+        definition,
+        "digest",
+        `${label} definition`,
+        errors,
+      );
+      const definitionFile = resolveContained(
+        root,
+        definitionPath,
+        `${label} definition artifact`,
+        errors,
+      );
+      if (!/^[a-f0-9]{64}$/i.test(definitionDigest ?? ""))
+        errors.push(`${label} definition digest must be a SHA-256 hex digest.`);
+      if (digest !== definitionDigest)
+        errors.push(`${label} digest must bind the typed definition artifact.`);
+      if (
+        definitionFile &&
+        /^[a-f0-9]{64}$/i.test(definitionDigest ?? "") &&
+        sha256(definitionFile) !== definitionDigest
+      )
+        errors.push(`${label} definition digest does not match artifact.`);
+      if (definitionFile) {
+        const definitionDocument = parseDocument(
+          fs.readFileSync(definitionFile, "utf8"),
+        );
+        const definitionData = definitionDocument.toJS() ?? {};
+        const definitionFields = new Set([
+          "schema_version",
+          "id",
+          "version",
+          "classification",
+          "owner",
+          "release_state",
+          "description",
+          "inputs",
+          "outputs",
+          "permissions",
+          "tools",
+          "prompt_dependencies",
+          "context_dependencies",
+          "cost_budget",
+          "latency_budget_ms",
+          "evaluation_suite",
+          "rollback_target",
+        ]);
+        const unsupportedDefinitionField = Object.keys(definitionData).some(
+          (field) => !definitionFields.has(field),
+        );
+        const zeroTools =
+          Array.isArray(definitionData.tools) &&
+          definitionData.tools.length === 0;
+        const zeroPermissions =
+          Array.isArray(definitionData.permissions) &&
+          definitionData.permissions.length === 0;
+        if (
+          definitionDocument.errors.length ||
+          definitionData.schema_version !== 1 ||
+          definitionData.id !== id ||
+          definitionData.version !== version ||
+          definitionData.owner !== skill.owner ||
+          definitionData.classification !== "contract/reference" ||
+          definitionData.release_state !== "reference" ||
+          definitionData.inputs?.type !== "object" ||
+          definitionData.outputs?.type !== "object" ||
+          !zeroPermissions ||
+          !zeroTools ||
+          unsupportedDefinitionField ||
+          !meaningful(definitionData.rollback_target)
+        ) {
+          errors.push(
+            `${label} definition must be a reference-only typed contract with matching identity/owner, object inputs/outputs, zero permissions/tools, and rollback.`,
+          );
+        }
+      }
+    }
 
     const policy = skill.policy;
     if (!policy || typeof policy !== "object" || Array.isArray(policy)) {
@@ -1620,14 +1766,33 @@ function validateSkillRegistry(root, errors) {
           fs.readFileSync(policyFile, "utf8"),
         );
         const policyData = policyDocument.toJS() ?? {};
+        const requiredDenials = new Set([
+          "tool_call",
+          "tenant_or_customer_data",
+          "authorization_financial_truth_workflow_state",
+        ]);
+        const deniedSubjects = new Set();
+        let permissiveProtectedSubject = false;
+        for (const rule of Array.isArray(policyData.rules)
+          ? policyData.rules
+          : []) {
+          if (!rule || typeof rule !== "object" || Array.isArray(rule))
+            continue;
+          if (requiredDenials.has(rule.subject)) {
+            if (rule.effect === "deny") deniedSubjects.add(rule.subject);
+            else permissiveProtectedSubject = true;
+          }
+        }
         if (
           policyDocument.errors.length ||
           policyData.schema_version !== 1 ||
           !Array.isArray(policyData.rules) ||
-          !policyData.rules.length
+          !policyData.rules.length ||
+          permissiveProtectedSubject ||
+          [...requiredDenials].some((subject) => !deniedSubjects.has(subject))
         ) {
           errors.push(
-            `${label} policy artifact must be valid schema-versioned YAML with nonempty rules.`,
+            `${label} policy must explicitly deny tools, tenant/customer data, and authoritative decisions without permissive overrides.`,
           );
         }
       }

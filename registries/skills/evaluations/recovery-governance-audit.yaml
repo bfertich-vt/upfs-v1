@@ -1,0 +1,19 @@
+schema_version: 1
+skill_id: recovery-governance-audit
+skill_version: 1.0.0
+status: passed
+executed_at: 2026-08-02T00:00:00Z
+cases: 3
+assertions: 9
+classification: contract/reference
+scope: >-
+  Structural contract evaluation only: typed input/output binding,
+  deny-by-default policy coverage, and zero-tool/zero-cost constraints.
+  This is not runtime or production-model evidence.
+results:
+  - case: typed-contract
+    status: passed
+  - case: tool-and-data-deny-default
+    status: passed
+  - case: no-authoritative-decision-surface
+    status: passed

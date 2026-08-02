@@ -1,0 +1,32 @@
+schema_version: 1
+id: recovery-governance-audit
+version: 1.0.0
+classification: contract/reference
+owner: platform-governance
+release_state: reference
+description: >-
+  A typed, non-production skill contract for bounded repository-governance
+  evidence review. It cannot call tools or make authoritative decisions.
+inputs:
+  type: object
+  required:
+    - evidence_manifest
+  properties:
+    evidence_manifest:
+      type: object
+outputs:
+  type: object
+  required:
+    - findings
+  properties:
+    findings:
+      type: array
+permissions: []
+tools: []
+prompt_dependencies: []
+context_dependencies: []
+cost_budget:
+  max_usd: 0
+latency_budget_ms: 0
+evaluation_suite: registries/skills/evaluations/recovery-governance-audit.yaml
+rollback_target: disable-registry-entry
