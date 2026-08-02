@@ -133,20 +133,13 @@ test("complete immutable provenance bundle hydrates every historic handoff witho
       encoding: "utf8",
     });
     assert.equal(sourceClone.status, 0, sourceClone.stderr);
-    git(candidate, ["checkout", "--quiet", "-B", "candidate", "origin/HEAD"]);
-    git(candidate, ["config", "user.email", "fixture@example.test"]);
-    git(candidate, ["config", "user.name", "Fixture"]);
-    const candidateDiff = spawnSync("git", ["-C", root, "diff", "--binary", "HEAD"], {
-      encoding: null,
-      maxBuffer: 16 * 1024 * 1024,
-    });
-    assert.equal(candidateDiff.status, 0, candidateDiff.stderr?.toString());
-    const apply = spawnSync("git", ["-C", candidate, "apply", "--index"], {
-      encoding: "utf8",
-      input: candidateDiff.stdout,
-    });
-    assert.equal(apply.status, 0, apply.stderr);
-    git(candidate, ["commit", "--quiet", "-m", "fixture final candidate"]);
+    git(candidate, [
+      "checkout",
+      "--quiet",
+      "-B",
+      "candidate",
+      git(root, ["rev-parse", "HEAD"]),
+    ]);
     git(authoritative, ["init", "--bare"]);
     git(authoritative, [
       "fetch",
