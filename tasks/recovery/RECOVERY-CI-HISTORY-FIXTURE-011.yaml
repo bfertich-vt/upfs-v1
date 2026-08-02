@@ -1,0 +1,73 @@
+id: RECOVERY-CI-HISTORY-FIXTURE-011
+title: Make immutable provenance regression history self-contained in hosted CI
+state: in_progress
+role: Backend
+role_file: agents/BACKEND.md
+scope: >-
+  Replace the CI-gate tests' implicit dependence on unpublished local Git
+  objects with a versioned, Git-verified fixture containing only the immutable
+  historical commits required to exercise the existing append-only provenance
+  erratum rules. This is repository-control recovery only and changes no
+  product, queue, provenance rule, or runtime behavior.
+allowed_files:
+  - scripts/ci-gate-validator.test.mjs
+  - scripts/fixtures/historical-provenance-v1.bundle
+  - tasks/recovery/RECOVERY-CI-HISTORY-FIXTURE-011.yaml
+  - docs/handoffs/RECOVERY-CI-HISTORY-FIXTURE-011.md
+prohibited_files:
+  - scripts/ci-gate-validator.mjs
+  - tasks/queue.yaml
+  - .github/
+  - CODEOWNERS
+  - README.md
+  - START_HERE.md
+  - docs/governance
+  - package.json
+  - package-lock.json
+  - services
+  - apps
+  - contracts
+  - specs
+  - product source, deployment configuration, and provider integrations
+acceptance_criteria:
+  - Hosted CI tests obtain the exact immutable source and candidate commits from a repository-contained fixture rather than unpublished checkout history.
+  - The fixture is Git-verified and fails closed when corrupt or when any required commit is absent.
+  - Existing append-only, fixed-allowlist, blob, digest, and malformed-erratum negative tests remain active and pass against the fixture.
+  - No provenance validation rule, authorization, tenant-isolation, queue, or product behavior is weakened or skipped.
+required_sources:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/QA_SECURITY.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - GitHub Actions run 30744306355 failed log
+security_and_tenant_isolation: >-
+  Repository-control-only. The fixture preserves immutable Git-object evidence
+  and is checked with git bundle verify plus exact commit identity assertions.
+  It contains no secrets, customer data, financial data, tenant identifiers,
+  provider data, runtime APIs, or credentials. Tenant isolation and
+  authorization behavior are unchanged.
+required_tests:
+  - npm ci --ignore-scripts
+  - node --test scripts/ci-gate-validator.test.mjs
+  - npm test
+  - npm run ci:gates
+  - npm run validate
+  - Node YAML parse of this structured input
+  - git diff --check
+  - Negative missing-commit, fixture-integrity, append-only, malformed-erratum, blob, and digest cases
+rollback: >-
+  Corrective-forward only. Preserve the failed hosted run and historical
+  objects. Revert this bounded corrective commit only through a new commit;
+  do not amend, reset, force-push, delete branches, or rewrite history.
+handoff_requirements:
+  - Task ID, role, role-file path and committed-byte digest, agent thread ID, worktree, branch, and owned files
+  - Candidate and separate handoff commits, sources/contracts read, acceptance evidence, commands/results, and negative cases
+  - Security, tenant-isolation, audit/evidence, limitations, external prerequisites, and rollback analysis
+  - Independent QA/Security reviewer and result remain pending until a distinct role-bound reviewer records immutable evidence

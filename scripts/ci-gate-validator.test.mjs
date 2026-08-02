@@ -15,6 +15,18 @@ import {
 } from "./ci-gate-validator.mjs";
 
 const root = path.resolve(".");
+const historicalProvenanceFixture = path.join(
+  root,
+  "scripts",
+  "fixtures",
+  "historical-provenance-v1.bundle",
+);
+const historicalProvenanceCommits = [
+  "e7c81bf1a38726e0ac8ebf84c969219c21758aea",
+  "2ec8213fe000a0b78c68c588eb10768a39116be3",
+  "4ae7e95f0af88e21dde526be44443846a8d8d9a6",
+  "90208c69504893c7a01cbcd51a8eb35caf21f5e3",
+];
 const columns = [
   "Source file and section",
   "Requirement",
@@ -55,6 +67,31 @@ function git(directory, args) {
   });
   assert.equal(result.status, 0, result.stderr);
   return result.stdout.trim();
+}
+
+function cloneHistoricalProvenanceFixture(fixture) {
+  assert.ok(
+    fs.existsSync(historicalProvenanceFixture),
+    "versioned historical provenance fixture is required",
+  );
+  const verify = spawnSync(
+    "git",
+    ["-C", root, "bundle", "verify", historicalProvenanceFixture],
+    { encoding: "utf8" },
+  );
+  assert.equal(verify.status, 0, verify.stderr);
+  git(fixture, ["init", "--initial-branch=fixture/historical-provenance"]);
+  git(fixture, [
+    "fetch",
+    historicalProvenanceFixture,
+    "refs/fixtures/*:refs/fixtures/*",
+  ]);
+  for (const commit of historicalProvenanceCommits)
+    assert.equal(
+      git(fixture, ["cat-file", "-t", commit]),
+      "commit",
+      `historical provenance fixture must retain ${commit}`,
+    );
 }
 
 function filesRecursively(directory) {
@@ -726,7 +763,7 @@ test("provenance record classification rejects partial entries before erratum co
 
 test("repository scan permits only the exact legacy unpaired queue provenance correction", () => {
   const fixture = temp("upfs-legacy-unpaired-erratum-");
-  git(root, ["clone", "--no-checkout", root, fixture]);
+  cloneHistoricalProvenanceFixture(fixture);
   git(fixture, [
     "checkout",
     "--detach",
@@ -917,7 +954,7 @@ test("repository scan permits only the immutable historical partially paired CI 
     "specs/10_security/security_baseline.md",
     "specs/12_testing/test_strategy.md",
   ];
-  git(root, ["clone", "--no-checkout", root, fixture]);
+  cloneHistoricalProvenanceFixture(fixture);
   git(fixture, ["checkout", "--detach", source]);
   const handoff = path.join(fixture, ...relative.split("/"));
   const row = (entry) => {
