@@ -35,5 +35,8 @@
     "traceability:check": "node scripts/ci-gate-validator.mjs --traceability",
     "ci:gates": "node scripts/ci-gate-validator.mjs",
     "rehearsal:postgres:embedded": "node scripts/task-0014-embedded-postgres.mjs"
+  },
+  "optionalDependencies": {
+    "@embedded-postgres/linux-x64": "^18.4.0-beta.17"
   }
 }

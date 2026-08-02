@@ -1,0 +1,78 @@
+id: RECOVERY-CI-POSTGRES-RUNTIME-012
+title: Make the CI PostgreSQL migration gate deterministic and fail closed
+state: in_progress
+role: Backend
+role_file: agents/BACKEND.md
+scope: >-
+  Correct the hosted migration gate from GitHub Actions run 30745469898 by
+  ensuring Linux CI installs a disposable test-only PostgreSQL runtime. The
+  gate must still reject skipped, failed, and unavailable execution. This is
+  CI recovery only and does not add a product database, credentials, or a
+  production deployment claim.
+allowed_files:
+  - package.json
+  - package-lock.json
+  - scripts/embedded-postgres-ci-gate.mjs
+  - scripts/embedded-postgres-ci-gate.test.mjs
+  - tasks/recovery/RECOVERY-CI-POSTGRES-RUNTIME-012.yaml
+  - docs/handoffs/RECOVERY-CI-POSTGRES-RUNTIME-012.md
+prohibited_files:
+  - tasks/queue.yaml
+  - CODEOWNERS
+  - README.md
+  - START_HERE.md
+  - docs/governance
+  - services
+  - apps
+  - contracts
+  - specs
+  - product source, deployment configuration, and provider integrations
+acceptance_criteria:
+  - Linux npm ci installs a deterministic disposable PostgreSQL runtime needed by migration:check.
+  - migration:check continues to fail when the embedded runtime reports skipped, failed, or no result.
+  - No production database URL, customer data, secret, or provider credential is added.
+  - The migration and tenant-isolation checks remain real executable checks rather than a soft skip.
+  - Package versions remain locked and non-Linux development environments retain optional runtime behavior.
+required_sources:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/QA_SECURITY.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - package.json
+  - package-lock.json
+  - scripts/embedded-postgres-ci-gate.mjs
+  - scripts/embedded-postgres-ci-gate.test.mjs
+  - scripts/task-0014-embedded-postgres.mjs
+  - GitHub Actions run 30745469898 failed log
+security_and_tenant_isolation: >-
+  The runtime is disposable and test-only. No external PostgreSQL URL or
+  credential is accepted by the CI migration script, and no customer or
+  financial data is supplied. The existing gate rejects skipped execution;
+  its real migration and FORCE RLS checks remain mandatory. Tenant runtime
+  behavior is unchanged.
+required_tests:
+  - npm ci --ignore-scripts
+  - npm run migration:check
+  - node --test scripts/embedded-postgres-ci-gate.test.mjs
+  - npm test
+  - npm run ci:gates
+  - npm run validate
+  - Node YAML parse of this structured input
+  - git diff --check
+  - Negative skipped, failed, and missing embedded-runtime result cases
+rollback: >-
+  Correct forward only. Preserve the failed hosted run and immutable commits.
+  If the runtime dependency proves unsuitable, remove it in a new reviewed
+  corrective commit or replace it with an equivalently fail-closed disposable
+  service. Do not amend, reset, force-push, delete branches, or rewrite
+  history.
+handoff_requirements:
+  - Task ID, role, role-file path and committed-byte digest, agent thread ID, worktree, branch, and owned files
+  - Candidate and separate handoff commits, sources read, acceptance evidence, commands/results, and negative cases
+  - Security, tenant-isolation, audit/evidence, limitations, external prerequisites, and rollback analysis
+  - Independent QA/Security reviewer and result remain pending until a distinct role-bound reviewer records immutable evidence
