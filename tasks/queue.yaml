@@ -1841,3 +1841,237 @@ tasks:
       evidence_excerpt: "# TASK-0110 Handoff"
     source: docs/compliance/pilot-go-no-go.md; specs/11_soc2/soc2_readiness.md
     acceptance: [Final continuation/pause/stop decision is reproducible, approval-gated, source-bound, truthful, and makes no certification or production claim]
+  - id: TASK-0111
+    title: Decide FDX-first architecture and legacy UPFS/Vetralysis reuse
+    status: ready
+    dependencies: []
+    inputs: [AGENTS.md, docs/MASTER_PLAN.md, docs/MASTER_PLAN_TRACEABILITY.md, docs/PRODUCTION_BACKLOG.md, specs/00_constitution/engineering_constitution.md, specs/03_architecture/system_architecture.md, specs/10_security/security_baseline.md, specs/12_testing/test_strategy.md]
+    normative_sources: [docs/MASTER_PLAN.md#Delivery-stages, specs/00_constitution/engineering_constitution.md#Product-invariants, specs/10_security/security_baseline.md#Security-baseline]
+    source: docs/MASTER_PLAN.md#Delivery-stages
+    role: Schema/Search/AI
+    authorized_files: [docs/decisions/, docs/PRODUCTION_BACKLOG.md, tasks/queue.yaml, docs/handoffs/]
+    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md]
+    acceptance: [Record FDX-first decision and each legacy asset accept-adapt-reject outcome, Require security license provenance compatibility and regression-test review before reuse, Record owner versions residual risk rollback and no production-capability claim]
+    contracts: [Decision references FDX/provider contract version and compatibility boundary; no runtime contract is changed]
+    required_tests: [Decision review checklist including security license compatibility and negative-test coverage]
+    tenant_security: Verified scope only; no credentials customer data or secrets are inspected or recorded.
+    documentation: Decision record backlog update and candidate handoff.
+    rollback: Revert only the accepted decision record; do not alter historic reclassifications.
+    runtime_evidence: Source-bound decision reviewed asset inventory and explicit absent-runtime-capability statement.
+    external_prerequisites: Authorized FDX documentation and named owners for candidate legacy assets.
+  - id: TASK-0112
+    title: Provision approved FDX provider sandbox credential boundary
+    status: blocked
+    dependencies: [TASK-0111]
+    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/03_architecture/system_architecture.md, specs/10_security/security_baseline.md, specs/12_testing/test_strategy.md]
+    normative_sources: [specs/03_architecture/system_architecture.md#Data-path, specs/10_security/security_baseline.md#Security-baseline]
+    source: specs/10_security/security_baseline.md#Security-baseline
+    role: Backend
+    authorized_files: [infra/, services/, docs/runbooks/, docs/handoffs/]
+    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance: [Use managed sandbox-only secret references or workload identity, Verify least privilege rotation expiry and egress boundary, Reject missing misbound expired or replayed credential material]
+    contracts: [Provider credential configuration and webhook trust boundary documented without secret values]
+    required_tests: [Credential misbinding expiry rotation and secret-redaction tests]
+    tenant_security: No client-supplied tenant scope; credentials are environment-scoped and never logged.
+    documentation: Provider onboarding and incident/rotation runbook.
+    rollback: Disable provider binding and revoke sandbox credential; preserve audit evidence.
+    runtime_evidence: Sanitized successful provider authentication and configured credential-reference identity.
+    external_prerequisites: Provider sandbox account approval managed secret manager workload identity and network allowlist.
+  - id: TASK-0113
+    title: Implement immutable raw provider evidence and quarantine
+    status: blocked
+    dependencies: [TASK-0111, TASK-0112]
+    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/00_constitution/engineering_constitution.md, specs/03_architecture/system_architecture.md, specs/10_security/security_baseline.md]
+    normative_sources: [specs/00_constitution/engineering_constitution.md#Product-invariants, specs/03_architecture/system_architecture.md#Data-path]
+    source: specs/03_architecture/system_architecture.md#Data-path
+    role: Schema/Search/AI
+    authorized_files: [services/, contracts/, docs/runbooks/, docs/handoffs/]
+    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance: [Persist immutable content-addressed raw artifacts with provenance, Scan validate and quarantine malformed or unsafe observations before canonicalization, Append corrections without altering original artifact]
+    contracts: [Versioned raw observation quarantine reason provenance and lineage schemas]
+    required_tests: [Tamper quarantine scanner failure cross-tenant authorization replay and raw-payload log-redaction tests]
+    tenant_security: Tenant-scoped access encryption audit retention and no raw evidence leakage to logs or prompts.
+    documentation: Evidence/quarantine API and operator runbook.
+    rollback: Stop intake and route new artifacts to quarantine; never delete immutable evidence.
+    runtime_evidence: Sanitized sandbox artifact lifecycle including quarantine and audit correlation.
+    external_prerequisites: TASK-0112 sandbox credential boundary and approved malware/content scanning service.
+  - id: TASK-0114
+    title: Normalize canonical transactions with governed taxonomy
+    status: blocked
+    dependencies: [TASK-0113]
+    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/00_constitution/engineering_constitution.md, specs/03_architecture/system_architecture.md, specs/12_testing/test_strategy.md]
+    normative_sources: [specs/00_constitution/engineering_constitution.md#Correctness, specs/03_architecture/system_architecture.md#Data-path]
+    source: specs/00_constitution/engineering_constitution.md#Correctness
+    role: Schema/Search/AI
+    authorized_files: [contracts/, services/, packages/, docs/handoffs/]
+    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance: [Map validated observations to versioned canonical transactions, Preserve provider category mapping version raw evidence and transformation lineage, Use declared currency deterministic decimal and bitemporal fields while quarantining unmapped values]
+    contracts: [Canonical transaction taxonomy mapping and provider-category preservation schemas]
+    required_tests: [Golden decimal currency timezone mapping-version lineage and unmapped-category quarantine tests]
+    tenant_security: Canonicalization derives scope from evidence context and cannot cross tenants.
+    documentation: Taxonomy governance mapping change and correction procedure.
+    rollback: Pin prior mapping version and correct forward with appended assertions.
+    runtime_evidence: Sanitized mapping report with provider-to-taxonomy and quarantine counts.
+    external_prerequisites: Approved provider sample schema and taxonomy governance owner.
+  - id: TASK-0115
+    title: Implement bitemporal PostgreSQL RLS outbox and canonical read API
+    status: blocked
+    dependencies: [TASK-0114]
+    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/00_constitution/engineering_constitution.md, specs/03_architecture/system_architecture.md, specs/05_apis/api_standards.md, specs/10_security/security_baseline.md]
+    normative_sources: [specs/03_architecture/system_architecture.md#Multi-tenancy-and-scale, specs/03_architecture/system_architecture.md#Reliability, specs/05_apis/api_standards.md#API-standards]
+    source: specs/03_architecture/system_architecture.md#Reliability
+    role: Backend
+    authorized_files: [services/, contracts/, infra/, docs/runbooks/, docs/handoffs/]
+    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance: [Make tenant-scoped bitemporal PostgreSQL canonical authority with RLS defense in depth, Atomically write canonical changes audit and transactional outbox, Expose versioned authorized cursor-paginated canonical read API with structured errors]
+    contracts: [OpenAPI canonical read schema PostgreSQL migration outbox event schema and RLS policy]
+    required_tests: [Migration rehearsal RLS cross-tenant BOLA pagination authorization outbox atomicity idempotency and rollback tests]
+    tenant_security: Authorization-derived tenant/environment scope and deny-by-default RLS; audit every read/write without sensitive payloads.
+    documentation: API permissions/errors migration operations and rollback runbooks.
+    rollback: Rehearsed expand-contract or corrective-forward migration and outbox replay from durable checkpoint.
+    runtime_evidence: Deployed database/API health RLS negative proof outbox lag and reconciliation metrics.
+    external_prerequisites: Managed PostgreSQL identity/policy integration migration environment and telemetry.
+  - id: TASK-0116
+    title: Implement provider incremental sync webhooks pagination and reconciliation
+    status: blocked
+    dependencies: [TASK-0112, TASK-0113, TASK-0115]
+    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/03_architecture/system_architecture.md, specs/05_apis/api_standards.md, specs/10_security/security_baseline.md, specs/12_testing/test_strategy.md]
+    normative_sources: [specs/03_architecture/system_architecture.md#Data-path, specs/03_architecture/system_architecture.md#Reliability, specs/10_security/security_baseline.md#Security-baseline]
+    source: specs/03_architecture/system_architecture.md#Data-path
+    role: Backend
+    authorized_files: [services/, contracts/, infra/, docs/runbooks/, docs/handoffs/]
+    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance: [Perform bounded incremental cursor/watermark sync with resumable pagination, Verify signed webhooks and deduplicate/replay-protect events, Reconcile provider source counts and watermarks to canonical/outbox state with actionable discrepancies]
+    contracts: [Provider adapter sync checkpoint webhook envelope and reconciliation result schemas]
+    required_tests: [Pagination restart webhook forgery replay duplicate rate limit provider outage bounded-backfill and reconciliation mismatch tests]
+    tenant_security: Provider connection and checkpoints are tenant-bound; signature material and payloads stay secret/redacted.
+    documentation: Connector onboarding webhook rotation recovery and reconciliation runbooks.
+    rollback: Pause connector retain checkpoint/evidence replay safely and corrective-forward discrepancies.
+    runtime_evidence: Sanitized provider-sandbox sync webhook verification pagination and zero-unexplained-reconciliation report.
+    external_prerequisites: Active approved sandbox webhook endpoint/egress approval and provider rate-limit agreement.
+  - id: TASK-0117
+    title: Deploy FDX slice composition with privacy-safe observability
+    status: blocked
+    dependencies: [TASK-0115, TASK-0116]
+    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/00_constitution/engineering_constitution.md, specs/09_cicd/delivery_pipeline.md, specs/10_security/security_baseline.md]
+    normative_sources: [specs/00_constitution/engineering_constitution.md#Operational-quality, specs/09_cicd/delivery_pipeline.md#CI-CD-and-SDLC]
+    source: specs/00_constitution/engineering_constitution.md#Operational-quality
+    role: Backend
+    authorized_files: [infra/, services/, docs/runbooks/, docs/handoffs/]
+    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance: [Compose deployed API worker database and connector paths, Emit redacted structured logs metrics traces audit and health signals, Provide alerts dashboards SLOs and failure/recovery runbook]
+    contracts: [Runtime configuration health/readiness telemetry and audit event documentation]
+    required_tests: [Composed smoke health secret-redaction failure-injection recovery and telemetry cardinality tests]
+    tenant_security: Telemetry excludes credentials account numbers raw evidence prompts and unnecessary financial descriptions.
+    documentation: Deployment incident SLO and rollback runbooks.
+    rollback: Canary/cell rollback connector pause outbox replay and reconciled corrective-forward.
+    runtime_evidence: Accessible deployed composition URL versioned release manifest dashboards traces and recovery drill.
+    external_prerequisites: Authorized deployment environment telemetry/audit retention managed identity and change approval.
+  - id: TASK-0118
+    title: Implement governed read-only transaction skill
+    status: blocked
+    dependencies: [TASK-0115, TASK-0117, TASK-0122]
+    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/01_product/vision_and_scope.md, specs/06_ai/ai_runtime.md, specs/08_policies/policy_system.md, specs/12_testing/test_strategy.md]
+    normative_sources: [specs/06_ai/ai_runtime.md#Governed-AI-runtime, specs/08_policies/policy_system.md#Policy-system]
+    source: specs/06_ai/ai_runtime.md#Governed-AI-runtime
+    role: Schema/Search/AI
+    authorized_files: [services/, contracts/, packages/, docs/handoffs/]
+    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance: [Register typed read-only skill with owner permissions tool/context dependencies budgets evaluations release state and rollback target, Assemble deterministic authorized bounded context with evidence citations, Enforce independent policy/schema checks and ensure model owns neither authorization nor durable truth]
+    contracts: [Skill input/output context profile tool policy citation and evaluation schemas]
+    required_tests: [Citation authorization prompt-injection adversarial DLP cross-tenant policy-deny schema and deterministic-total tests]
+    tenant_security: Consent/user/purpose-scoped context untrusted-content separation no secrets/raw prompts in telemetry and deny on absent citation/policy.
+    documentation: Skill permissions evaluation incident-disable and rollback documentation.
+    rollback: Disable/revert to approved prior skill release without changing canonical data.
+    runtime_evidence: Sanitized deployed invocation with verified citations policy decision and evaluation results.
+    external_prerequisites: Approved model endpoint model/data-processing review and independent policy owner.
+  - id: TASK-0119
+    title: Deliver runnable accessible customer transaction console
+    status: blocked
+    dependencies: [TASK-0115, TASK-0117, TASK-0123]
+    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/01_product/vision_and_scope.md, specs/02_ui/console_experience.md, specs/05_apis/api_standards.md, specs/12_testing/test_strategy.md]
+    normative_sources: [specs/01_product/vision_and_scope.md#Initial-commercial-slice, specs/02_ui/console_experience.md#Page-contract, specs/05_apis/api_standards.md#API-standards]
+    source: specs/02_ui/console_experience.md#Page-contract
+    role: Frontend
+    authorized_files: [apps/, docs/, contracts/, docs/handoffs/]
+    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance: [Make authenticated console reachable in deployed composition using canonical APIs only, Provide evidence drilldown cursor pagination loading unavailable forbidden and error states, Meet keyboard focus semantic and assistive-technology acceptance without leaking unauthorized data]
+    contracts: [Page contract OpenAPI client mapping permission/error and accessibility behavior documentation]
+    required_tests: [E2E accessible keyboard screen-reader semantics unauthorized/cross-tenant retry pagination and API-only boundary tests]
+    tenant_security: Session-derived scope only; no direct database/projection access and fail closed on authorization/API failure.
+    documentation: User guide accessibility statement and support runbook.
+    rollback: Revert immutable UI release or disable route behind approved flag; canonical data remains unchanged.
+    runtime_evidence: Accessible deployed URL authenticated smoke accessibility report and redacted client telemetry.
+    external_prerequisites: Hosted runtime identity integration approved test tenant and accessibility review environment.
+  - id: TASK-0120
+    title: Execute FDX slice security compatibility and acceptance suite
+    status: blocked
+    dependencies: [TASK-0116, TASK-0117, TASK-0118, TASK-0119]
+    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/00_constitution/engineering_constitution.md, specs/09_cicd/delivery_pipeline.md, specs/10_security/security_baseline.md, specs/12_testing/test_strategy.md]
+    normative_sources: [specs/10_security/security_baseline.md#Security-baseline, specs/12_testing/test_strategy.md#Test-strategy, specs/09_cicd/delivery_pipeline.md#CI-CD-and-SDLC]
+    source: specs/12_testing/test_strategy.md#Test-strategy
+    role: Independent QA/Security
+    authorized_files: [docs/reviews/, docs/handoffs/, tests/, services/, apps/]
+    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance: [Verify FDX decision license security compatibility and reuse evidence, Run end-to-end sandbox evidence-to-console/skill path with reconciliation, Demonstrate no known tenant escape and document failures/remediation]
+    contracts: [Compatibility matrix and acceptance test evidence bind exact contract versions]
+    required_tests: [Unit contract integration E2E migration projection parity BOLA IDOR webhook forgery replay injection SSRF prompt-injection accessibility performance and restore tests]
+    tenant_security: Independent adversarial tenant and leakage testing; findings remain release blockers until accepted remediation.
+    documentation: Acceptance report residual-risk register and release-blocker list.
+    rollback: No promotion on failure; retain evidence and use task-specific corrective-forward plans.
+    runtime_evidence: Immutable test reports from deployed sandbox composition and reconciled data path.
+    external_prerequisites: Independent reviewers approved sandbox/test tenant scanning tools and representative synthetic data.
+  - id: TASK-0121
+    title: Independently review FDX transaction slice for QA and security acceptance
+    status: blocked
+    dependencies: [TASK-0120]
+    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/00_constitution/engineering_constitution.md, specs/10_security/security_baseline.md, specs/12_testing/test_strategy.md]
+    normative_sources: [specs/00_constitution/engineering_constitution.md#Secure-by-default-delivery, specs/12_testing/test_strategy.md#Test-strategy]
+    source: specs/12_testing/test_strategy.md#Test-strategy
+    role: Independent QA/Security
+    authorized_files: [docs/reviews/, docs/handoffs/]
+    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml, apps/, services/, contracts/, infra/]
+    acceptance: [Independently verify provenance requirements tenant isolation external prerequisite status rollback and runtime evidence, Issue pass/fail with concrete blocker evidence, Make no production certification or deployment claim]
+    contracts: [Review binds exact approved contract and release-manifest versions]
+    required_tests: [Reproduce selected acceptance and negative tests from TASK-0120]
+    tenant_security: Review uses sanitized evidence and verifies no credential/customer-data leakage.
+    documentation: Independent QA/Security report and accountable residual-risk decision.
+    rollback: Failed review blocks promotion; corrective work is separately queued.
+    runtime_evidence: Reviewer-attested reproduction results and provenance references.
+    external_prerequisites: Reviewer independence repository/access permissions and approved evidence-retention location.
+  - id: TASK-0122
+    title: Establish governed-skills CI capability gate
+    status: blocked
+    dependencies: [TASK-0111]
+    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/06_ai/ai_runtime.md, specs/09_cicd/delivery_pipeline.md, specs/12_testing/test_strategy.md]
+    normative_sources: [specs/06_ai/ai_runtime.md#Governed-AI-runtime, specs/09_cicd/delivery_pipeline.md#CI-CD-and-SDLC]
+    source: specs/06_ai/ai_runtime.md#Governed-AI-runtime
+    role: Schema/Search/AI
+    authorized_files: [services/, scripts/, docs/, docs/handoffs/]
+    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance: [Validate runnable typed skill registration policy boundaries citations evaluations and rollback metadata, Fail closed for absent owner permissions or adversarial-evaluation coverage, Gate actual skill capability rather than synthetic evidence]
+    contracts: [Skill registry/evaluation schema and CI invocation contract]
+    required_tests: [Valid skill missing permission citation failure prompt-injection and release-rollback negative tests]
+    tenant_security: Gate uses synthetic data only and rejects cross-tenant/unauthorized context fixtures.
+    documentation: CI capability criteria and skill-author guide.
+    rollback: Revert the gate change separately; do not weaken a failing capability gate.
+    runtime_evidence: CI result against runnable governed skill fixture and later TASK-0118 implementation.
+    external_prerequisites: Approved skill policy/evaluation owner; no model credential required for structural gate.
+  - id: TASK-0123
+    title: Establish accessibility CI capability gate for customer console
+    status: blocked
+    dependencies: [TASK-0111]
+    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/01_product/vision_and_scope.md, specs/02_ui/console_experience.md, specs/09_cicd/delivery_pipeline.md, specs/12_testing/test_strategy.md]
+    normative_sources: [specs/02_ui/console_experience.md#Page-contract, specs/12_testing/test_strategy.md#Test-strategy]
+    source: specs/02_ui/console_experience.md#Page-contract
+    role: Frontend
+    authorized_files: [apps/, scripts/, docs/, docs/handoffs/]
+    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance: [Validate runnable console keyboard focus semantic labels and inaccessible-state failures, Fail closed for inaccessible authenticated transaction workflows, Gate product accessibility behavior rather than synthetic evidence]
+    contracts: [Console page contract and accessibility test harness criteria]
+    required_tests: [Keyboard focus heading label contrast state and forbidden-data non-leak accessibility tests]
+    tenant_security: Accessibility fixtures remain synthetic and forbidden states expose no tenant or financial details.
+    documentation: Accessibility test standard and console author guidance.
+    rollback: Revert only an independently accepted gate change; never bypass failing accessibility checks.
+    runtime_evidence: CI report from runnable console and later deployed TASK-0119 route.
+    external_prerequisites: Accessibility review tooling and representative assistive-technology test environment.
