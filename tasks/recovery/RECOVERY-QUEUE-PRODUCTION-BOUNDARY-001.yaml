@@ -1,0 +1,63 @@
+id: RECOVERY-QUEUE-PRODUCTION-BOUNDARY-001
+title: Bind immutable reclassification validation to TASK-0001 through TASK-0110 only
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/governance/TASK-RECLASSIFICATION-007.md
+  - tasks/queue.yaml
+  - scripts/queue-validator.mjs
+  - scripts/queue-validator.test.mjs
+  - docs/PRODUCTION_BACKLOG.md
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-002-QA-V3
+authorized_files:
+  - tasks/recovery/RECOVERY-QUEUE-PRODUCTION-BOUNDARY-001.yaml
+  - scripts/queue-validator.mjs
+  - scripts/queue-validator.test.mjs
+  - docs/handoffs/RECOVERY-QUEUE-PRODUCTION-BOUNDARY-001.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/governance/TASK-RECLASSIFICATION-007.md
+  - docs/PRODUCTION_BACKLOG.md
+  - .github/**
+  - CODEOWNERS
+  - README.md
+  - START_HERE.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - infra/**
+  - specs/**
+acceptance_criteria:
+  - Under recovery_freeze, immutable historical reclassification validation applies exactly to TASK-0001 through TASK-0110, as defined by the reclassification report and traceability requirement—not all future TASK-#### IDs.
+  - All 110 historical tasks still require blocked status, exact report binding, immutable artifacts/excerpts, and production-proof requirements where classified; any omission, altered ID, duplicate, or changed classification fails closed.
+  - New production TASK IDs above TASK-0110 may exist without historical report records, but must not carry historical-only report_row/classification/historical_evidence/production_proof fields; an attempt to use those fields or change a historical task fails validation.
+  - Tests cover valid TASK-0111 append, 110-record preservation, new historical-field rejection, out-of-range/report mismatch, and dependency/ready-state behavior.
+  - No queue or roadmap task is changed in this implementation; post-commit handoff is provenance complete and full validation has no new error.
+required_tests:
+  - node --test scripts/queue-validator.test.mjs
+  - npm run queue:check
+  - npm run traceability:check
+  - npm run validate
+  - npm test
+  - git diff --check
+security_requirements:
+  - Preserve fail-closed historical evidence, authorization/tenant isolation, auditability, and no claim escalation through new task IDs.
+rollback:
+  - Revert only independently accepted validator boundary correction; preserve all historic evidence and uncommitted roadmap draft.
+runtime_evidence_required: Mutation tests, queue/traceability/validation/full-test output, candidate handoff, and independent QA/Security review.
