@@ -1,0 +1,72 @@
+id: RECOVERY-TRACEABILITY-HISTORY-TOPOLOGY-029
+title: Hydrate immutable historic provenance objects without availability bypasses
+state: candidate
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+scope: >-
+  Repair hosted traceability validation by hydrating the existing immutable
+  historical-provenance bundle before repository gates. Preserve the strict,
+  exact erratum classifications; do not reclassify any task or make a product
+  capability claim.
+allowed_files:
+  - .github/workflows/validate.yml
+  - scripts/ci-gate-validator.test.mjs
+  - tasks/recovery/RECOVERY-TRACEABILITY-HISTORY-TOPOLOGY-029.yaml
+  - docs/handoffs/RECOVERY-TRACEABILITY-HISTORY-TOPOLOGY-029.md
+prohibited_files:
+  - scripts/ci-gate-validator.mjs
+  - tasks/queue.yaml
+  - docs/reviews/**
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - README.md
+  - START_HERE.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - specs/**
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/governance/provenance-verification.md
+  - docs/reviews/RECOVERY-TRACEABILITY-ERRATUM-AVAILABLE-028-QA.md
+  - scripts/fixtures/historical-provenance-v1.bundle
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+acceptance_criteria:
+  - The queue erratum source e7c81bf1a38726e0ac8ebf84c969219c21758aea remains validated as reachable authoritative history.
+  - The retained CI erratum source 4ae7e95f0af88e21dde526be44443846a8d8d9a6 is hydrated from the versioned bundle before all hosted repository gates.
+  - Strict source/path/candidate/literal-record/blob/digest provenance validation remains unchanged; source availability never suppresses a validation failure.
+  - Regression coverage proves the authoritative topology fails before retained-source hydration and passes only after exact immutable bundle hydration.
+  - Copied current marker, corrupt TASK-0123 provenance, unknown/mutated fields, and source identity mutations remain rejected by existing adversarial tests.
+required_tests:
+  - npm ci --ignore-scripts
+  - node --test scripts/ci-gate-validator.test.mjs
+  - npm run traceability:check
+  - npm run ci:gates
+  - npm test
+  - npm run validate
+  - git diff --check
+security_and_tenant_isolation: >-
+  Repository-control-only. The workflow fetches only a checked-in Git bundle
+  containing immutable historical fixture objects. No credentials, customer,
+  financial, tenant, or provider data is added. Exact source, candidate,
+  record, blob, and digest predicates continue to fail closed.
+rollback: >-
+  Revert only an independently accepted corrective commit. Preserve the
+  versioned fixture, rejected candidates, and history; do not amend, reset,
+  force-push, delete branches, or suppress strict provenance validation.
+handoff_requirements:
+  - Record role binding, thread, worktree, branch, candidate and handoff commits, and owned files.
+  - Record topology commands, fixture verification, focused/full tests, security analysis, limitations, rollback, and pending independent QA/Security result.

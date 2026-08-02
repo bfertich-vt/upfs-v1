@@ -944,6 +944,95 @@ test("repository scan permits only the exact legacy unpaired queue provenance co
   fs.rmSync(fixture, { force: true, recursive: true });
 });
 
+test("historical errata validate on authoritative topology only after immutable fixture hydration", () => {
+  const fixture = temp("upfs-authoritative-provenance-topology-");
+  const reachableQueueSource = "e7c81bf1a38726e0ac8ebf84c969219c21758aea";
+  const retainedCiSource = "4ae7e95f0af88e21dde526be44443846a8d8d9a6";
+  const queueOnlyBundle = path.join(fixture, "queue-history.bundle");
+  const queueOnlySource = path.join(fixture, "queue-history.git");
+  try {
+    fs.mkdirSync(queueOnlySource, { recursive: true });
+    git(queueOnlySource, ["init", "--bare"]);
+    git(queueOnlySource, [
+      "fetch",
+      "--no-tags",
+      root,
+      `${reachableQueueSource}:refs/heads/integration`,
+      "2ec8213fe000a0b78c68c588eb10768a39116be3:refs/heads/candidate",
+    ]);
+    const bundle = spawnSync(
+      "git",
+      ["-C", queueOnlySource, "bundle", "create", queueOnlyBundle, "--all"],
+      { encoding: "utf8" },
+    );
+    assert.equal(bundle.status, 0, bundle.stderr);
+    git(fixture, ["init", "--initial-branch=fixture/topology"]);
+    git(fixture, [
+      "fetch",
+      "--no-tags",
+      queueOnlyBundle,
+      `${reachableQueueSource}:refs/heads/integration`,
+    ]);
+    git(fixture, ["checkout", "--quiet", "integration"]);
+    for (const relative of [
+      "docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md",
+      "docs/handoffs/RECOVERY-CI-GATES-001.md",
+    ])
+      write(
+        fixture,
+        relative,
+        fs.readFileSync(path.join(root, ...relative.split("/"))),
+      );
+
+    assert.equal(
+      git(fixture, [
+        "merge-base",
+        "--is-ancestor",
+        reachableQueueSource,
+        "HEAD",
+      ]),
+      "",
+      "the exact queue erratum source must remain reachable from authoritative history",
+    );
+    const absentCiSource = spawnSync(
+      "git",
+      ["-C", fixture, "cat-file", "-e", `${retainedCiSource}^{commit}`],
+      { encoding: "utf8" },
+    );
+    assert.notEqual(
+      absentCiSource.status,
+      0,
+      "the retained CI source must not be accidentally inherited from the authoritative fetch",
+    );
+
+    const beforeHydration =
+      validateRepositoryHandoffSpecificationDigests(fixture);
+    assert.equal(beforeHydration.status, "failed");
+    assert.ok(
+      beforeHydration.errors.some((error) =>
+        error.includes(
+          "original handoff is not Git-resolvable at its declared source commit",
+        ),
+      ),
+      beforeHydration.errors.join(" | "),
+    );
+
+    git(fixture, [
+      "fetch",
+      "--no-tags",
+      historicalProvenanceFixture,
+      "refs/fixtures/*:refs/fixtures/*",
+    ]);
+    assert.equal(git(fixture, ["cat-file", "-t", retainedCiSource]), "commit");
+    assert.deepEqual(validateRepositoryHandoffSpecificationDigests(fixture), {
+      status: "passed",
+      errors: [],
+    });
+  } finally {
+    fs.rmSync(fixture, { force: true, recursive: true });
+  }
+});
+
 test("repository scan permits only the immutable historical partially paired CI correction", () => {
   const fixture = temp("upfs-historical-partial-erratum-");
   const source = "4ae7e95f0af88e21dde526be44443846a8d8d9a6";
