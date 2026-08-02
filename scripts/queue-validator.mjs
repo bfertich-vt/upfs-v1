@@ -7,6 +7,10 @@ import { parseDocument } from "yaml";
 const STATUSES = new Set(["planned", "ready", "in_progress", "blocked", "complete", "superseded"]);
 const RECLASSIFICATION_REPORT = "docs/governance/TASK-RECLASSIFICATION-007.md";
 const HISTORICAL_CLASSIFICATIONS = new Set(["Proven production implementation", "Proven reference implementation", "Contract/interface only", "Synthetic rehearsal only", "External prerequisite", "Incomplete", "Unsupported completion claim"]);
+const HISTORICAL_TASK_FIRST = 1;
+const HISTORICAL_TASK_LAST = 110;
+const HISTORICAL_ONLY_FIELDS = ["report_row", "classification", "historical_evidence", "production_proof"];
+const immutableArtifactCache = new Map();
 export const HANDOFF_FIELDS = [
   "Task and scope:", "Agent role:", "Role-file path and digest:", "Agent thread ID:", "Worktree and branch:", "Commit:", "Files changed:", "Specifications and contracts read:", "Acceptance criteria:", "Tests and commands run:", "Negative tests:", "Contracts/migrations:", "Security and tenant-isolation analysis:", "Audit/evidence behavior:", "Results:", "Rollback/corrective-forward plan:", "Documentation updated:", "Known risks and follow-ups:", "Known limitations:", "External prerequisites:", "Independent reviewer and review result:",
 ];
@@ -87,7 +91,9 @@ function immutableArtifact(root, artifact, commit, description, errors) {
     return null;
   }
   try {
-    return execFileSync("git", ["show", `${commit}:${safe.normalized}`], { cwd: root });
+    const key = `${root}\0${commit}\0${safe.normalized}`;
+    if (!immutableArtifactCache.has(key)) immutableArtifactCache.set(key, execFileSync("git", ["show", `${commit}:${safe.normalized}`], { cwd: root }));
+    return immutableArtifactCache.get(key);
   } catch {
     errors.push(`${description} cannot be resolved at immutable commit ${commit}.`);
     return null;
@@ -106,8 +112,25 @@ function readReclassificationReport(root, errors) {
   try { return JSON.parse(match[1]); } catch { errors.push(`${RECLASSIFICATION_REPORT} contains invalid JSON evidence records.`); return null; }
 }
 
+function taskNumber(id) {
+  return Number.parseInt(id.slice("TASK-".length), 10);
+}
+
+function isHistoricalTaskId(id) {
+  return /^TASK-\d{4}$/.test(id) && taskNumber(id) >= HISTORICAL_TASK_FIRST && taskNumber(id) <= HISTORICAL_TASK_LAST;
+}
+
+function expectedHistoricalIds() {
+  return Array.from({ length: HISTORICAL_TASK_LAST - HISTORICAL_TASK_FIRST + 1 }, (_, index) => `TASK-${String(index + HISTORICAL_TASK_FIRST).padStart(4, "0")}`);
+}
+
 function validateHistoricalReclassification(root, tasks, errors, frozen) {
-  const historical = [...tasks.values()].filter((task) => /^TASK-\d{4}$/.test(task.id));
+  const historical = [...tasks.values()].filter((task) => isHistoricalTaskId(task.id));
+  for (const task of tasks.values()) {
+    if (taskNumber(task.id) > HISTORICAL_TASK_LAST) {
+      for (const field of HISTORICAL_ONLY_FIELDS) if (Object.hasOwn(task, field)) errors.push(`${task.id} must not carry historical-only field ${field}.`);
+    }
+  }
   const requiresReport = frozen || historical.some((task) => task.report_row || task.classification || task.historical_evidence);
   if (!requiresReport) return;
   const report = readReclassificationReport(root, errors);
@@ -118,6 +141,7 @@ function validateHistoricalReclassification(root, tasks, errors, frozen) {
   const records = new Map();
   for (const record of report.records) {
     if (!object(record) || typeof record.id !== "string" || !/^TASK-\d{4}$/.test(record.id)) { errors.push(`${RECLASSIFICATION_REPORT} contains an invalid record ID.`); continue; }
+    if (!isHistoricalTaskId(record.id)) { errors.push(`${RECLASSIFICATION_REPORT} ${record.id} is outside the immutable TASK-0001 through TASK-0110 range.`); continue; }
     if (records.has(record.id)) { errors.push(`${RECLASSIFICATION_REPORT} duplicates ${record.id}.`); continue; }
     records.set(record.id, record);
     if (!HISTORICAL_CLASSIFICATIONS.has(record.classification)) errors.push(`${RECLASSIFICATION_REPORT} ${record.id} has an unknown classification.`);
@@ -128,7 +152,10 @@ function validateHistoricalReclassification(root, tasks, errors, frozen) {
     else if (bytes && !bytes.toString("utf8").includes(record.evidence_excerpt)) errors.push(`${RECLASSIFICATION_REPORT} ${record.id} excerpt is absent from its immutable artifact.`);
     if (typeof record.limitation !== "string" || !record.limitation.includes(record.id)) errors.push(`${RECLASSIFICATION_REPORT} ${record.id} needs a task-specific limitation.`);
   }
-  if (records.size !== historical.length) errors.push(`${RECLASSIFICATION_REPORT} must contain exactly ${historical.length} task records.`);
+  const expectedIds = expectedHistoricalIds();
+  if (records.size !== expectedIds.length) errors.push(`${RECLASSIFICATION_REPORT} must contain exactly ${expectedIds.length} task records.`);
+  for (const id of expectedIds) if (!records.has(id)) errors.push(`${RECLASSIFICATION_REPORT} is missing immutable historical record ${id}.`);
+  if (historical.length !== expectedIds.length) errors.push(`tasks/queue.yaml must contain exactly ${expectedIds.length} immutable historical tasks TASK-0001 through TASK-0110.`);
   for (const task of historical) {
     const record = records.get(task.id);
     if (!record) { errors.push(`${task.id} is absent from ${RECLASSIFICATION_REPORT}.`); continue; }

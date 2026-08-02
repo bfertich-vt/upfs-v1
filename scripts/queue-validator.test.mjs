@@ -22,66 +22,83 @@ test("rejects an exact-name handoff symlink outside root before reading it", (t)
 test("rejects placeholders but accepts explanatory limitation prose", () => { const root = fixture(); fs.mkdirSync(path.join(root, "docs/handoffs"), { recursive: true }); for (const value of ["TBD later", "unknown at this time", "pending review", "N/A", "not applicable", "-"]) { fs.writeFileSync(path.join(root, "docs/handoffs/TASK-0001.md"), handoff("TASK-0001", { "Known limitations:": value })); invalid(root, task({ status: "complete" }), "missing substantive"); } fs.writeFileSync(path.join(root, "docs/handoffs/TASK-0001.md"), handoff("TASK-0001")); validateQueueDocument(task({ status: "complete" }), root); });
 test("records every recovery candidate file in the authoritative handoff inventory", () => { const handoffPath = path.resolve("docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md"); const body = fs.readFileSync(handoffPath, "utf8"); const inventory = ["tasks/queue.yaml", "scripts/queue-validator.mjs", "scripts/queue-validator.test.mjs", "scripts/validate-repository.mjs", "tasks/recovery/RECOVERY-QUEUE-VALIDATION-001.yaml", "docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md"]; for (const relPath of inventory) assert.match(body, new RegExp(`Files changed:.*${relPath.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}`)); });
 
-test("recovery freeze blocks promotion but preserves every structural and immutable-evidence validation", () => {
+test("recovery freeze binds exactly TASK-0001 through TASK-0110 and permits a clean production append", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "upfs-reclassification-"));
   fs.mkdirSync(path.join(root, "specs"), { recursive: true });
   fs.writeFileSync(path.join(root, "specs/input.md"), "input\n");
   fs.mkdirSync(path.join(root, "docs/handoffs"), { recursive: true });
   fs.mkdirSync(path.join(root, "docs/governance"), { recursive: true });
-  const artifact = "docs/handoffs/TASK-0001.md";
+  const artifact = "docs/handoffs/historical-evidence.md";
   const bytes = Buffer.from("- Tests and commands run: `node --test service.test.mjs` PASS\n");
   fs.writeFileSync(path.join(root, artifact), bytes);
   for (const args of [["init"], ["config", "user.email", "qa@example.invalid"], ["config", "user.name", "QA"], ["add", "."], ["commit", "-m", "fixture"]]) execFileSync("git", args, { cwd: root, stdio: "ignore" });
   const commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
-  const record = { id: "TASK-0001", classification: "Unsupported completion claim", artifact, artifact_sha256: crypto.createHash("sha256").update(bytes).digest("hex"), artifact_commit: commit, evidence_excerpt: "- Tests and commands run: `node --test service.test.mjs` PASS", limitation: "TASK-0001 requires independent revalidation." };
-  const report = (value) => `# report\n\n\`\`\`json\n${JSON.stringify({ version: 1, records: [value] })}\n\`\`\`\n`;
-  const queue = (changes = {}) => `version: 1
-recovery_freeze: ${changes.freeze ?? "true"}
-tasks:
-  - id: TASK-0001
+  const evidenceExcerpt = "- Tests and commands run: `node --test service.test.mjs` PASS";
+  const record = (number) => ({ id: `TASK-${String(number).padStart(4, "0")}`, classification: "Unsupported completion claim", artifact, artifact_sha256: crypto.createHash("sha256").update(bytes).digest("hex"), artifact_commit: commit, evidence_excerpt: evidenceExcerpt, limitation: `TASK-${String(number).padStart(4, "0")} requires independent revalidation.` });
+  const records = Array.from({ length: 110 }, (_, index) => record(index + 1));
+  const report = (value = records) => `# report\n\n\`\`\`json\n${JSON.stringify({ version: 1, records: value })}\n\`\`\`\n`;
+  const historicalTask = (value, changes = {}) => `  - id: ${value.id}
     title: historical
     status: ${changes.status ?? "blocked"}
     dependencies: []
-${changes.inputs === false ? "" : `    inputs: ${changes.inputs ?? "[specs/input.md]"}\n`}${changes.source === false ? "" : `    source: ${changes.source ?? "specs/input.md"}\n`}${changes.acceptance === false ? "" : `    acceptance: ${changes.acceptance ?? "[result]"}\n`}    classification: ${changes.classification ?? "Unsupported completion claim"}
-    report_row: ${changes.report_row ?? "TASK-0001"}
+${changes.inputs === false ? "" : `    inputs: ${changes.inputs ?? "[specs/input.md]"}\n`}${changes.source === false ? "" : `    source: ${changes.source ?? "specs/input.md"}\n`}${changes.acceptance === false ? "" : `    acceptance: ${changes.acceptance ?? "[result]"}\n`}    classification: ${changes.classification ?? value.classification}
+    report_row: ${changes.report_row ?? value.id}
     historical_evidence:
       artifact: ${changes.artifact ?? artifact}
-      artifact_sha256: ${changes.artifact_sha256 ?? record.artifact_sha256}
+      artifact_sha256: ${changes.artifact_sha256 ?? value.artifact_sha256}
       artifact_commit: ${changes.artifact_commit ?? commit}
-      evidence_excerpt: ${JSON.stringify(changes.evidence_excerpt ?? record.evidence_excerpt)}
+      evidence_excerpt: ${JSON.stringify(changes.evidence_excerpt ?? value.evidence_excerpt)}
 `;
+  const productionTask = (changes = {}) => `  - id: TASK-0111
+    title: production append
+    status: ${changes.status ?? "blocked"}
+    dependencies: ${changes.dependencies ?? "[]"}
+    inputs: [specs/input.md]
+    source: specs/input.md
+    acceptance: [production result]
+${changes.historicalField ?? ""}`;
+  const queue = (changes = {}) => `version: 1
+recovery_freeze: ${changes.freeze ?? "true"}
+tasks:
+${records.filter((value) => value.id !== changes.omit).map((value) => historicalTask(value, value.id === changes.mutateId ? changes : {})).join("")}${changes.append ? productionTask(changes) : ""}`;
   const reportPath = path.join(root, "docs/governance/TASK-RECLASSIFICATION-007.md");
   const writeReport = (value) => fs.writeFileSync(reportPath, report(value));
-  writeReport(record);
+  writeReport();
   validateQueueDocument(queue(), root);
-  invalid(root, queue({ classification: "Synthetic rehearsal only", report_row: "WRONG" }), "classification binding mismatch");
-  invalid(root, queue({ artifact: "docs/handoffs/fabricated.md", artifact_sha256: "a".repeat(64), artifact_commit: "a".repeat(40), evidence_excerpt: "fabricated" }), "immutable-evidence mismatch");
-  invalid(root, queue({ inputs: "[../secret.md]" }), "must not escape");
-  invalid(root, queue({ inputs: false }), "inputs must be");
-  invalid(root, queue({ source: false }), "source must cite");
-  invalid(root, queue({ acceptance: false }), "acceptance must be");
+  validateQueueDocument(queue({ append: true }), root);
+  invalid(root, queue({ mutateId: "TASK-0001", classification: "Synthetic rehearsal only", report_row: "WRONG" }), "classification binding mismatch");
+  invalid(root, queue({ mutateId: "TASK-0001", artifact: "docs/handoffs/fabricated.md", artifact_sha256: "a".repeat(64), artifact_commit: "a".repeat(40), evidence_excerpt: "fabricated" }), "immutable-evidence mismatch");
+  invalid(root, queue({ mutateId: "TASK-0001", inputs: "[../secret.md]" }), "must not escape");
+  invalid(root, queue({ mutateId: "TASK-0001", inputs: false }), "inputs must be");
+  invalid(root, queue({ mutateId: "TASK-0001", source: false }), "source must cite");
+  invalid(root, queue({ mutateId: "TASK-0001", acceptance: false }), "acceptance must be");
   invalid(root, queue({ freeze: "false" }), "recovery_freeze must be literal true");
-  writeReport({ ...record, evidence_excerpt: "- Tests and commands run: fabricated" });
+  writeReport(records.map((value) => value.id === "TASK-0001" ? { ...value, evidence_excerpt: "- Tests and commands run: fabricated" } : value));
   invalid(root, queue(), "excerpt is absent");
-  writeReport({ ...record, evidence_excerpt: "No command or test result is recorded." });
+  writeReport(records.map((value) => value.id === "TASK-0001" ? { ...value, evidence_excerpt: "No command or test result is recorded." } : value));
   invalid(root, queue(), "fabricated no-evidence assertion");
-  const { evidence_excerpt, ...withoutExcerpt } = record;
-  writeReport(withoutExcerpt);
+  const { evidence_excerpt, ...withoutExcerpt } = records[0];
+  writeReport([withoutExcerpt, ...records.slice(1)]);
   invalid(root, queue(), "absent evidence excerpt");
-  writeReport({ ...record, evidence_excerpt: null });
+  writeReport([{ ...records[0], evidence_excerpt: null }, ...records.slice(1)]);
   invalid(root, queue(), "absent evidence excerpt");
-  writeReport({ ...record, evidence_excerpt: "" });
+  writeReport([{ ...records[0], evidence_excerpt: "" }, ...records.slice(1)]);
   invalid(root, queue(), "absent evidence excerpt");
-  writeReport(record);
-  invalid(root, queue().replace(/^\s+evidence_excerpt:.*\n/m, ""), "immutable-evidence mismatch");
+  writeReport();
+  invalid(root, queue({ mutateId: "TASK-0001", evidence_excerpt: "" }), "immutable-evidence mismatch");
   invalid(root, queue().replace(/(evidence_excerpt:) .*$/m, "$1 null"), "immutable-evidence mismatch");
-  writeReport({ ...record, artifact_sha256: "a".repeat(64) });
+  writeReport([{ ...records[0], artifact_sha256: "a".repeat(64) }, ...records.slice(1)]);
   invalid(root, queue(), "stale or incorrect artifact SHA-256");
-  fs.writeFileSync(reportPath, `# report\n\n\`\`\`json\n${JSON.stringify({ version: 1, records: [record, record] })}\n\`\`\`\n`);
+  writeReport([...records, records[0]]);
   invalid(root, queue(), "duplicates TASK-0001");
-  fs.writeFileSync(reportPath, `# report\n\n\`\`\`json\n${JSON.stringify({ version: 1, records: [] })}\n\`\`\`\n`);
-  invalid(root, queue(), "absent from");
-  const production = { ...record, classification: "Proven production implementation" };
-  writeReport(production);
-  invalid(root, queue({ classification: "Proven production implementation" }), "cannot claim proven production implementation");
+  writeReport(records.slice(1));
+  invalid(root, queue(), "must contain exactly 110 task records");
+  writeReport([...records, record(111)]);
+  invalid(root, queue(), "outside the immutable TASK-0001 through TASK-0110 range");
+  writeReport();
+  invalid(root, queue({ append: true, historicalField: "    report_row: TASK-0111\n" }), "must not carry historical-only field report_row");
+  invalid(root, queue({ append: true, dependencies: "[TASK-0001]", status: "ready" }), "ready before all dependencies are complete");
+  const production = { ...records[0], classification: "Proven production implementation" };
+  writeReport([production, ...records.slice(1)]);
+  invalid(root, queue({ mutateId: "TASK-0001", classification: "Proven production implementation" }), "cannot claim proven production implementation");
 });
