@@ -74,8 +74,10 @@ Commands and results:
 - `npm run ci:gates` — passed.
 - Node YAML parse of the structured input — passed.
 - `git diff --check` — passed.
-- `npm test` and `npm run validate` remain required for integration/QA; they
-  were not represented as executed author evidence in this handoff.
+- `npm test` — passed 900 total: 899 passed, 0 failed, and 1 documented
+  opt-in embedded-PostgreSQL skip. The mandatory `migration:check` is a
+  distinct CI step and passed above.
+- `npm run validate` — passed.
 
 ## Security, limitations, and corrective-forward plan
 
