@@ -1843,7 +1843,7 @@ tasks:
     acceptance: [Final continuation/pause/stop decision is reproducible, approval-gated, source-bound, truthful, and makes no certification or production claim]
   - id: TASK-0111
     title: Decide FDX-first architecture and legacy UPFS/Vetralysis reuse
-    status: ready
+    status: complete
     dependencies: []
     inputs: [AGENTS.md, docs/MASTER_PLAN.md, docs/MASTER_PLAN_TRACEABILITY.md, docs/PRODUCTION_BACKLOG.md, specs/00_constitution/engineering_constitution.md, specs/03_architecture/system_architecture.md, specs/10_security/security_baseline.md, specs/12_testing/test_strategy.md]
     normative_sources: [docs/MASTER_PLAN.md#Delivery-stages, specs/00_constitution/engineering_constitution.md#Product-invariants, specs/10_security/security_baseline.md#Security-baseline]
