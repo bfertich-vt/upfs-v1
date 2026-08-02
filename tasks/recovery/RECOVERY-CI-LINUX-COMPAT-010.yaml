@@ -1,0 +1,76 @@
+id: RECOVERY-CI-LINUX-COMPAT-010
+title: Repair Linux CI compatibility without weakening immutable provenance validation
+state: in_progress
+role: Backend
+role_file: agents/BACKEND.md
+scope: >-
+  Correct only the confirmed cross-platform CI defects in the validation
+  workflow and its repository-control tests. Preserve Git-bound provenance,
+  immutable history validation, and injection resistance. This is corrective
+  recovery work only; it does not change product behavior, queue status, or
+  roadmap scope.
+allowed_files:
+  - .github/workflows/validate.yml
+  - scripts/ci-gate-validator.test.mjs
+  - scripts/provenance-command.test.mjs
+  - tasks/recovery/RECOVERY-CI-LINUX-COMPAT-010.yaml
+  - docs/handoffs/RECOVERY-CI-LINUX-COMPAT-010.md
+prohibited_files:
+  - tasks/queue.yaml
+  - CODEOWNERS
+  - README.md
+  - START_HERE.md
+  - docs/governance
+  - package.json
+  - package-lock.json
+  - services
+  - apps
+  - contracts
+  - specs
+  - product source, deployment configuration, and provider integrations
+acceptance_criteria:
+  - The validation workflow obtains complete immutable Git history required by historical provenance tests.
+  - Linux CI retains structural validation of the documented PowerShell command and injection guard without falsely claiming PowerShell execution.
+  - Windows executes the literal documented PowerShell command for positive and injection-bearing negative cases.
+  - Reviewer-worktree mutation evidence uses a truly absolute, nonexistent path on both Windows and Linux and reaches the intended existence check.
+  - Regression tests fail if complete checkout history or the platform-specific provenance safety checks are removed.
+  - No provenance, tenant-isolation, authorization, queue, or product behavior is weakened.
+required_sources:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/QA_SECURITY.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - .github/workflows/validate.yml
+  - scripts/ci-gate-validator.test.mjs
+  - scripts/provenance-command.test.mjs
+  - docs/governance/provenance-verification.md
+  - GitHub Actions run 30739299420 failed log
+security_and_tenant_isolation: >-
+  Repository-control-only. The task must retain fail-closed Git-bound evidence
+  checks and PowerShell injection/path-escape protections. It handles no
+  secrets, customer data, financial data, tenant identifiers, provider data,
+  authorization, persistence, or runtime APIs; tenant isolation is unchanged.
+required_tests:
+  - npm ci --ignore-scripts
+  - node --test scripts/provenance-command.test.mjs
+  - node --test scripts/ci-gate-validator.test.mjs
+  - npm test
+  - npm run ci:gates
+  - npm run validate
+  - Node YAML parse of this structured input
+  - git diff --check
+  - Negative complete-history, Linux PowerShell execution, injection-source, and cross-platform absolute-worktree cases
+rollback: >-
+  Corrective-forward only. Preserve all existing evidence and branches. Revert
+  this bounded corrective commit if necessary through a new commit; do not
+  amend, reset, force-push, delete branches, or rewrite history.
+handoff_requirements:
+  - Task ID, role, role-file path and committed-byte digest, agent thread ID, worktree, branch, and owned files
+  - Candidate and separate handoff commits, sources/contracts read, acceptance evidence, commands/results, and negative cases
+  - Security, tenant-isolation, audit/evidence, limitations, external prerequisites, and rollback analysis
+  - Independent QA/Security reviewer and result remain pending until a distinct role-bound reviewer records immutable evidence

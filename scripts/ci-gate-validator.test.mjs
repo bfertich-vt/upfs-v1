@@ -266,6 +266,17 @@ test("current CI gate wiring passes structural validation", () => {
   assert.deepEqual(validateCiGates(root), { status: "passed", errors: [] });
 });
 
+test("validation workflow retains complete Git history for immutable provenance evidence", () => {
+  const workflow = fs.readFileSync(
+    path.join(root, ".github", "workflows", "validate.yml"),
+    "utf8",
+  );
+  assert.match(
+    workflow,
+    /uses: actions\/checkout@11bd71901bbe5b1630ceea73d27597364c9af683[\s\S]*?\n\s+with:\s*(?:\n\s*(?:#.*)?)*\n\s+fetch-depth:\s*0/m,
+  );
+});
+
 test("mutable actions and removed gates fail closed", () => {
   const fixture = temp("upfs-ci-gate-");
   fs.cpSync(path.join(root, ".github"), path.join(fixture, ".github"), {
@@ -1256,6 +1267,10 @@ test("traceability rejects generic repeated bindings even when IDs are unique", 
 test("traceability rejects spoofed reviewer provenance and required coverage omissions", () => {
   const fixture = temp("upfs-traceability-reviewer-");
   writeTraceabilityFixture(fixture);
+  const nonexistentAbsoluteWorktree = path.join(
+    path.parse(fixture).root,
+    "not-real",
+  );
   const mutateReview = (replace, expected) => {
     const review = path.join(fixture, "docs/reviews/valid-qa.md");
     const original = fs.readFileSync(review, "utf8");
@@ -1272,7 +1287,7 @@ test("traceability rejects spoofed reviewer provenance and required coverage omi
     (text) =>
       text.replace(
         /Review worktree and branch: `[^`]+`/,
-        "Review worktree and branch: `C:\\not-real`",
+        `Review worktree and branch: \`${nonexistentAbsoluteWorktree}\``,
       ),
     "reviewer worktree does not exist",
   );

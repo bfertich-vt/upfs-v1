@@ -33,7 +33,25 @@ function executeLiteralCommand(scriptPath, commit, artifact) {
   );
 }
 
-test('the literal documented PowerShell Git-byte SHA-256 command executes', () => {
+const windowsPowerShellOnly = {
+  skip:
+    process.platform === 'win32'
+      ? false
+      : 'requires Windows PowerShell; Linux validates the literal command source and injection guard without claiming execution',
+};
+
+test('the literal documented PowerShell command retains fail-closed source-level injection guards on every platform', () => {
+  assert.match(documentedCommand, /\[Parameter\(Mandatory = \$true\)\]\[string\]\$Commit/);
+  assert.match(documentedCommand, /\[Parameter\(Mandatory = \$true\)\]\[string\]\$Path/);
+  assert.match(documentedCommand, /\$Commit -cnotmatch '\^\[0-9a-f\]\{40\}\$'/);
+  assert.match(documentedCommand, /\$Path -cnotmatch '\^\[A-Za-z0-9\]/);
+  assert.match(documentedCommand, /git ls-tree -r --name-only \$Commit -- \$Path/);
+  assert.match(documentedCommand, /execFileSync\('git', \['cat-file', '-e', `\$\{commit\}\^\{commit\}`\]\)/);
+  assert.match(documentedCommand, /execFileSync\('git', \['show', `\$\{commit\}:\$\{file\}`\]\)/);
+  assert.doesNotMatch(documentedCommand, /(?:Invoke-Expression|\biex\b|Start-Process)/i);
+});
+
+test('the literal documented PowerShell Git-byte SHA-256 command executes on Windows', windowsPowerShellOnly, () => {
   const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repositoryRoot, encoding: 'utf8' }).trim();
   const artifact = 'AGENTS.md';
   const expected = crypto.createHash('sha256').update(
@@ -54,7 +72,7 @@ test('the literal documented PowerShell Git-byte SHA-256 command executes', () =
   }
 });
 
-test('the literal documented command rejects malformed and injection-bearing inputs without execution', () => {
+test('the literal documented command rejects malformed and injection-bearing inputs without execution on Windows', windowsPowerShellOnly, () => {
   const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repositoryRoot, encoding: 'utf8' }).trim();
   const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'upfs-provenance-command-negative-'));
   const scriptPath = path.join(tempDirectory, 'documented-command.ps1');
