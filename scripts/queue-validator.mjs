@@ -249,8 +249,10 @@ export function validateQueueDocument(content, root) {
   for (const [id, task] of tasks) if (task.status === "complete") validateHandoff(root, id, errors);
   const hasReady = [...tasks.values()].some((task) => task.status === "ready");
   const terminal = [...tasks.values()].every((task) => ["complete", "superseded"].includes(task.status));
-  const fullyFrozen = recoveryFrozen && [...tasks.values()].every((task) => task.status === "blocked");
-  if (!hasReady && !terminal && !fullyFrozen) errors.push("Task queue must have a ready task or have only terminal tasks unless it is explicitly frozen for recovery.");
+  const frozenSilentWork = [...tasks.values()].filter((task) => ["planned", "in_progress"].includes(task.status));
+  if (recoveryFrozen && frozenSilentWork.length) errors.push(`A recovery-frozen queue must not contain planned or in_progress work: ${frozenSilentWork.map((task) => task.id).join(", ")}.`);
+  const freezeQuiescent = recoveryFrozen && [...tasks.values()].every((task) => ["complete", "superseded", "blocked"].includes(task.status));
+  if (!hasReady && !terminal && !freezeQuiescent) errors.push("Task queue must have a ready task or have only terminal tasks unless it is explicitly frozen for recovery with every nonterminal task blocked.");
   if (errors.length) throw new QueueValidationError(errors);
   return { state: terminal ? "terminal" : "active", tasks: tasks.size };
 }

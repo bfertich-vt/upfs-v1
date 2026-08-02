@@ -1,0 +1,64 @@
+id: RECOVERY-QUEUE-FREEZE-008
+title: Correct fail-closed recovery queue-freeze semantics
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/12_testing/test_strategy.md
+  - tasks/queue.yaml
+  - scripts/queue-validator.mjs
+  - scripts/queue-validator.test.mjs
+  - docs/handoffs/TASK-0111.md
+  - docs/reviews/TASK-0111-PROVENANCE-QA.md
+  - docs/REPOSITORY_GOVERNANCE.md
+normative_sources:
+  - AGENTS.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/12_testing/test_strategy.md
+dependencies: []
+authorized_files:
+  - scripts/queue-validator.mjs
+  - scripts/queue-validator.test.mjs
+  - tasks/recovery/RECOVERY-QUEUE-FREEZE-008.yaml
+  - docs/governance/delivery-governance.md
+  - docs/handoffs/RECOVERY-QUEUE-FREEZE-008.md
+prohibited_files:
+  - tasks/queue.yaml
+  - README.md
+  - START_HERE.md
+  - .github/**
+  - package.json
+  - package-lock.json
+  - apps/**
+  - services/**
+  - contracts/**
+  - schemas/**
+  - deployment/**
+acceptance_criteria:
+  - A recovery-frozen queue with terminal tasks and every remaining nonterminal task blocked is valid even when it has no ready task.
+  - A non-frozen, nonterminal queue with no ready task remains invalid.
+  - A recovery-frozen queue containing planned or in_progress work is invalid.
+  - Dependency, handoff, provenance, historical-evidence, and complete-task validation remain fail-closed.
+  - Documentation defines the exact recovery-freeze boundary and says it cannot authorize skipped work, product work, or unreviewed promotion.
+required_tests:
+  - node --test scripts/queue-validator.test.mjs
+  - npm run queue:check
+  - npm run traceability:check
+  - npm run validate
+  - git diff --check
+  - YAML parse of tasks/recovery/RECOVERY-QUEUE-FREEZE-008.yaml
+security_requirements:
+  - Control-plane only: fail closed against unauthorized task promotion and retain provenance and complete-handoff requirements.
+  - Do not process credentials, customer data, tenant identifiers, or runtime requests.
+documentation_requirements:
+  - State exact freeze semantics and the no-skipped-work, no-product-work, and no-unreviewed-promotion limits.
+rollback:
+  - Revert only the independently reviewed validator/documents commit; preserve queue state, historic evidence, and prior corrective-forward records.
+runtime_evidence_required: Focused validator test results, structural queue validation, repository validation, YAML parse, diff check, immutable handoff, and independent QA/Security review. No product runtime evidence is created.

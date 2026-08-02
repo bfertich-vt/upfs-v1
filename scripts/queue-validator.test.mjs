@@ -58,14 +58,20 @@ ${changes.inputs === false ? "" : `    inputs: ${changes.inputs ?? "[specs/input
     acceptance: [production result]
 ${changes.historicalField ?? ""}`;
   const queue = (changes = {}) => `version: 1
-recovery_freeze: ${changes.freeze ?? "true"}
-tasks:
+${changes.freeze === false ? "" : `recovery_freeze: ${changes.freeze ?? "true"}\n`}tasks:
 ${records.filter((value) => value.id !== changes.omit).map((value) => historicalTask(value, value.id === changes.mutateId ? changes : {})).join("")}${changes.append ? productionTask(changes) : ""}`;
   const reportPath = path.join(root, "docs/governance/TASK-RECLASSIFICATION-007.md");
   const writeReport = (value) => fs.writeFileSync(reportPath, report(value));
   writeReport();
   validateQueueDocument(queue(), root);
   validateQueueDocument(queue({ append: true }), root);
+  fs.writeFileSync(path.join(root, "docs/handoffs/TASK-0111.md"), handoff("TASK-0111"));
+  // A reviewed terminal decision plus externally blocked follow-on work is a
+  // quiescent recovery state; the former all-blocked-only predicate rejected it.
+  validateQueueDocument(queue({ append: true, status: "complete" }), root);
+  invalid(root, queue({ append: true, status: "complete", freeze: false }), "must have a ready task");
+  invalid(root, queue({ append: true, status: "planned" }), "must not contain planned or in_progress work");
+  invalid(root, queue({ append: true, status: "in_progress" }), "must not contain planned or in_progress work");
   invalid(root, queue({ mutateId: "TASK-0001", classification: "Synthetic rehearsal only", report_row: "WRONG" }), "classification binding mismatch");
   invalid(root, queue({ mutateId: "TASK-0001", artifact: "docs/handoffs/fabricated.md", artifact_sha256: "a".repeat(64), artifact_commit: "a".repeat(40), evidence_excerpt: "fabricated" }), "immutable-evidence mismatch");
   invalid(root, queue({ mutateId: "TASK-0001", inputs: "[../secret.md]" }), "must not escape");
