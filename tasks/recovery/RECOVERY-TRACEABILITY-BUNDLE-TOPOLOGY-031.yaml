@@ -1,0 +1,78 @@
+Exit code: 0
+Wall time: 0.3 seconds
+Output:
+id: RECOVERY-TRACEABILITY-BUNDLE-TOPOLOGY-031
+title: Derive final-topology historical provenance bundle
+state: candidate
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+scope: >-
+  Derive every declared historic handoff candidate and the two exact erratum
+  source commits required by the strict traceability validator, package only
+  those named refs in a checked-in Git bundle, and hydrate them locally before
+  hosted gates. Validation semantics, errata scope, queue state, and product
+  behavior are unchanged.
+allowed_files:
+  - .github/workflows/validate.yml
+  - scripts/ci-gate-validator.test.mjs
+  - scripts/fixtures/historical-provenance-v2.bundle
+  - scripts/fixtures/historical-provenance-v2.json
+  - tasks/recovery/RECOVERY-TRACEABILITY-BUNDLE-TOPOLOGY-031.yaml
+  - docs/handoffs/RECOVERY-TRACEABILITY-BUNDLE-TOPOLOGY-031.md
+prohibited_files:
+  - scripts/ci-gate-validator.mjs
+  - tasks/queue.yaml
+  - docs/reviews/
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - README.md
+  - START_HERE.md
+  - apps/
+  - services/
+  - packages/
+  - contracts/
+  - specs/
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - scripts/fixtures/historical-provenance-v2.bundle
+  - docs/reviews/RECOVERY-TRACEABILITY-BUNDLE-030-QA.md
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+acceptance_criteria:
+  - Checked-in bundle manifest lists every historic handoff candidate unavailable from the authoritative checkout plus both exact erratum source commits.
+  - Bundle hash, refs, and commit identities are deterministic and Git-verified before use.
+  - Fresh checkout regression proves strict validation fails before local bundle hydration and all preexisting historical handoffs validate after it.
+  - TASK-0123 corruption and copied-marker attacks remain rejected after hydration.
+  - Workflow fetches only the local named fixture refs with no credential or network operation after checkout.
+required_tests:
+  - node --test scripts/ci-gate-validator.test.mjs
+  - npm run traceability:check
+  - npm run ci:gates
+  - npm test
+  - npm run validate
+  - git bundle verify scripts/fixtures/historical-provenance-v2.bundle
+  - git diff --check
+security_and_tenant_isolation: >-
+  Repository-control-only immutable Git-object transport. It adds no customer,
+  financial, tenant, provider, secret, credential, model, or runtime data.
+  Traceability remains fail-closed on missing, copied, corrupt, or mismatched
+  provenance; tenant-isolation behavior is unchanged.
+rollback: >-
+  Correct forward through a separately reviewed commit only. Preserve failed
+  runs, bundle, source objects, and rejected candidates; never amend, reset,
+  force-push, delete branches, or weaken validation.
+handoff_requirements:
+  - Record role binding, thread, worktree, branch, owned files, candidate and separate handoff commits.
+  - Record exact bundle hash, refs, derivation, commands/results, negative tests, security analysis, limitations, rollback, and pending independent QA/Security result.

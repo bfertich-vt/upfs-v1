@@ -28,14 +28,14 @@ jobs:
           # Historical provenance tests resolve immutable commits outside the
           # checkout tip, so a shallow clone is not sufficient evidence.
           fetch-depth: 0
-      - name: Hydrate immutable historical provenance fixture
-        # The authoritative branch retains the queue erratum source in its
-        # ancestry, but the distinct CI erratum source is intentionally only
-        # preserved in this versioned, Git-verified fixture. Hydrate objects;
-        # never suppress provenance validation based on source availability.
+      - name: Hydrate immutable historical provenance bundle
+        # The exact historic handoff candidates and erratum sources that are
+        # not in the checkout ancestry are preserved in a repository-local,
+        # Git-verified bundle. This is object transport only: it never
+        # suppresses provenance validation or contacts a network service.
         run: >-
-          git fetch --no-tags scripts/fixtures/historical-provenance-v1.bundle
-          'refs/fixtures/*:refs/fixtures/*'
+          git fetch --no-tags scripts/fixtures/historical-provenance-v2.bundle
+          'refs/bundle-build/traceability-v2/*:refs/fixtures/traceability-v2/*'
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "24.16.0"

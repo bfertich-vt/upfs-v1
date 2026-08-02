@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "purpose": "Git-object transport for final-handoff candidates unavailable from authoritative ancestry and exact erratum sources; not an exception or validation bypass.",
+  "bundle": "scripts/fixtures/historical-provenance-v2.bundle",
+  "sha256": "7eff5f697a06a7e163f539976d6a8f17e4dab9e2b157a4b53abc335af7c93b46",
+  "ref_prefix": "refs/bundle-build/traceability-v2/",
+  "refs": [
+    {
+      "commit": "01f3808f892598c72e43b97f494f9dc2442fe5c6",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "06b00c5942f094ff8b22c7b33061503bc0fef445",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "22d48450768e6fac0bc692178dc59e724037ce6d",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "286cbc59a54bf28e4a802e345bb295db9f98aaa4",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "2ec8213fe000a0b78c68c588eb10768a39116be3",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "2f597c85c568c08679df48fe55afc109006225df",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "37662e41e7753c7f63ee63bc21a2e109a2e98ea1",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "3aaf39cc167dce07cbdf013601830670532566ac",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "3e112eb12605b653832be597888091833c18c652",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "4ca3494dd2b19050646061ca5ce44f28e2cfca15",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "5e6990cf403d74fc630499f57d0d9252c0fc46be",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "73e84f6b11080c281beeef02146385879fafeda5",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "78e0de564d9f4dd5e3ba43ba81001b486dcc63f4",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "79de8cbc179c235a62db126f0c091b6cfa8687ae",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "7a1ea6483ee6ba09dd5ed857e868987446184f7d",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "8c17dbf33d5507a506885805b984d303d9d3793a",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "90208c69504893c7a01cbcd51a8eb35caf21f5e3",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "9fc2d266dfbb5e291ec4c0fc25dc7c1e9d2ae722",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "adc80e1c6e783258afccaaf0758e8e6e96f4ea60",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "af692c1864cba2291ec3386ca18c0066305b5c00",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "b6b541b594c84c5c3f7ef5082d58d8656a7f9945",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "ba67ccd8274002badb47d00a0ec8b288b1595570",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "c6afa07e4f5bbc4fa85fde1172e6944ac07374dd",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "d2e6ddb4591a2d32b12abdc080aff679036edf10",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "dc3e202cb0043d46da919a449c6115e718268d2c",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "ea36f0c5e99d36b38225ff976245d06a753f9ed9",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "eb1fd64c4c62842cbc28c9cfc13622c0b151ee2b",
+      "kind": "handoff-candidate"
+    },
+    {
+      "commit": "4ae7e95f0af88e21dde526be44443846a8d8d9a6",
+      "kind": "erratum-source"
+    },
+    {
+      "commit": "e7c81bf1a38726e0ac8ebf84c969219c21758aea",
+      "kind": "erratum-source"
+    }
+  ]
+}

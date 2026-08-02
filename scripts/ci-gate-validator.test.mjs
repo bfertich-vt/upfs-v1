@@ -19,14 +19,20 @@ const historicalProvenanceFixture = path.join(
   root,
   "scripts",
   "fixtures",
-  "historical-provenance-v1.bundle",
+  "historical-provenance-v2.bundle",
 );
-const historicalProvenanceCommits = [
-  "e7c81bf1a38726e0ac8ebf84c969219c21758aea",
-  "2ec8213fe000a0b78c68c588eb10768a39116be3",
-  "4ae7e95f0af88e21dde526be44443846a8d8d9a6",
-  "90208c69504893c7a01cbcd51a8eb35caf21f5e3",
-];
+const historicalProvenanceManifest = path.join(
+  root,
+  "scripts",
+  "fixtures",
+  "historical-provenance-v2.json",
+);
+const historicalProvenanceManifestData = JSON.parse(
+  fs.readFileSync(historicalProvenanceManifest, "utf8"),
+);
+const historicalProvenanceCommits = historicalProvenanceManifestData.refs.map(
+  ({ commit }) => commit,
+);
 const columns = [
   "Source file and section",
   "Requirement",
@@ -84,7 +90,7 @@ function cloneHistoricalProvenanceFixture(fixture) {
   git(fixture, [
     "fetch",
     historicalProvenanceFixture,
-    "refs/fixtures/*:refs/fixtures/*",
+    "refs/bundle-build/traceability-v2/*:refs/fixtures/traceability-v2/*",
   ]);
   for (const commit of historicalProvenanceCommits)
     assert.equal(
@@ -93,6 +99,176 @@ function cloneHistoricalProvenanceFixture(fixture) {
       `historical provenance fixture must retain ${commit}`,
     );
 }
+
+function handoffCandidateCommits(worktree) {
+  const handoffDirectory = path.join(worktree, "docs", "handoffs");
+  return fs
+    .readdirSync(handoffDirectory)
+    .filter((name) => name.endsWith(".md"))
+    .flatMap((name) => {
+      const body = fs.readFileSync(path.join(handoffDirectory, name), "utf8");
+      return [
+        ...body.matchAll(/^- Commit:\s*(?:candidate\s+)?`([a-f0-9]{40})`/gim),
+        ...body.matchAll(
+          /^- Candidate implementation commit:\s*`([a-f0-9]{40})`/gim,
+        ),
+      ].map((match) => match[1]);
+    });
+}
+
+function isAncestor(worktree, commit, head = "HEAD") {
+  return (
+    spawnSync("git", ["-C", worktree, "merge-base", "--is-ancestor", commit, head], {
+      encoding: "utf8",
+    }).status === 0
+  );
+}
+
+test("complete immutable provenance bundle hydrates every historic handoff without a semantic bypass", () => {
+  const fixture = temp("upfs-complete-provenance-bundle-");
+  const authoritative = temp("upfs-complete-provenance-authoritative-");
+  const candidate = temp("upfs-complete-provenance-candidate-");
+  try {
+    const sourceClone = spawnSync("git", ["clone", "--no-local", root, candidate], {
+      encoding: "utf8",
+    });
+    assert.equal(sourceClone.status, 0, sourceClone.stderr);
+    git(candidate, ["checkout", "--quiet", "-B", "candidate", "origin/HEAD"]);
+    git(candidate, ["config", "user.email", "fixture@example.test"]);
+    git(candidate, ["config", "user.name", "Fixture"]);
+    const candidateDiff = spawnSync("git", ["-C", root, "diff", "--binary", "HEAD"], {
+      encoding: null,
+      maxBuffer: 16 * 1024 * 1024,
+    });
+    assert.equal(candidateDiff.status, 0, candidateDiff.stderr?.toString());
+    const apply = spawnSync("git", ["-C", candidate, "apply", "--index"], {
+      encoding: "utf8",
+      input: candidateDiff.stdout,
+    });
+    assert.equal(apply.status, 0, apply.stderr);
+    git(candidate, ["commit", "--quiet", "-m", "fixture final candidate"]);
+    git(authoritative, ["init", "--bare"]);
+    git(authoritative, [
+      "fetch",
+      "--no-tags",
+      candidate,
+      `${git(candidate, ["rev-parse", "HEAD"])}:refs/heads/integration`,
+    ]);
+    const clone = spawnSync("git", ["clone", "--no-local", authoritative, fixture], {
+      encoding: "utf8",
+    });
+    assert.equal(clone.status, 0, clone.stderr);
+    git(fixture, [
+      "checkout",
+      "--quiet",
+      "-B",
+      "fixture/hosted-checkout",
+      "origin/integration",
+    ]);
+
+    const manifest = JSON.parse(
+      fs.readFileSync(
+        path.join(fixture, "scripts/fixtures/historical-provenance-v2.json"),
+        "utf8",
+      ),
+    );
+    assert.equal(manifest.schema_version, 1);
+    assert.equal(
+      manifest.bundle,
+      "scripts/fixtures/historical-provenance-v2.bundle",
+    );
+    assert.equal(
+      digest(path.join(fixture, manifest.bundle)),
+      manifest.sha256,
+      "the checked-in bundle digest must be exact",
+    );
+    assert.equal(
+      new Set(manifest.refs.map(({ commit }) => commit)).size,
+      manifest.refs.length,
+    );
+    const candidates = new Set(handoffCandidateCommits(fixture));
+    const historicalCandidates = new Set(
+      [...candidates].filter((candidate) => !isAncestor(fixture, candidate)),
+    );
+    const manifestCandidates = new Set(
+      manifest.refs
+        .filter(({ kind }) => kind === "handoff-candidate")
+        .map(({ commit }) => commit),
+    );
+    assert.deepEqual(
+      [...manifestCandidates].sort(),
+      [...historicalCandidates].sort(),
+      "manifest must contain exactly final-handoff candidates unavailable from authoritative ancestry",
+    );
+    for (const candidate of candidates)
+      assert.ok(
+        !isAncestor(fixture, candidate) || !manifestCandidates.has(candidate),
+        `reachable final-handoff candidate ${candidate} must not be transported as historical evidence`,
+      );
+    assert.deepEqual(
+      manifest.refs
+        .filter(({ kind }) => kind === "erratum-source")
+        .map(({ commit }) => commit)
+        .sort(),
+      [
+        "4ae7e95f0af88e21dde526be44443846a8d8d9a6",
+        "e7c81bf1a38726e0ac8ebf84c969219c21758aea",
+      ],
+    );
+
+    const before = validateRepositoryHandoffSpecificationDigests(fixture);
+    assert.equal(
+      before.status,
+      "failed",
+      "a fresh checkout must fail closed before hydration",
+    );
+    const verify = spawnSync(
+      "git",
+      ["-C", fixture, "bundle", "verify", manifest.bundle],
+      { encoding: "utf8" },
+    );
+    assert.equal(verify.status, 0, verify.stderr);
+    git(fixture, [
+      "fetch",
+      "--no-tags",
+      manifest.bundle,
+      "refs/bundle-build/traceability-v2/*:refs/fixtures/traceability-v2/*",
+    ]);
+    assert.deepEqual(validateRepositoryHandoffSpecificationDigests(fixture), {
+      status: "passed",
+      errors: [],
+    });
+
+    const task0123 = path.join(fixture, "docs/handoffs/TASK-0123.md");
+    const original = fs.readFileSync(task0123, "utf8");
+    fs.writeFileSync(
+      task0123,
+      original.replace(
+        "`9d8465020d6f658294fba5a20462e62fdf2d67cf6e7d74fd665f7d753f86bac1`",
+        `\`${"0".repeat(64)}\``,
+      ),
+    );
+    assert.equal(
+      validateRepositoryHandoffSpecificationDigests(fixture).status,
+      "failed",
+      "corrupt current TASK-0123 provenance must remain rejected after hydration",
+    );
+    fs.writeFileSync(
+      task0123,
+      original +
+        "\n## Git-bound provenance erratum v1 — RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-003\n",
+    );
+    assert.equal(
+      validateRepositoryHandoffSpecificationDigests(fixture).status,
+      "failed",
+      "copied current erratum marker must remain rejected after hydration",
+    );
+  } finally {
+    fs.rmSync(fixture, { force: true, recursive: true });
+    fs.rmSync(authoritative, { force: true, recursive: true });
+    fs.rmSync(candidate, { force: true, recursive: true });
+  }
+});
 
 function filesRecursively(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -1021,7 +1197,7 @@ test("historical errata validate on authoritative topology only after immutable 
       "fetch",
       "--no-tags",
       historicalProvenanceFixture,
-      "refs/fixtures/*:refs/fixtures/*",
+      "refs/bundle-build/traceability-v2/*:refs/fixtures/traceability-v2/*",
     ]);
     assert.equal(git(fixture, ["cat-file", "-t", retainedCiSource]), "commit");
     assert.deepEqual(validateRepositoryHandoffSpecificationDigests(fixture), {
