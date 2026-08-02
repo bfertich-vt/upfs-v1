@@ -1,0 +1,60 @@
+id: RECOVERY-QUEUE-PRODUCTION-BOUNDARY-HANDOFF-002
+title: Correct queue-boundary candidate handoff specification provenance
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - tasks/recovery/RECOVERY-QUEUE-PRODUCTION-BOUNDARY-001.yaml
+  - docs/handoffs/RECOVERY-QUEUE-PRODUCTION-BOUNDARY-001.md
+  - docs/handoffs/RECOVERY-QUEUE-PRODUCTION-BOUNDARY-001-QA.md
+  - scripts/ci-gate-validator.mjs
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-QUEUE-PRODUCTION-BOUNDARY-001-QA
+authorized_files:
+  - tasks/recovery/RECOVERY-QUEUE-PRODUCTION-BOUNDARY-HANDOFF-002.yaml
+  - docs/handoffs/RECOVERY-QUEUE-PRODUCTION-BOUNDARY-001.md
+  - docs/handoffs/RECOVERY-QUEUE-PRODUCTION-BOUNDARY-HANDOFF-002.md
+prohibited_files:
+  - scripts/**
+  - tasks/queue.yaml
+  - docs/governance/**
+  - docs/PRODUCTION_BACKLOG.md
+  - docs/handoffs/RECOVERY-QUEUE-PRODUCTION-BOUNDARY-001-QA.md
+  - .github/**
+  - CODEOWNERS
+  - README.md
+  - START_HERE.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - infra/**
+  - specs/**
+acceptance_criteria:
+  - Correct only the existing candidate handoff’s Specifications and contracts read record to use exact path plus SHA-256 pairs for every declared source, computed from the immutable candidate Git blob bytes.
+  - The corrected record passes handoff parser and traceability validation; no validator, queue, report, backlog, implementation, acceptance, test, or QA rejection content changes.
+  - The original QA rejection is preserved and directly addressed by a new post-commit remediation handoff.
+  - Full candidate validation has no handoff-origin error; only separately proven inherited failures may remain.
+required_tests:
+  - npm run traceability:check
+  - npm run validate
+  - npm test
+  - git diff --check
+security_requirements:
+  - Preserve immutable provenance, exact raw Git-byte digests, tenant/security claims, and fail-closed handoff grammar; no evidence erasure or claim change.
+rollback:
+  - Revert only independently accepted handoff correction; retain prior rejection evidence.
+runtime_evidence_required: Git blob digest commands/results, parser output, full gates, corrective handoff, and fresh independent QA/Security review.
