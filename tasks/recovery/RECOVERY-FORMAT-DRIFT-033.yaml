@@ -1,0 +1,70 @@
+id: RECOVERY-FORMAT-DRIFT-033
+title: Restore committed Prettier conformance for CI gate validator tests
+state: candidate
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+scope: >-
+  Correct the hosted formatting failure from run 30758005629 by applying the
+  repository's pinned Prettier formatter to scripts/ci-gate-validator.test.mjs.
+  This is whitespace-only control-plane maintenance; test and validator
+  semantics, workflow behavior, bundle contents, queue state, and product
+  behavior remain unchanged.
+allowed_files:
+  - scripts/ci-gate-validator.test.mjs
+  - tasks/recovery/RECOVERY-FORMAT-DRIFT-033.yaml
+  - docs/handoffs/RECOVERY-FORMAT-DRIFT-033.md
+prohibited_files:
+  - scripts/ci-gate-validator.mjs
+  - .github/workflows/
+  - scripts/fixtures/
+  - tasks/queue.yaml
+  - docs/reviews/
+  - apps/
+  - services/
+  - packages/
+  - contracts/
+  - infra/
+  - specs/
+  - README.md
+  - START_HERE.md
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/12_testing/test_strategy.md
+  - scripts/ci-gate-validator.test.mjs
+  - package.json
+  - .github/workflows/validate.yml
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/12_testing/test_strategy.md
+acceptance_criteria:
+  - Hosted formatting failure from run 30758005629 is corrected by the pinned Prettier version.
+  - The diff to scripts/ci-gate-validator.test.mjs is whitespace and line-wrapping only.
+  - No validator, test assertion, workflow, bundle, queue, product, security, or tenant-isolation semantics change.
+  - npm run format:check, focused validator tests, full application tests, repository validation, and diff checks pass.
+required_tests:
+  - npm ci --ignore-scripts
+  - npm run format:check
+  - node --test scripts/ci-gate-validator.test.mjs
+  - npm test
+  - npm run validate
+  - git diff --check
+  - whitespace-normalized committed-file equality assertion
+  - Hosted repository-validation and repository-security checks after independent QA and integration
+security_and_tenant_isolation: >-
+  Formatting-only change. It introduces no credentials, secrets, financial or
+  customer data, provider configuration, endpoint, policy, tenant selector, or
+  authorization behavior. Existing negative provenance and tenant-isolation
+  tests must retain their behavior.
+rollback: >-
+  Correct forward only through a separate independently reviewed commit. Preserve
+  this candidate, its review evidence, and hosted run records. Do not amend,
+  reset, force-push, delete branches, rewrite history, or weaken a gate.
+handoff_requirements:
+  - Record role binding, role-file digest, agent thread, worktree, branch, commits, and owned files.
+  - Record hosted failure, whitespace-only proof, commands/results, negative cases, security analysis, limitations, rollback, and pending independent QA result.

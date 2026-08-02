@@ -118,9 +118,13 @@ function handoffCandidateCommits(worktree) {
 
 function isAncestor(worktree, commit, head = "HEAD") {
   return (
-    spawnSync("git", ["-C", worktree, "merge-base", "--is-ancestor", commit, head], {
-      encoding: "utf8",
-    }).status === 0
+    spawnSync(
+      "git",
+      ["-C", worktree, "merge-base", "--is-ancestor", commit, head],
+      {
+        encoding: "utf8",
+      },
+    ).status === 0
   );
 }
 
@@ -129,9 +133,13 @@ test("complete immutable provenance bundle hydrates every historic handoff witho
   const authoritative = temp("upfs-complete-provenance-authoritative-");
   const candidate = temp("upfs-complete-provenance-candidate-");
   try {
-    const sourceClone = spawnSync("git", ["clone", "--no-local", root, candidate], {
-      encoding: "utf8",
-    });
+    const sourceClone = spawnSync(
+      "git",
+      ["clone", "--no-local", root, candidate],
+      {
+        encoding: "utf8",
+      },
+    );
     assert.equal(sourceClone.status, 0, sourceClone.stderr);
     git(candidate, [
       "checkout",
@@ -147,9 +155,13 @@ test("complete immutable provenance bundle hydrates every historic handoff witho
       candidate,
       `${git(candidate, ["rev-parse", "HEAD"])}:refs/heads/integration`,
     ]);
-    const clone = spawnSync("git", ["clone", "--no-local", authoritative, fixture], {
-      encoding: "utf8",
-    });
+    const clone = spawnSync(
+      "git",
+      ["clone", "--no-local", authoritative, fixture],
+      {
+        encoding: "utf8",
+      },
+    );
     assert.equal(clone.status, 0, clone.stderr);
     git(fixture, [
       "checkout",
