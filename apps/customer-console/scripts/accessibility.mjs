@@ -8,6 +8,11 @@ import { createSearchApi, createSearchWorkbench } from '../transaction-search-wo
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 let assertions = 0;
 const check = (condition, message) => { assertions += 1; assert.ok(condition, message); };
+const contrast = (foreground, background) => {
+  const luminance = (hex) => hex.match(/[a-f0-9]{2}/gi).map((part) => Number.parseInt(part, 16) / 255).map((value) => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4).reduce((total, value, index) => total + value * [0.2126, 0.7152, 0.0722][index], 0);
+  const [lighter, darker] = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+  return (lighter + 0.05) / (darker + 0.05);
+};
 
 class Element {
   constructor(tag) { this.tagName = tag.toUpperCase(); this.children = []; this.attributes = {}; this.listeners = {}; this.textContent = ''; this.value = ''; this.type = ''; this.name = ''; this.required = false; this.disabled = false; }
@@ -28,7 +33,12 @@ for (const page of ['console-shell.html', 'transaction-search-workbench.html']) 
   check(/<html lang="en">/i.test(html), `${page} must declare language`);
   check(/<meta charset="utf-8">/i.test(html), `${page} must declare encoding`);
   check(/<meta name="viewport"/i.test(html), `${page} must declare viewport`);
+  check(/<link rel="stylesheet" href="\.\/console\.css">/i.test(html), `${page} must load the shared accessible stylesheet`);
 }
+const stylesheet = fs.readFileSync(path.join(root, 'console.css'), 'utf8');
+check(contrast('101828', 'ffffff') >= 4.5, 'foreground and background colors must meet normal-text contrast');
+check(contrast('175cd3', 'ffffff') >= 3, 'focus indicator must meet non-text contrast');
+check(/:focus-visible\s*\{[^}]*outline:\s*3px\s+solid\s+#175cd3/i.test(stylesheet), 'keyboard focus indicator must be visible');
 
 globalThis.document = { createElement: (tag) => new Element(tag) };
 const consoleHost = host();

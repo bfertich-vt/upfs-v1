@@ -1,0 +1,3 @@
+:root { color: #101828; background: #ffffff; font-family: system-ui, sans-serif; }
+button, input { color: #101828; background: #ffffff; border: 1px solid #475467; }
+button:focus-visible, input:focus-visible { outline: 3px solid #175cd3; outline-offset: 2px; }
