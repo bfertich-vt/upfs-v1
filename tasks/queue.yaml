@@ -1859,6 +1859,8 @@ tasks:
     rollback: Revert only the accepted decision record; do not alter historic reclassifications.
     runtime_evidence: Source-bound decision reviewed asset inventory and explicit absent-runtime-capability statement.
     external_prerequisites: Authorized FDX documentation and named owners for candidate legacy assets.
+    decision_record: docs/decisions/ADR-007-fdx-first-legacy-reuse.md
+    decision_outcome: FDX-first; no in-tree legacy asset accepted or adapted; provider contract version remains unselected pending authorized documentation.
   - id: TASK-0112
     title: Provision approved FDX provider sandbox credential boundary
     status: blocked

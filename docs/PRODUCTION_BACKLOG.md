@@ -18,7 +18,7 @@ money movement, ledger replacement, and autonomous agents.
 
 | Task | Outcome | Requirement mapping | Current gate |
 | --- | --- | --- | --- |
-| TASK-0111 | FDX-first and legacy-reuse decision | master plan, constitution, security | ready: decision-only; no runtime capability |
+| TASK-0111 | FDX-first and legacy-reuse decision | master plan, constitution, security | ready: [ADR-007](decisions/ADR-007-fdx-first-legacy-reuse.md) recorded; independent review pending; no runtime capability |
 | TASK-0112 | Provider sandbox credential boundary | architecture data path; security | blocked: decision, provider approval, managed credentials |
 | TASK-0113 | Immutable evidence and quarantine | constitution invariants; architecture data path | blocked: sandbox boundary and content scanning |
 | TASK-0114 | Canonical normalization and taxonomy | constitution correctness; architecture data path | blocked: validated raw evidence |
@@ -41,6 +41,12 @@ API/schema compatibility review, and regression plus negative-test review have
 all passed. The decision records asset/version/owner, evidence, residual risk,
 migration or removal plan, and rollback. Existing samples, handoffs, fixtures,
 or in-memory seams are not production-capable reuse.
+
+`ADR-007` records this decision gate with an explicit zero-asset in-tree
+inventory: no candidate legacy UPFS/Vetralysis asset was found, so no asset is
+accepted or adapted. It remains ready pending independent QA/Security review;
+it does not select an FDX/provider contract version, authorize provider access,
+or satisfy any downstream external prerequisite.
 
 ## Inherited delivery requirements
 
