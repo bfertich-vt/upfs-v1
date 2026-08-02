@@ -8,6 +8,20 @@ permissions:
 jobs:
   repository-validation:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres@sha256:38471f330eb885e04de130b768d6db4e10469e2311879c7e5c699f6d2d8a1c74 # 16.10-bookworm
+        env:
+          POSTGRES_DB: upfs_ci
+          POSTGRES_USER: upfs_ci
+          POSTGRES_PASSWORD: upfs-ci-test-only
+        options: >-
+          --health-cmd "pg_isready -U upfs_ci -d upfs_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -35,6 +49,8 @@ jobs:
         run: npm run generated:check
       - name: Migration gate
         run: npm run migration:check
+        env:
+          UPFS_TEST_DATABASE_URL: postgresql://upfs_ci:upfs-ci-test-only@127.0.0.1:5432/upfs_ci
       - name: Tenant-isolation gate
         run: npm run tenant-isolation:check
       - name: Documentation and example gate
