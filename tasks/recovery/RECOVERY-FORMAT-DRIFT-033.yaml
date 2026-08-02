@@ -44,7 +44,8 @@ normative_sources:
   - specs/12_testing/test_strategy.md
 acceptance_criteria:
   - Hosted formatting failure from run 30758005629 is corrected by the pinned Prettier version.
-  - The diff to scripts/ci-gate-validator.test.mjs is whitespace and line-wrapping only.
+  - The diff to scripts/ci-gate-validator.test.mjs is Prettier layout only,
+    plus semantically inert trailing commas inserted by the pinned formatter.
   - No validator, test assertion, workflow, bundle, queue, product, security, or tenant-isolation semantics change.
   - npm run format:check, focused validator tests, full application tests, repository validation, and diff checks pass.
 required_tests:
@@ -54,7 +55,8 @@ required_tests:
   - npm test
   - npm run validate
   - git diff --check
-  - whitespace-normalized committed-file equality assertion
+  - formatter-normalized semantic-equivalence assertion that strips whitespace
+    and trailing commas immediately before a closing call parenthesis
   - Hosted repository-validation and repository-security checks after independent QA and integration
 security_and_tenant_isolation: >-
   Formatting-only change. It introduces no credentials, secrets, financial or
