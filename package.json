@@ -16,7 +16,7 @@
   },
   "scripts": {
     "test": "node --test scripts/*.test.mjs services/*.test.mjs apps/**/*.test.mjs",
-    "format:check": "prettier --check package.json package-lock.json .github/workflows/*.yml scripts/ci-gate-validator.mjs scripts/ci-gate-validator.test.mjs scripts/embedded-postgres-ci-gate.mjs scripts/embedded-postgres-ci-gate.test.mjs scripts/postgres-service-ci-gate.mjs scripts/postgres-service-ci-gate.test.mjs scripts/format-committed-candidate-check.mjs tasks/recovery/RECOVERY-CI-GATES-001.yaml tasks/recovery/RECOVERY-CI-PG-YAML-TAG-020.yaml",
+    "format:check": "prettier --check package.json package-lock.json .github/workflows/*.yml scripts/ci-gate-validator.mjs scripts/ci-gate-validator.test.mjs scripts/embedded-postgres-ci-gate.mjs scripts/embedded-postgres-ci-gate.test.mjs scripts/postgres-service-ci-gate.mjs scripts/postgres-service-ci-gate.test.mjs scripts/format-committed-candidate-check.mjs tasks/recovery/RECOVERY-CI-GATES-001.yaml tasks/recovery/RECOVERY-CI-PG-NODE-RANGE-022.yaml",
     "format:committed": "node scripts/format-committed-candidate-check.mjs",
     "lint": "eslint --no-config-lookup --rule no-constant-binary-expression:error scripts/**/*.mjs services/**/*.mjs apps/**/*.mjs",
     "static:check": "tsc --noEmit --allowJs false packages/sdk-generated/index.ts",

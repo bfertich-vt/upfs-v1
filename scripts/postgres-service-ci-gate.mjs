@@ -14,9 +14,35 @@ const testConnection = Object.freeze({
   password: "upfs-ci-test-only",
   connectionTimeoutMillis: 10_000,
 });
-export const taskId = "RECOVERY-CI-PG-YAML-TAG-020";
+export const taskId = "RECOVERY-CI-PG-NODE-RANGE-022";
 export const fixedTestDatabaseUrl =
   "postgresql://upfs_ci:upfs-ci-test-only@127.0.0.1:5432/upfs_ci";
+
+function rawPortNodeSource(workflowText, portsNode) {
+  const range = portsNode?.range;
+  if (
+    !Array.isArray(range) ||
+    range.length !== 3 ||
+    !range.every(Number.isSafeInteger) ||
+    range[0] < 0 ||
+    range[0] > range[1] ||
+    range[1] > range[2] ||
+    range[2] > workflowText.length
+  )
+    throw new Error(
+      "PostgreSQL CI service port AST node must expose a bounded source range",
+    );
+
+  // YAML's sequence-node range begins at the first list indicator, omitting
+  // indentation. Expand only backward to that node's own source line: this
+  // retains the exact lexical spelling without searching unrelated services.
+  const lineStart = workflowText.lastIndexOf("\n", range[0] - 1) + 1;
+  if (lineStart < 0 || lineStart > range[0])
+    throw new Error(
+      "PostgreSQL CI service port AST node source range cannot be located",
+    );
+  return workflowText.slice(lineStart, range[2]);
+}
 
 export function validateWorkflowPortBinding(workflowText) {
   const document = parseDocument(workflowText, {
@@ -54,6 +80,10 @@ export function validateWorkflowPortBinding(workflowText) {
   )
     throw new Error(
       "PostgreSQL CI service must publish exactly one ordinary untagged plain scalar 5432:5432 mapping",
+    );
+  if (rawPortNodeSource(workflowText, portsNode) !== "          - 5432:5432\n")
+    throw new Error(
+      "PostgreSQL CI service port source must contain exactly one canonical raw list item within its AST node range",
     );
   if (migrationStep?.env?.UPFS_TEST_DATABASE_URL !== fixedTestDatabaseUrl)
     throw new Error(

@@ -67,6 +67,45 @@ test("PostgreSQL CI service publishes the exact fixed loopback port used by migr
       ),
     ),
   );
+  for (const rawVariant of [
+    "          -  5432:5432\n",
+    "          - 5432:5432 \n",
+    "         - 5432:5432\n",
+    "\t          - 5432:5432\n",
+    "          - 5432:5432 # canonical-looking comment\n",
+  ]) {
+    assert.throws(
+      () =>
+        validateWorkflowPortBinding(
+          workflow.replace("          - 5432:5432\n", rawVariant),
+        ),
+      `must reject raw lexical port variant ${JSON.stringify(rawVariant)}`,
+    );
+  }
+  assert.throws(() =>
+    validateWorkflowPortBinding(workflow.replaceAll("\n", "\r\n")),
+  );
+
+  const servicesEnd = workflow.indexOf("    steps:\n");
+  assert.notEqual(
+    servicesEnd,
+    -1,
+    "workflow must contain the services/steps boundary",
+  );
+  const alternateActualService = workflow
+    .slice(0, servicesEnd)
+    .replace(
+      "      postgres:\n",
+      "      decoy:\n        ports:\n          - 5432:5432\n      postgres:\n",
+    )
+    .replace(/^        /gm, "          ")
+    .concat(workflow.slice(servicesEnd));
+  // Valid YAML: the decoy has the canonical spelling, while the actual
+  // postgres service is parsed at its required path with alternate indentation.
+  assert.throws(
+    () => validateWorkflowPortBinding(alternateActualService),
+    /within its AST node range/,
+  );
   assert.throws(() =>
     validateWorkflowPortBinding(
       workflow.replace(":5432/upfs_ci", ":6543/upfs_ci"),
@@ -132,7 +171,7 @@ class FakeClient {
 test("every PostgreSQL gate result records only the current task identity", async () => {
   const boundary = await runPostgresServiceGate({ databaseUrl: undefined });
   assert.equal(boundary.task, taskId);
-  assert.equal(boundary.task, "RECOVERY-CI-PG-YAML-TAG-020");
+  assert.equal(boundary.task, "RECOVERY-CI-PG-NODE-RANGE-022");
 
   class FailingClient extends FakeClient {
     async connect() {
@@ -177,6 +216,10 @@ test("every PostgreSQL gate result records only the current task identity", asyn
     );
     assert.equal(
       JSON.stringify(result).includes("RECOVERY-CI-PG-PORT-PARSER-019"),
+      false,
+    );
+    assert.equal(
+      JSON.stringify(result).includes("RECOVERY-CI-PG-YAML-TAG-020"),
       false,
     );
   }
