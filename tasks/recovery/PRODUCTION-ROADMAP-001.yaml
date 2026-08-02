@@ -1,0 +1,76 @@
+id: PRODUCTION-ROADMAP-001
+title: Create a requirement-mapped production backlog for the FDX-first transaction slice
+status: candidate
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/01_product/vision_and_scope.md
+  - specs/03_architecture/system_architecture.md
+  - specs/05_apis/api_standards.md
+  - specs/06_ai/ai_runtime.md
+  - specs/07_workflows/workflow_runtime.md
+  - specs/08_policies/policy_system.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/MASTER_PLAN.md
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - docs/REPOSITORY_GOVERNANCE.md
+  - tasks/queue.yaml
+  - README.md
+  - START_HERE.md
+normative_sources:
+  - docs/MASTER_PLAN.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/01_product/vision_and_scope.md
+  - specs/03_architecture/system_architecture.md
+  - specs/05_apis/api_standards.md
+  - specs/06_ai/ai_runtime.md
+  - specs/07_workflows/workflow_runtime.md
+  - specs/08_policies/policy_system.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-DOCUMENTATION-STATUS-002-QA
+authorized_files:
+  - tasks/recovery/PRODUCTION-ROADMAP-001.yaml
+  - docs/PRODUCTION_BACKLOG.md
+  - tasks/queue.yaml
+  - docs/handoffs/PRODUCTION-ROADMAP-001.md
+prohibited_files:
+  - README.md
+  - START_HERE.md
+  - CODEOWNERS
+  - .github/**
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - apps/**
+  - services/**
+  - packages/**
+  - contracts/**
+  - infra/**
+  - scripts/**
+  - specs/**
+acceptance_criteria:
+  - Add a dependency-controlled production backlog mapped to master-plan and normative sections, with no claim that blocked/reference/synthetic work is production capability.
+  - Add only the minimum real tasks necessary to deliver the first FDX-first provider-sandbox transaction vertical slice: architecture/legacy-reuse decision; provider sandbox credentials/external prerequisite; incremental sync/webhooks/pagination/reconciliation; immutable raw evidence/quarantine; canonical transaction normalization and governed taxonomy/provider category preservation; bitemporal PostgreSQL tenant-isolated persistence; transactional outbox; authorized canonical read API; runtime composition/observability; test and security acceptance; and independent QA stages.
+  - Backlog also includes real prerequisites for the currently failing skill and accessibility CI gates, classified as product capability work—not synthetic evidence—and correctly ordered without displacing the FDX slice.
+  - Each proposed task has structured inputs, normative sources, dependencies, role, authorized/prohibited files, acceptance criteria, contracts, required tests, tenant/security requirements, documentation, rollback, runtime evidence, and external prerequisites.
+  - Queue preserves existing TASK-0001–TASK-0110 reclassifications and historic evidence; no existing task completion status is inflated. New tasks are candidate/blocked until supervisor authorization, except only a planning/decision task that is objectively ready with no unresolved dependency.
+  - FDX-first and legacy UPFS/Vetralysis reuse decision is explicit: reuse requires security, licensing, compatibility, and test review; no reuse is presumed.
+  - Handoff is post-commit/provenance complete and candidate validation passes; independent QA/Security review is pending.
+required_tests:
+  - npm run traceability:check
+  - npm run validate
+  - npm test
+  - git diff --check
+security_requirements:
+  - Backlog preserves tenant isolation, authorization, evidence immutability, auditability, replay/idempotency, secret handling, leakage controls, and external-credential boundaries.
+rollback:
+  - Revert only independently accepted roadmap/queue additions; preserve historical reclassification and provenance evidence.
+runtime_evidence_required: Requirement-to-task mapping, queue structural validation, current capability classification, exact command results, candidate handoff, and independent QA/Security review.
