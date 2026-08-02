@@ -1,0 +1,63 @@
+id: RECOVERY-SKILL-POLICY-SHAPE-025
+title: Close reference-skill policy shape against digest-consistent bypasses
+state: in_progress
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+scope: >-
+  Corrective-forward from the rejected policy candidate. Enforce an exact,
+  closed-world, deny-only policy shape for the reference-only skill registry.
+  This is repository control-plane validation, not AI runtime capability.
+allowed_files:
+  - registries/skills/**
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - tasks/recovery/RECOVERY-SKILL-POLICY-SHAPE-025.yaml
+  - docs/handoffs/RECOVERY-SKILL-POLICY-SHAPE-025.md
+prohibited_files:
+  - tasks/queue.yaml
+  - .github/**
+  - README.md
+  - START_HERE.md
+  - services/**
+  - apps/**
+  - contracts/**
+  - infra/**
+  - specs/**
+  - docs/reviews/**
+  - package.json
+  - package-lock.json
+acceptance_criteria:
+  - Policy top-level fields are exactly schema_version and rules.
+  - Policy rules are exactly the three defined deny rules, in canonical order, with only id, effect, subject, and substantive reason fields.
+  - Any default, exception, alias, unknown key, added rule, omitted rule, or permit-like effect fails even after the policy digest is recomputed.
+  - The reference contract remains zero-tools, zero-permissions, contract/reference, and reference release-state only.
+  - Validation does not add production model, provider, tenant, API, deployment, or authorization-runtime behavior.
+required_sources:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/06_ai/ai_runtime.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/reviews/RECOVERY-SKILL-POLICY-024-QA.md at commit 1365bb1
+security_and_tenant_isolation: >-
+  Deny by default applies to this static reference contract: it can neither
+  call tools nor access tenant/customer data nor make authoritative decisions.
+  No tenant runtime is changed; fixtures are synthetic metadata only.
+required_tests:
+  - npm ci --ignore-scripts
+  - node --test scripts/ci-gate-validator.test.mjs
+  - npm run skill:check
+  - npm run ci:gates
+  - npm test
+  - npm run validate
+  - git diff --check
+  - Digest-consistent replays for default effect, exceptions, aliases, added rules, unknown nested keys, permit effects, and missing rules
+rollback: >-
+  Corrective-forward only. Preserve all rejected candidates and reviews. Revert
+  an independently accepted correction only by a separately reviewed commit;
+  never reset, force-push, delete branches, or rewrite evidence.
+handoff_requirements:
+  - Full task, role, role-file digest, thread, worktree, branch, commit, source, acceptance, test, negative-test, security, limitation, prerequisite, rollback, and independent-review provenance

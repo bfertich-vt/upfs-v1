@@ -1766,33 +1766,56 @@ function validateSkillRegistry(root, errors) {
           fs.readFileSync(policyFile, "utf8"),
         );
         const policyData = policyDocument.toJS() ?? {};
-        const requiredDenials = new Set([
-          "tool_call",
-          "tenant_or_customer_data",
-          "authorization_financial_truth_workflow_state",
+        const requiredPolicy = [
+          {
+            id: "deny-tool-access",
+            subject: "tool_call",
+          },
+          {
+            id: "deny-tenant-data",
+            subject: "tenant_or_customer_data",
+          },
+          {
+            id: "deny-authoritative-decisions",
+            subject: "authorization_financial_truth_workflow_state",
+          },
+        ];
+        const permittedTopLevelFields = new Set(["schema_version", "rules"]);
+        const permittedRuleFields = new Set([
+          "id",
+          "effect",
+          "subject",
+          "reason",
         ]);
-        const deniedSubjects = new Set();
-        let permissiveProtectedSubject = false;
-        for (const rule of Array.isArray(policyData.rules)
-          ? policyData.rules
-          : []) {
-          if (!rule || typeof rule !== "object" || Array.isArray(rule))
-            continue;
-          if (requiredDenials.has(rule.subject)) {
-            if (rule.effect === "deny") deniedSubjects.add(rule.subject);
-            else permissiveProtectedSubject = true;
-          }
-        }
+        const hasOnlyTopLevelFields = Object.keys(policyData).every((field) =>
+          permittedTopLevelFields.has(field),
+        );
+        const exactRules =
+          Array.isArray(policyData.rules) &&
+          policyData.rules.length === requiredPolicy.length &&
+          requiredPolicy.every((expected, index) => {
+            const rule = policyData.rules[index];
+            return (
+              rule &&
+              typeof rule === "object" &&
+              !Array.isArray(rule) &&
+              Object.keys(rule).every((field) =>
+                permittedRuleFields.has(field),
+              ) &&
+              rule.id === expected.id &&
+              rule.effect === "deny" &&
+              rule.subject === expected.subject &&
+              meaningful(rule.reason)
+            );
+          });
         if (
           policyDocument.errors.length ||
           policyData.schema_version !== 1 ||
-          !Array.isArray(policyData.rules) ||
-          !policyData.rules.length ||
-          permissiveProtectedSubject ||
-          [...requiredDenials].some((subject) => !deniedSubjects.has(subject))
+          !hasOnlyTopLevelFields ||
+          !exactRules
         ) {
           errors.push(
-            `${label} policy must explicitly deny tools, tenant/customer data, and authoritative decisions without permissive overrides.`,
+            `${label} policy must have only schema_version and the exact three deny-only reference rules; defaults, exceptions, aliases, unknown fields, and additional rules are prohibited.`,
           );
         }
       }

@@ -278,7 +278,7 @@ function writeCapabilityFixture(fixture) {
   const policy = write(
     fixture,
     "registries/skills/policies/example.yaml",
-    "schema_version: 1\nrules:\n  - id: deny-tool\n    effect: deny\n    subject: tool_call\n  - id: deny-data\n    effect: deny\n    subject: tenant_or_customer_data\n  - id: deny-authoritative\n    effect: deny\n    subject: authorization_financial_truth_workflow_state\n",
+    "schema_version: 1\nrules:\n  - id: deny-tool-access\n    effect: deny\n    subject: tool_call\n    reason: Reference-only contracts have no allowlisted tools.\n  - id: deny-tenant-data\n    effect: deny\n    subject: tenant_or_customer_data\n    reason: Repository governance evidence cannot include customer data.\n  - id: deny-authoritative-decisions\n    effect: deny\n    subject: authorization_financial_truth_workflow_state\n    reason: Skills cannot authorize, establish financial truth, or own workflow state.\n",
   );
   const evaluation = write(
     fixture,
@@ -1584,120 +1584,131 @@ test("runtime capability gates reject empty, unbound, and unsafe placeholder art
   );
 });
 
-test("skill capability gate rejects digest-consistent policy and zero-tool bypasses", () => {
-  const fixture = temp("upfs-skill-policy-");
-  writeCapabilityFixture(fixture);
-  const definition = path.join(
-    fixture,
-    "registries/skills/definitions/example.yaml",
-  );
-  const policy = path.join(fixture, "registries/skills/policies/example.yaml");
-  const registry = path.join(fixture, "registries/skills/index.yaml");
+test("skill capability gate rejects digest-consistent closed-world policy bypasses", () => {
+  function capabilityFixture() {
+    const fixture = temp("upfs-skill-policy-");
+    writeCapabilityFixture(fixture);
+    return {
+      fixture,
+      definition: path.join(
+        fixture,
+        "registries/skills/definitions/example.yaml",
+      ),
+      policy: path.join(fixture, "registries/skills/policies/example.yaml"),
+      registry: path.join(fixture, "registries/skills/index.yaml"),
+    };
+  }
 
-  function refreshDigest(file) {
-    const oldDigest = /digest: ([a-f0-9]{64})/.exec(
-      fs.readFileSync(registry, "utf8"),
-    )?.[1];
+  function refreshArtifactDigest(registry, artifact) {
+    const text = fs.readFileSync(registry, "utf8");
+    const oldDigest = /digest: ([a-f0-9]{64})/.exec(text)?.[1];
     assert.ok(oldDigest);
-    fs.writeFileSync(
-      registry,
-      fs.readFileSync(registry, "utf8").replaceAll(oldDigest, digest(file)),
+    fs.writeFileSync(registry, text.replaceAll(oldDigest, digest(artifact)));
+  }
+
+  function refreshPolicyDigest(registry, policy) {
+    const text = fs.readFileSync(registry, "utf8");
+    const oldDigest =
+      /policies\/example\.yaml\n      digest: ([a-f0-9]{64})/.exec(text)?.[1];
+    assert.ok(oldDigest);
+    fs.writeFileSync(registry, text.replace(oldDigest, digest(policy)));
+  }
+
+  function rejectsPolicyMutation(name, mutate) {
+    const { fixture, policy, registry } = capabilityFixture();
+    mutate(policy);
+    refreshPolicyDigest(registry, policy);
+    const result = validateRuntimeCapabilities(fixture, ["skill"]);
+    assert.equal(result.status, "failed", name);
+    assert.ok(
+      result.errors.some((error) => error.includes("exact three deny-only")),
+      name,
     );
   }
 
-  fs.appendFileSync(definition, "tool_aliases: [unrestricted-network]\n");
-  refreshDigest(definition);
-  let result = validateRuntimeCapabilities(fixture, ["skill"]);
-  assert.equal(result.status, "failed");
-  assert.ok(
-    result.errors.some((error) => error.includes("zero permissions/tools")),
-  );
+  {
+    const { fixture, definition, registry } = capabilityFixture();
+    fs.appendFileSync(definition, "tool_aliases: [unrestricted-network]\n");
+    refreshArtifactDigest(registry, definition);
+    const result = validateRuntimeCapabilities(fixture, ["skill"]);
+    assert.equal(result.status, "failed");
+    assert.ok(
+      result.errors.some((error) => error.includes("zero permissions/tools")),
+    );
+  }
 
-  fs.writeFileSync(
-    definition,
-    fs
-      .readFileSync(definition, "utf8")
-      .replace("tool_aliases: [unrestricted-network]\n", "")
-      .replace("tools: []", "tools: [unrestricted-network]"),
-  );
-  refreshDigest(definition);
-  result = validateRuntimeCapabilities(fixture, ["skill"]);
-  assert.equal(result.status, "failed");
-  assert.ok(
-    result.errors.some((error) => error.includes("zero permissions/tools")),
-  );
+  {
+    const { fixture, definition, registry } = capabilityFixture();
+    fs.writeFileSync(
+      definition,
+      fs
+        .readFileSync(definition, "utf8")
+        .replace("tools: []", "tools: [unrestricted-network]"),
+    );
+    refreshArtifactDigest(registry, definition);
+    const result = validateRuntimeCapabilities(fixture, ["skill"]);
+    assert.equal(result.status, "failed");
+    assert.ok(
+      result.errors.some((error) => error.includes("zero permissions/tools")),
+    );
+  }
 
-  fs.writeFileSync(
-    policy,
-    fs
-      .readFileSync(policy, "utf8")
-      .replace(
-        "effect: deny\n    subject: tool_call",
-        "effect: allow\n    subject: tool_call",
-      ),
+  rejectsPolicyMutation("default allow", (policy) =>
+    fs.appendFileSync(policy, "default_effect: allow\n"),
   );
-  const policyText = fs.readFileSync(policy, "utf8");
-  const oldPolicyDigest =
-    /policies\/example\.yaml\n      digest: ([a-f0-9]{64})/.exec(
-      fs.readFileSync(registry, "utf8"),
-    )?.[1];
-  assert.ok(oldPolicyDigest);
-  fs.writeFileSync(
-    registry,
-    fs.readFileSync(registry, "utf8").replace(oldPolicyDigest, digest(policy)),
+  rejectsPolicyMutation("top-level alias", (policy) =>
+    fs.appendFileSync(policy, "tool_aliases: [unrestricted-network]\n"),
   );
-  assert.ok(policyText.includes("effect: allow"));
-  result = validateRuntimeCapabilities(fixture, ["skill"]);
-  assert.equal(result.status, "failed");
-  assert.ok(
-    result.errors.some((error) => error.includes("explicitly deny tools")),
+  rejectsPolicyMutation("nested exception", (policy) =>
+    fs.appendFileSync(policy, "    exceptions: [unrestricted-network]\n"),
   );
-
-  const permissivePolicyDigest =
-    /policies\/example\.yaml\n      digest: ([a-f0-9]{64})/.exec(
-      fs.readFileSync(registry, "utf8"),
-    )?.[1];
-  assert.ok(permissivePolicyDigest);
-  fs.writeFileSync(
-    policy,
-    fs
-      .readFileSync(policy, "utf8")
-      .replace(
-        "effect: allow\n    subject: tool_call",
-        "effect: deny\n    subject: tool_call",
-      )
-      .replace(
-        /  - id: deny-authoritative[\s\S]*?authorization_financial_truth_workflow_state\n/,
-        "",
-      ),
-  );
-  fs.writeFileSync(
-    registry,
-    fs
-      .readFileSync(registry, "utf8")
-      .replace(permissivePolicyDigest, digest(policy)),
-  );
-  result = validateRuntimeCapabilities(fixture, ["skill"]);
-  assert.equal(result.status, "failed");
-  assert.ok(
-    result.errors.some((error) => error.includes("authoritative decisions")),
-  );
-
-  fs.writeFileSync(
-    registry,
-    fs
-      .readFileSync(registry, "utf8")
-      .replace(
-        "classification: contract/reference",
-        "classification: production",
-      )
-      .replace("release_state: reference", "release_state: released"),
-  );
-  result = validateRuntimeCapabilities(fixture, ["skill"]);
-  assert.equal(result.status, "failed");
-  assert.ok(
-    result.errors.some((error) =>
-      error.includes("classified contract/reference"),
+  rejectsPolicyMutation("allow rule", (policy) =>
+    fs.appendFileSync(
+      policy,
+      "  - id: allow-network\n    effect: allow\n    subject: tool_alias:unrestricted-network\n    reason: bypass\n",
     ),
   );
+  rejectsPolicyMutation("unknown nested rule key", (policy) =>
+    fs.appendFileSync(policy, "    override: permit\n"),
+  );
+  rejectsPolicyMutation("permissive required rule", (policy) => {
+    fs.writeFileSync(
+      policy,
+      fs
+        .readFileSync(policy, "utf8")
+        .replace(
+          "effect: deny\n    subject: tool_call",
+          "effect: allow\n    subject: tool_call",
+        ),
+    );
+  });
+  rejectsPolicyMutation("missing required rule", (policy) => {
+    fs.writeFileSync(
+      policy,
+      fs
+        .readFileSync(policy, "utf8")
+        .replace(/  - id: deny-authoritative-decisions[\s\S]*?(?=\n  -|$)/, ""),
+    );
+  });
+
+  {
+    const { fixture, registry } = capabilityFixture();
+    fs.writeFileSync(
+      registry,
+      fs
+        .readFileSync(registry, "utf8")
+        .replace(
+          "classification: contract/reference",
+          "classification: production",
+        )
+        .replace("release_state: reference", "release_state: released"),
+    );
+    const result = validateRuntimeCapabilities(fixture, ["skill"]);
+    assert.equal(result.status, "failed");
+    assert.ok(
+      result.errors.some((error) =>
+        error.includes("classified contract/reference"),
+      ),
+    );
+  }
 });
