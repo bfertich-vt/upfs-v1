@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -14,25 +14,69 @@ const verificationDocument = fs.readFileSync(
 );
 const documentedCommand = verificationDocument.match(/```powershell\r?\n([\s\S]*?)\r?\n```/)[1];
 
+function executeLiteralCommand(scriptPath, commit, artifact) {
+  return spawnSync(
+    'powershell.exe',
+    [
+      '-NoProfile',
+      '-NonInteractive',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-File',
+      scriptPath,
+      '-Commit',
+      commit,
+      '-Path',
+      artifact,
+    ],
+    { cwd: repositoryRoot, encoding: 'utf8' },
+  );
+}
+
 test('the literal documented PowerShell Git-byte SHA-256 command executes', () => {
   const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repositoryRoot, encoding: 'utf8' }).trim();
   const artifact = 'AGENTS.md';
   const expected = crypto.createHash('sha256').update(
     execFileSync('git', ['show', `${commit}:${artifact}`], { cwd: repositoryRoot }),
   ).digest('hex');
-  const literalCommand = documentedCommand.replace('<commit>', commit).replace('<path>', artifact);
   const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'upfs-provenance-command-'));
   const scriptPath = path.join(tempDirectory, 'documented-command.ps1');
 
   try {
-    fs.writeFileSync(scriptPath, literalCommand, 'utf8');
-    const actual = execFileSync(
-      'powershell.exe',
-      ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', scriptPath],
-      { cwd: repositoryRoot, encoding: 'utf8' },
-    ).trim();
+    fs.writeFileSync(scriptPath, documentedCommand, 'utf8');
+    const result = executeLiteralCommand(scriptPath, commit, artifact);
+    assert.equal(result.status, 0, result.stderr);
+    const actual = result.stdout.trim();
     assert.match(actual, /^[a-f0-9]{64}$/);
     assert.equal(actual, expected);
+  } finally {
+    fs.rmSync(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('the literal documented command rejects malformed and injection-bearing inputs without execution', () => {
+  const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repositoryRoot, encoding: 'utf8' }).trim();
+  const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'upfs-provenance-command-negative-'));
+  const scriptPath = path.join(tempDirectory, 'documented-command.ps1');
+  const cases = [
+    ['semicolon injection', commit, 'AGENTS.md; Write-Output INJECTED'],
+    ['whitespace injection', commit, 'AGENTS.md INJECTED'],
+    ['quote/metacharacter injection', commit, "AGENTS.md'$(Write-Output INJECTED)"],
+    ['missing ref', '0000000000000000000000000000000000000000', 'AGENTS.md'],
+    ['malformed ref', 'not-a-commit', 'AGENTS.md'],
+    ['absolute path', commit, 'C:/Windows/system32/drivers/etc/hosts'],
+    ['traversal path', commit, '../AGENTS.md'],
+    ['untracked path', commit, 'not-tracked.txt'],
+    ['missing path', commit, 'docs/missing.md'],
+  ];
+
+  try {
+    fs.writeFileSync(scriptPath, documentedCommand, 'utf8');
+    for (const [name, candidateCommit, artifact] of cases) {
+      const result = executeLiteralCommand(scriptPath, candidateCommit, artifact);
+      assert.notEqual(result.status, 0, `${name} unexpectedly succeeded`);
+      assert.doesNotMatch(`${result.stdout}${result.stderr}`, /INJECTED/);
+    }
   } finally {
     fs.rmSync(tempDirectory, { recursive: true, force: true });
   }

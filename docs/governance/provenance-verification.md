@@ -14,19 +14,64 @@ For an artifact asserted at an immutable commit, calculate SHA-256 over the
 exact Git blob bytes, not a checked-out file. This prevents platform newline
 conversion (including CRLF) from changing recorded evidence.
 
-Run this literal PowerShell command from the repository root, replacing the
-two ordinary positional arguments:
+Save this literal PowerShell command as `provenance-hash.ps1` and invoke it
+from the repository root using `-Commit` and `-Path` arguments. The script
+accepts only a lowercase 40-character Git commit ID and a tracked,
+repository-relative slash-delimited path whose components use letters,
+numbers, `.`, `_`, or `-`. This deliberately rejects abbreviated or named
+refs, whitespace, shell metacharacters, absolute paths, traversal, and paths
+outside the asserted commit. The argument values are bound by PowerShell as
+data; do not substitute them into this script.
 
 ```powershell
-node -e 'const childProcess = require(''child_process''); const crypto = require(''crypto''); const commit = process.argv[1]; const file = process.argv[2]; const bytes = childProcess.execFileSync(''git'', [''show'', commit + '':'' + file]); console.log(crypto.createHash(''sha256'').update(bytes).digest(''hex''));' <commit> <path>
+param(
+  [Parameter(Mandatory = $true)][string]$Commit,
+  [Parameter(Mandatory = $true)][string]$Path
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+if ($Commit -cnotmatch '^[0-9a-f]{40}$') {
+  throw 'Commit must be a lowercase 40-character Git commit ID.'
+}
+if ($Path -cnotmatch '^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*$') {
+  throw 'Path must be a safe repository-relative slash-delimited path.'
+}
+
+$trackedPath = @(& git ls-tree -r --name-only $Commit -- $Path)
+if ($LASTEXITCODE -ne 0 -or $trackedPath.Count -ne 1 -or $trackedPath[0] -cne $Path) {
+  throw 'Path is not tracked at the asserted commit.'
+}
+
+$env:UPFS_PROVENANCE_COMMIT = $Commit
+$env:UPFS_PROVENANCE_PATH = $Path
+try {
+  $program = @'
+const childProcess = require('child_process');
+const crypto = require('crypto');
+const commit = process.env.UPFS_PROVENANCE_COMMIT;
+const file = process.env.UPFS_PROVENANCE_PATH;
+childProcess.execFileSync('git', ['cat-file', '-e', `${commit}^{commit}`]);
+const bytes = childProcess.execFileSync('git', ['show', `${commit}:${file}`]);
+console.log(crypto.createHash('sha256').update(bytes).digest('hex'));
+'@
+  & node -e $program
+  if ($LASTEXITCODE -ne 0) {
+    throw 'Git-byte hash command failed.'
+  }
+} finally {
+  Remove-Item Env:UPFS_PROVENANCE_COMMIT -ErrorAction SilentlyContinue
+  Remove-Item Env:UPFS_PROVENANCE_PATH -ErrorAction SilentlyContinue
+}
 ```
 
-The single-quoted Node program is deliberate: PowerShell passes its contents
-literally and doubled single quotes become JavaScript single quotes. Record the
-immutable commit, repository-relative path, algorithm (`SHA-256`), and the
-resulting lowercase hexadecimal digest together. A working-tree digest may be
-recorded only when labeled as such; it is never a substitute for committed-byte
-evidence.
+For example, invoke the saved exact script with
+`powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File .\provenance-hash.ps1 -Commit <40-lowercase-hex> -Path AGENTS.md`.
+Record the immutable commit, repository-relative path, algorithm (`SHA-256`),
+and the resulting lowercase hexadecimal digest together. A working-tree digest
+may be recorded only when labeled as such; it is never a substitute for
+committed-byte evidence.
 
 ## Required record chain
 
