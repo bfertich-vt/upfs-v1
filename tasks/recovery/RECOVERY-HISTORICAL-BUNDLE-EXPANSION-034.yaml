@@ -1,0 +1,55 @@
+id: RECOVERY-HISTORICAL-BUNDLE-EXPANSION-034
+title: Expand immutable historical provenance hydration to the complete accepted object set
+role: Schema/Search/AI
+scope: Repository control-plane correction only; no product capability, release, or task-status claim.
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/handoffs/RECOVERY-TRACEABILITY-BUNDLE-TOPOLOGY-031.md
+  - docs/reviews/RECOVERY-TRACEABILITY-BUNDLE-TOPOLOGY-031-R2-QA.md
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - scripts/fixtures/historical-provenance-v2.json
+  - .github/workflows/validate.yml
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md#Secure-by-default-delivery
+  - specs/09_cicd/delivery_pipeline.md#CI-CD-and-SDLC
+  - specs/10_security/security_baseline.md#Security-baseline
+  - specs/12_testing/test_strategy.md#Test-strategy
+dependencies:
+  - RECOVERY-TRACEABILITY-BUNDLE-TOPOLOGY-031
+authorized_files:
+  - .github/workflows/validate.yml
+  - scripts/ci-gate-validator.test.mjs
+  - scripts/fixtures/historical-provenance-v3.bundle
+  - scripts/fixtures/historical-provenance-v3.json
+  - tasks/recovery/RECOVERY-HISTORICAL-BUNDLE-EXPANSION-034.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-BUNDLE-EXPANSION-034.md
+prohibited_files:
+  - scripts/ci-gate-validator.mjs
+  - tasks/queue.yaml
+  - docs/handoffs/RECOVERY-TRACEABILITY-BUNDLE-TOPOLOGY-031.md
+  - docs/reviews/RECOVERY-TRACEABILITY-BUNDLE-TOPOLOGY-031-R2-QA.md
+  - README.md
+  - START_HERE.md
+  - CODEOWNERS
+acceptance:
+  - Deterministically transport the 30 accepted historical-topology handoff candidates, the two later accepted current handoff candidates required by strict shallow-clone provenance validation, and both exact erratum-source commits (34 objects total).
+  - Verify exact SHA-256 identities for the bundle, manifest-declared commit objects, and every derivation source.
+  - Prove a fresh shallow/clean clone fails before hydration and validates after hydration without validator semantic changes.
+  - Fail closed for bundle-byte tampering, manifest or ref substitution, omitted required objects, duplicates or mismatches, and use of an historical path for a current handoff.
+  - Preserve strict validation of all current and resolvable handoffs.
+required_tests:
+  - git bundle verification and SHA-256 verification
+  - fresh clone hydration regression
+  - corruption, substitution, omission, duplicate, mismatch, and current-handoff negative tests
+  - provenance, queue, validation, traceability, security/accessibility/PostgreSQL relevant gates, full test suite
+tenant_security: No tenant/runtime behavior changes. No secrets, credentials, customer, provider, or financial data may be added. Historical provenance must remain fail-closed.
+rollback: Preserve v1/v2 and all rejected evidence. Correct forward in a new isolated branch; never weaken the validator, rewrite history, or delete evidence.
+runtime_evidence: Repository-local immutable Git-object transport and clean-clone gate evidence only; not production runtime evidence.
