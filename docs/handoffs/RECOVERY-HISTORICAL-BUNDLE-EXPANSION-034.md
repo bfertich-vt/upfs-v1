@@ -5,7 +5,7 @@
 - Role-file path and digest: `agents/SCHEMA_SEARCH_AI.md`; SHA-256 `8b05d11c936e7d0eac9ea63cf5b34cc594b620205292054bfcd6e01046050d9d`.
 - Agent thread ID: `/root/schema_historical_bundle_expansion_034`.
 - Worktree and branch: `C:\source\upfs-schema-historical-bundle-expansion-034`; `recovery/historical-bundle-expansion-034`.
-- Base and commits: base `aedd9ca2080cdc12974650de1248eb3736e7a0e4`; implementation `2268b1deac53e03eda3d8e59a8de1b3c0ee0cd35`; author-handoff commit pending this record. No push, pull request, merge, deployment, history rewrite, or evidence deletion was performed.
+- Base and commits: base `aedd9ca2080cdc12974650de1248eb3736e7a0e4`; implementation `2268b1deac53e03eda3d8e59a8de1b3c0ee0cd35`; author-handoff record `f74c1b5d86ca8cb453525d1c3a3cf7832f7cd80a`. No push, pull request, merge, deployment, history rewrite, or evidence deletion was performed.
 - Structured task input: `tasks/recovery/RECOVERY-HISTORICAL-BUNDLE-EXPANSION-034.yaml`.
 - Files changed: `.github/workflows/validate.yml`; `scripts/ci-gate-validator.test.mjs`; `scripts/fixtures/historical-provenance-v3.bundle`; `scripts/fixtures/historical-provenance-v3.json`; `tasks/recovery/RECOVERY-HISTORICAL-BUNDLE-EXPANSION-034.yaml`; this handoff.
 
