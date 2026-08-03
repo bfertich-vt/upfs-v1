@@ -5,7 +5,7 @@
 - Role-file path and digest: `agents/SCHEMA_SEARCH_AI.md`; SHA-256 `8b05d11c936e7d0eac9ea63cf5b34cc594b620205292054bfcd6e01046050d9d`.
 - Agent thread ID: `/root/schema_historical_bundle_expansion_034`.
 - Worktree and branch: `C:\source\upfs-schema-historical-bundle-expansion-034-r2`; `recovery/historical-bundle-expansion-034-r2`.
-- Base and commits: base `87aff774c2a3149e891c1cd64249928ec73267cb`; implementation `e3ef877899553d8471dc5db95d7e9ecb577f779c`; author-handoff commit pending this record. No push, PR, merge, deployment, force-push, reset, deletion, or history rewrite occurred.
+- Base and commits: base `87aff774c2a3149e891c1cd64249928ec73267cb`; implementation `e3ef877899553d8471dc5db95d7e9ecb577f779c`; author-handoff record `e2b60ad1e01b6dda93a5adc039c7fe313e55524f`. No push, PR, merge, deployment, force-push, reset, deletion, or history rewrite occurred.
 - Files changed: `scripts/ci-gate-validator.test.mjs`; `tasks/recovery/RECOVERY-HISTORICAL-BUNDLE-EXPANSION-034-R2.yaml`; this handoff.
 
 ## Required provenance and correction
