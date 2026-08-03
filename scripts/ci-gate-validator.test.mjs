@@ -46,6 +46,8 @@ const historicalProvenanceV3Manifest = path.join(
   "fixtures",
   "historical-provenance-v3.json",
 );
+const historicalProvenanceV3FixtureBase =
+  "aedd9ca2080cdc12974650de1248eb3736e7a0e4";
 const columns = [
   "Source file and section",
   "Requirement",
@@ -383,7 +385,7 @@ test("v3 provenance bundle is complete, immutable, and fails closed under transp
       },
     );
     assert.equal(cloneCandidate.status, 0, cloneCandidate.stderr);
-    git(candidate, ["checkout", "--quiet", git(root, ["rev-parse", "HEAD"])]);
+    git(candidate, ["checkout", "--quiet", historicalProvenanceV3FixtureBase]);
     for (const relative of [
       "scripts/fixtures/historical-provenance-v3.bundle",
       "scripts/fixtures/historical-provenance-v3.json",

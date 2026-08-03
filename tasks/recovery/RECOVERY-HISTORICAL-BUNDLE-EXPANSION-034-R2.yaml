@@ -1,0 +1,50 @@
+id: RECOVERY-HISTORICAL-BUNDLE-EXPANSION-034-R2
+title: Correct fresh-clone source staging for immutable provenance bundle regression
+role: Schema/Search/AI
+scope: Corrective-forward test-fixture construction only; preserve the accepted v3 34-object bundle, manifest, validator semantics, queue, and prior evidence.
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - tasks/recovery/RECOVERY-HISTORICAL-BUNDLE-EXPANSION-034.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-BUNDLE-EXPANSION-034.md
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - scripts/fixtures/historical-provenance-v3.json
+  - .github/workflows/validate.yml
+prior_rejection:
+  reviewer: Independent QA/Security
+  finding: The temporary fresh-clone source checked out the current candidate before staging v3 files, allowing a no-op staging commit when those files were already tracked.
+  corrective_requirement: Stage the unchanged v3 bundle and manifest into a separate temporary clone based on pre-v3 aedd9ca2080cdc12974650de1248eb3736e7a0e4 before creating the shallow authoritative clone.
+authorized_files:
+  - scripts/ci-gate-validator.test.mjs
+  - tasks/recovery/RECOVERY-HISTORICAL-BUNDLE-EXPANSION-034-R2.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-BUNDLE-EXPANSION-034-R2.md
+prohibited_files:
+  - scripts/ci-gate-validator.mjs
+  - scripts/fixtures/historical-provenance-v3.bundle
+  - scripts/fixtures/historical-provenance-v3.json
+  - .github/workflows/validate.yml
+  - tasks/queue.yaml
+  - docs/reviews/
+  - README.md
+  - START_HERE.md
+  - CODEOWNERS
+acceptance:
+  - The temporary source clone checks out pre-v3 aedd9ca2080cdc12974650de1248eb3736e7a0e4 before staging the unchanged v3 bundle and manifest.
+  - The staging commit is required before creation of the shallow authoritative clone and cannot be a no-op caused by tracked v3 files.
+  - The unchanged strict 34-object hydration, corruption, copied-exception, tampering, substitution, omission, duplicate, and mismatch tests pass.
+  - No validator semantic, bundle identity, manifest object-set, queue, product, tenant, or security behavior changes.
+required_tests:
+  - Focused fresh-clone v3 regression
+  - Full application test suite
+  - Validation, CI gates, provenance, queue, traceability, security, accessibility, tenant-isolation, and focused PostgreSQL gates
+  - Actual migration-gate attempt, recorded fail-closed when local PostgreSQL is unavailable
+tenant_security: No runtime or tenant behavior changes. Preserve provenance fail-closed behavior; no secrets, credentials, customer data, financial data, or provider data.
+rollback: Revert only this test-fixture correction through separately reviewed corrective-forward work; preserve the rejected QA finding and all previous bundle evidence.
+runtime_evidence: Fresh shallow-clone repository-control evidence only; no production runtime claim.
