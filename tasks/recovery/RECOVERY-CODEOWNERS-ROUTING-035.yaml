@@ -1,0 +1,30 @@
+id: RECOVERY-CODEOWNERS-ROUTING-035
+title: Add truthful CODEOWNERS routing for the verified repository owner
+status: in_progress
+role: Backend
+source:
+  - agents/BACKEND.md
+  - docs/REPOSITORY_GOVERNANCE.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies: []
+authorized_files:
+  - .github/CODEOWNERS
+  - tasks/recovery/RECOVERY-CODEOWNERS-ROUTING-035.yaml
+  - docs/handoffs/RECOVERY-CODEOWNERS-ROUTING-035.md
+acceptance_criteria:
+  - CODEOWNERS parses and routes all paths to verified @bfert-vt.
+  - GitHub CODEOWNERS errors endpoint is empty after publication.
+  - Native approval requirement remains zero by owner decision.
+  - Independent Codex QA is recorded as repository evidence and never described as human approval.
+tests:
+  - npm run validate
+  - npm run queue:check
+  - npm run traceability:check
+  - git diff --check
+security:
+  - No credentials, customer data, or tenant/runtime behavior changes.
+rollback: Remove .github/CODEOWNERS and revert this task commit through a reviewed corrective-forward change.
+external_prerequisites:
+  - GitHub API verification of @bfertich-vt owner identity and CODEOWNERS errors after push.
