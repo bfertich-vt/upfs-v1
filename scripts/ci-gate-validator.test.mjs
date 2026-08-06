@@ -5,6 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { pathToFileURL } from "node:url";
 import {
   validateCiGates,
   validateExternalHistoricalEvidence,
@@ -33,6 +34,20 @@ const historicalProvenanceManifestData = JSON.parse(
 const historicalProvenanceCommits = historicalProvenanceManifestData.refs.map(
   ({ commit }) => commit,
 );
+const historicalProvenanceV3Fixture = path.join(
+  root,
+  "scripts",
+  "fixtures",
+  "historical-provenance-v3.bundle",
+);
+const historicalProvenanceV3Manifest = path.join(
+  root,
+  "scripts",
+  "fixtures",
+  "historical-provenance-v3.json",
+);
+const historicalProvenanceV3FixtureBase =
+  "aedd9ca2080cdc12974650de1248eb3736e7a0e4";
 const columns = [
   "Source file and section",
   "Requirement",
@@ -126,6 +141,85 @@ function isAncestor(worktree, commit, head = "HEAD") {
       },
     ).status === 0
   );
+}
+
+function v3Ref(entry) {
+  return `refs/bundle-build/traceability-v3/${entry.kind}/${entry.commit}`;
+}
+
+function v3ManifestErrors(worktree, manifest, requireObjects = false) {
+  const errors = [];
+  if (manifest.schema_version !== 2)
+    errors.push("schema version must be exactly 2");
+  if (manifest.bundle !== "scripts/fixtures/historical-provenance-v3.bundle")
+    errors.push("bundle path is not immutable v3 path");
+  if (!/^[a-f0-9]{64}$/.test(manifest.sha256 ?? ""))
+    errors.push("bundle SHA-256 is malformed");
+  if (manifest.ref_prefix !== "refs/bundle-build/traceability-v3/")
+    errors.push("ref prefix is not immutable v3 namespace");
+  if (!Array.isArray(manifest.refs)) errors.push("refs must be an array");
+  const refs = manifest.refs ?? [];
+  if (new Set(refs.map(({ commit }) => commit)).size !== refs.length)
+    errors.push("duplicate manifest commit");
+  const candidateCount = refs.filter(
+    ({ kind }) => kind === "handoff-candidate",
+  ).length;
+  const erratumCount = refs.filter(
+    ({ kind }) => kind === "erratum-source",
+  ).length;
+  if (candidateCount !== 32)
+    errors.push("requires exactly 32 handoff candidates");
+  if (erratumCount !== 2) errors.push("requires exactly two erratum sources");
+  if (refs.length !== 34) errors.push("requires exactly 34 immutable objects");
+  for (const entry of refs) {
+    if (!/^[a-f0-9]{40}$/.test(entry.commit ?? ""))
+      errors.push("immutable commit is malformed");
+    if (!/^[a-f0-9]{64}$/.test(entry.object_sha256 ?? ""))
+      errors.push(`object SHA-256 is malformed for ${entry.commit}`);
+    if (!entry.derivation_handoff || !entry.derivation_handoff_sha256)
+      errors.push(`derivation is absent for ${entry.commit}`);
+    const handoff = path.join(worktree, entry.derivation_handoff ?? "");
+    if (
+      !fs.existsSync(handoff) ||
+      digest(handoff) !== entry.derivation_handoff_sha256
+    )
+      errors.push(`derivation handoff digest mismatches for ${entry.commit}`);
+    const body = fs.existsSync(handoff) ? fs.readFileSync(handoff, "utf8") : "";
+    const expected =
+      entry.kind === "handoff-candidate"
+        ? new RegExp(
+            "(?:Commit|Candidate(?: implementation)? commit):\\s*(?:candidate\\s*)?`?" +
+              entry.commit +
+              "`?",
+            "i",
+          )
+        : new RegExp(
+            "Original handoff source commit:\\s*`" + entry.commit + "`",
+            "i",
+          );
+    if (!expected.test(body))
+      errors.push(`derivation does not bind ${entry.commit}`);
+    if (requireObjects) {
+      const object = spawnSync(
+        "git",
+        ["-C", worktree, "cat-file", "commit", entry.commit],
+        { encoding: null },
+      );
+      if (object.status !== 0)
+        errors.push(`required object is unavailable for ${entry.commit}`);
+      else if (
+        crypto.createHash("sha256").update(object.stdout).digest("hex") !==
+        entry.object_sha256
+      )
+        errors.push(`object SHA-256 mismatches for ${entry.commit}`);
+    }
+  }
+  return errors;
+}
+
+function copy(file, target) {
+  fs.copyFileSync(file, target);
+  return target;
 }
 
 test("complete immutable provenance bundle hydrates every historic handoff without a semantic bypass", () => {
@@ -272,6 +366,221 @@ test("complete immutable provenance bundle hydrates every historic handoff witho
     fs.rmSync(fixture, { force: true, recursive: true });
     fs.rmSync(authoritative, { force: true, recursive: true });
     fs.rmSync(candidate, { force: true, recursive: true });
+  }
+});
+
+test("v3 provenance bundle is complete, immutable, and fails closed under transport attacks", () => {
+  const fixture = temp("upfs-v3-provenance-fresh-");
+  const authoritative = temp("upfs-v3-provenance-authoritative-");
+  const candidate = temp("upfs-v3-provenance-candidate-");
+  const partial = temp("upfs-v3-provenance-partial-");
+  const tamperedTarget = temp("upfs-v3-provenance-tampered-target-");
+  const tampered = path.join(temp("upfs-v3-provenance-tampered-"), "v3.bundle");
+  try {
+    const cloneCandidate = spawnSync(
+      "git",
+      ["clone", "--no-local", root, candidate],
+      {
+        encoding: "utf8",
+      },
+    );
+    assert.equal(cloneCandidate.status, 0, cloneCandidate.stderr);
+    git(candidate, ["checkout", "--quiet", historicalProvenanceV3FixtureBase]);
+    for (const relative of [
+      "scripts/fixtures/historical-provenance-v3.bundle",
+      "scripts/fixtures/historical-provenance-v3.json",
+    ])
+      copy(path.join(root, relative), path.join(candidate, relative));
+    git(candidate, ["config", "user.email", "fixture@example.test"]);
+    git(candidate, ["config", "user.name", "Fixture"]);
+    git(candidate, [
+      "add",
+      "scripts/fixtures/historical-provenance-v3.bundle",
+      "scripts/fixtures/historical-provenance-v3.json",
+    ]);
+    git(candidate, ["commit", "-m", "stage immutable v3 provenance fixture"]);
+    git(authoritative, ["init", "--bare"]);
+    git(authoritative, [
+      "fetch",
+      "--no-tags",
+      candidate,
+      `${git(candidate, ["rev-parse", "HEAD"])}:refs/heads/integration`,
+    ]);
+    const shallow = spawnSync(
+      "git",
+      [
+        "clone",
+        "--no-local",
+        "--depth=1",
+        "--branch",
+        "integration",
+        pathToFileURL(authoritative).href,
+        fixture,
+      ],
+      { encoding: "utf8" },
+    );
+    assert.equal(shallow.status, 0, shallow.stderr);
+    assert.ok(
+      fs.existsSync(path.join(fixture, ".git", "shallow")) ||
+        git(fixture, ["rev-list", "--count", "HEAD"]) === "1",
+      "the fixture must retain only the checked-out integration tip before hydration",
+    );
+
+    const manifestPath = path.join(
+      fixture,
+      "scripts",
+      "fixtures",
+      "historical-provenance-v3.json",
+    );
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    assert.deepEqual(v3ManifestErrors(fixture, manifest), []);
+    assert.equal(digest(path.join(fixture, manifest.bundle)), manifest.sha256);
+    assert.equal(
+      spawnSync("git", ["-C", fixture, "bundle", "verify", manifest.bundle], {
+        encoding: "utf8",
+      }).status,
+      0,
+    );
+    assert.equal(
+      validateRepositoryHandoffSpecificationDigests(fixture).status,
+      "failed",
+      "a fresh shallow clone must fail before v3 hydration",
+    );
+
+    git(fixture, [
+      "fetch",
+      "--no-tags",
+      manifest.bundle,
+      "refs/bundle-build/traceability-v3/*:refs/fixtures/traceability-v3/*",
+    ]);
+    const advertised = git(fixture, [
+      "for-each-ref",
+      "--format=%(refname):%(objectname)",
+      "refs/fixtures/traceability-v3",
+    ])
+      .split("\n")
+      .filter(Boolean)
+      .sort();
+    const expected = manifest.refs
+      .map(
+        (entry) =>
+          `refs/fixtures/traceability-v3/${entry.kind}/${entry.commit}:${entry.commit}`,
+      )
+      .sort();
+    assert.deepEqual(
+      advertised,
+      expected,
+      "ref substitution or omission must fail",
+    );
+    assert.deepEqual(v3ManifestErrors(fixture, manifest, true), []);
+    assert.deepEqual(validateRepositoryHandoffSpecificationDigests(fixture), {
+      status: "passed",
+      errors: [],
+    });
+
+    const current = path.join(fixture, "docs", "handoffs", "TASK-0123.md");
+    const pristineCurrent = fs.readFileSync(current, "utf8");
+    fs.writeFileSync(
+      current,
+      pristineCurrent.replace(
+        "`9d8465020d6f658294fba5a20462e62fdf2d67cf6e7d74fd665f7d753f86bac1`",
+        "`" + "0".repeat(64) + "`",
+      ),
+    );
+    assert.equal(
+      validateRepositoryHandoffSpecificationDigests(fixture).status,
+      "failed",
+    );
+    const copiedErratum = fs
+      .readFileSync(
+        path.join(
+          fixture,
+          "docs",
+          "handoffs",
+          "RECOVERY-QUEUE-VALIDATION-001.md",
+        ),
+        "utf8",
+      )
+      .match(/## Git-bound provenance erratum v1[\s\S]*/)[0];
+    fs.writeFileSync(current, pristineCurrent + "\n" + copiedErratum);
+    assert.equal(
+      validateRepositoryHandoffSpecificationDigests(fixture).status,
+      "failed",
+      "a current handoff cannot use a historical erratum path",
+    );
+    fs.writeFileSync(current, pristineCurrent);
+
+    copy(path.join(fixture, manifest.bundle), tampered);
+    const bytes = fs.readFileSync(tampered);
+    bytes[Math.floor(bytes.length / 2)] ^= 1;
+    fs.writeFileSync(tampered, bytes);
+    assert.notEqual(digest(tampered), manifest.sha256);
+    git(tamperedTarget, ["init", "--initial-branch=fixture/tampered"]);
+    assert.notEqual(
+      spawnSync(
+        "git",
+        [
+          "-C",
+          tamperedTarget,
+          "fetch",
+          "--no-tags",
+          tampered,
+          "refs/bundle-build/traceability-v3/*:refs/fixtures/tampered/*",
+        ],
+        {
+          encoding: "utf8",
+        },
+      ).status,
+      0,
+      "bundle-byte tampering must fail closed when hydrated",
+    );
+
+    const duplicate = structuredClone(manifest);
+    duplicate.refs[1].commit = duplicate.refs[0].commit;
+    assert.ok(v3ManifestErrors(fixture, duplicate).length > 0);
+    const substituted = structuredClone(manifest);
+    substituted.refs[2].commit = substituted.refs[3].commit;
+    assert.ok(v3ManifestErrors(fixture, substituted).length > 0);
+    const mismatched = structuredClone(manifest);
+    mismatched.refs[2].object_sha256 = "0".repeat(64);
+    assert.ok(v3ManifestErrors(fixture, mismatched, true).length > 0);
+    const omitted = structuredClone(manifest);
+    omitted.refs.pop();
+    assert.ok(v3ManifestErrors(fixture, omitted).length > 0);
+
+    git(partial, ["init", "--initial-branch=fixture/partial"]);
+    git(partial, [
+      "fetch",
+      "--no-tags",
+      historicalProvenanceV3Fixture,
+      `${v3Ref(manifest.refs[0])}:refs/fixtures/partial/one`,
+    ]);
+    assert.equal(
+      spawnSync(
+        "git",
+        [
+          "-C",
+          partial,
+          "show-ref",
+          "--verify",
+          "--quiet",
+          `refs/fixtures/partial/${manifest.refs.at(-1).kind}/${manifest.refs.at(-1).commit}`,
+        ],
+        { encoding: "utf8" },
+      ).status,
+      1,
+      "an omitted required object must remain absent from the immutable hydration namespace",
+    );
+  } finally {
+    for (const directory of [
+      fixture,
+      authoritative,
+      candidate,
+      partial,
+      tamperedTarget,
+      path.dirname(tampered),
+    ])
+      fs.rmSync(directory, { force: true, recursive: true });
   }
 });
 

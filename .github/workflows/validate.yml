@@ -34,11 +34,23 @@ jobs:
         # Git-verified bundle. This is object transport only: it never
         # suppresses provenance validation or contacts a network service.
         run: >-
-          git fetch --no-tags scripts/fixtures/historical-provenance-v2.bundle
-          'refs/bundle-build/traceability-v2/*:refs/fixtures/traceability-v2/*'
+          git fetch --no-tags scripts/fixtures/historical-provenance-v3.bundle
+          'refs/bundle-build/traceability-v3/*:refs/fixtures/traceability-v3/*'
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "24.16.0"
+      - name: Verify complete immutable provenance hydration
+        run: >-
+          node --input-type=module -e "import crypto from 'node:crypto'; import
+          { execFileSync } from 'node:child_process'; import fs from 'node:fs';
+          const m=JSON.parse(fs.readFileSync('scripts/fixtures/historical-provenance-v3.json'));
+          if(m.schema_version!==2||m.refs.length!==34||m.refs.filter(x=>x.kind==='handoff-candidate').length!==32||m.refs.filter(x=>x.kind==='erratum-source').length!==2)throw
+          new Error('historical provenance manifest count mismatch'); const
+          d=crypto.createHash('sha256').update(fs.readFileSync(m.bundle)).digest('hex'); if(d!==m.sha256)throw
+          new Error('historical provenance bundle digest mismatch'); const
+          got=execFileSync('git',['for-each-ref','--format=%(refname):%(objectname)','refs/fixtures/traceability-v3'],{encoding:'utf8'}).trim().split('\n').filter(Boolean).sort();
+          const want=m.refs.map(x=>'refs/fixtures/traceability-v3/'+x.kind+'/'+x.commit+':'+x.commit).sort();
+          if(JSON.stringify(got)!==JSON.stringify(want))throw new Error('historical provenance refs mismatch');"
       - name: Install validation dependencies
         run: npm ci --ignore-scripts
       - name: Verify CI gate wiring and immutable action pins
