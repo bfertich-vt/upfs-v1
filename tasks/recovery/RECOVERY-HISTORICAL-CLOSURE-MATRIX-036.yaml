@@ -1,0 +1,57 @@
+id: RECOVERY-HISTORICAL-CLOSURE-MATRIX-036
+title: Build evidence-backed closure matrix for TASK-0001 through TASK-0110
+status: in_progress
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+scope:
+  - Exactly TASK-0001 through TASK-0110
+  - No TASK-0111 or later roadmap work
+author_worktree: C:\source\upfs-schema-historical-closure-matrix-036
+author_branch: recovery/historical-closure-matrix-036
+base_commit: e191921c3cae56a46e3746ebef0b04b495c718b4
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/recovery/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/handoffs/TASK-*.md
+  - docs/reviews/**
+  - specs/**
+  - apps/**
+  - services/**
+  - contracts/**
+acceptance_criteria:
+  - Matrix has exactly 110 unique task IDs TASK-0001 through TASK-0110 and no post-0110 IDs.
+  - Every row includes source, acceptance, implementation/contracts, tests/results, runtime, security/tenant, documentation/provenance, classification, disposition, missing work, prerequisites, role, file ownership, dependencies, tests, rollback, and independent review.
+  - Unknown or absent evidence remains explicitly unknown and no task is marked complete without current independent evidence.
+  - TASK-0112 through TASK-0123 remain frozen and are not changed.
+  - Author handoff records role, thread, worktree, commit, specs, tests, negatives, security, limitations, and reviewer provenance.
+required_inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - specs/00_constitution/engineering_constitution.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - docs/MASTER_PLAN.md
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - docs/REPOSITORY_GOVERNANCE.md
+  - docs/PRODUCTION_BACKLOG.md
+  - tasks/queue.yaml
+  - specs/**
+  - tasks/recovery/**
+  - docs/handoffs/**
+  - docs/reviews/**
+required_checks:
+  - YAML parse
+  - npm run validate
+  - npm run queue:check
+  - npm run traceability:check
+  - npm test (or documented proportional result)
+  - git diff --check
+  - exact-row/count/prohibited-ID script
+security:
+  - Synthetic/read-only evidence only; no secrets, customer data, private financial data, provider credentials, or production access.
+  - Preserve tenant-isolation, authorization-denial, leakage, replay, idempotency, audit, failure, rollback, and contract-drift requirements for future revalidation.
+rollback: Revert this isolated commit only; preserve matrix and handoff evidence and do not alter historical records.
+
