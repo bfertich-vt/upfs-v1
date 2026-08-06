@@ -1,0 +1,4 @@
+# Repository-wide ownership routes review requests to the verified repository owner.
+# Native approval count is intentionally zero by owner decision; independent Codex
+# QA/Security reports remain mandatory repository evidence.
+* @bfertich-vt
