@@ -1,11 +1,19 @@
 import { createHash } from "node:crypto";
 
+const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const RESOURCE_KINDS = new Set(["organization", "tenant", "environment"]);
 const TRANSITIONS = Object.freeze({
-  active: new Set(["suspended", "decommissioned"]),
-  suspended: new Set(["active", "decommissioned"]),
-  decommissioned: new Set(),
+  active: new Set(["suspended", "deactivated"]),
+  suspended: new Set(["active", "deactivated"]),
+  deactivated: new Set(),
 });
+const REPOSITORY_METHODS = [
+  "snapshot",
+  "commitWithAudit",
+  "appendAudit",
+  "auditEvents",
+];
 
 export class FoundationError extends Error {
   constructor(code, message, { retryable = false } = {}) {
@@ -36,18 +44,39 @@ function digest(value) {
 }
 
 function requireText(value, name) {
-  if (typeof value !== "string" || value.trim() === "") {
+  if (typeof value !== "string" || value.trim() === "")
     fail("INVALID_REQUEST", `${name} is required`);
-  }
   return value;
+}
+
+function requireUuid(value, name) {
+  requireText(value, name);
+  if (!UUID.test(value))
+    fail("INVALID_REQUEST", `${name} must be an opaque UUID`);
+  return value.toLowerCase();
 }
 
 function clone(value) {
   return structuredClone(value);
 }
 
+function boundedAdapterFailure() {
+  return new FoundationError(
+    "REPOSITORY_UNAVAILABLE",
+    "Repository operation unavailable",
+    {
+      retryable: true,
+    },
+  );
+}
+
 function actorMembership(actor, scope, permission) {
-  if (!actor || actor.verified !== true || typeof actor.actorId !== "string") {
+  if (
+    !actor ||
+    actor.verified !== true ||
+    typeof actor.actorId !== "string" ||
+    !UUID.test(actor.actorId.trim())
+  ) {
     fail("UNAUTHENTICATED", "Verified actor required");
   }
   const memberships = Array.isArray(actor.memberships) ? actor.memberships : [];
@@ -61,23 +90,44 @@ function actorMembership(actor, scope, permission) {
       candidate.permissions.includes(permission),
   );
   if (!membership) fail("NOT_FOUND", "Resource not found");
-  return membership;
 }
 
 function requireScope(scope) {
   if (!scope || typeof scope !== "object")
     fail("INVALID_REQUEST", "scope is required");
   return {
-    organizationId: requireText(scope.organizationId, "scope.organizationId"),
-    tenantId: requireText(scope.tenantId, "scope.tenantId"),
-    environmentId: requireText(scope.environmentId, "scope.environmentId"),
+    organizationId: requireUuid(scope.organizationId, "scope.organizationId"),
+    tenantId: requireUuid(scope.tenantId, "scope.tenantId"),
+    environmentId: requireUuid(scope.environmentId, "scope.environmentId"),
   };
+}
+
+function idempotencyNamespace(action, scope, key) {
+  return canonical([
+    scope.organizationId,
+    scope.tenantId,
+    scope.environmentId,
+    action,
+    key,
+  ]);
+}
+
+function assertStateShape(state) {
+  if (
+    !state ||
+    !(state.organizations instanceof Map) ||
+    !(state.tenants instanceof Map) ||
+    !(state.environments instanceof Map) ||
+    !(state.idempotency instanceof Map)
+  ) {
+    throw boundedAdapterFailure();
+  }
 }
 
 /**
  * Reference in-memory composition seam. Production composition must supply a
- * durable transactional repository with equivalent atomic and append-only
- * semantics; this class is not production persistence.
+ * durable transactional repository whose commitWithAudit operation commits
+ * domain, idempotency, and audit state atomically. This is not persistence.
  */
 export class InMemoryFoundationRepository {
   #state = {
@@ -88,17 +138,27 @@ export class InMemoryFoundationRepository {
   };
 
   #audit = [];
+  #injectAtomicFailure;
+
+  constructor({ injectAtomicFailure = () => {} } = {}) {
+    this.#injectAtomicFailure = injectAtomicFailure;
+  }
 
   snapshot() {
     return clone(this.#state);
   }
 
-  commit(nextState) {
+  commitWithAudit(nextState, event) {
+    assertStateShape(nextState);
+    const nextAudit = [...this.#audit, Object.freeze(clone(event))];
+    this.#injectAtomicFailure("before-atomic-commit", { event: clone(event) });
     this.#state = clone(nextState);
+    this.#audit = nextAudit;
   }
 
   appendAudit(event) {
-    this.#audit.push(Object.freeze(clone(event)));
+    this.#injectAtomicFailure("before-audit-append", { event: clone(event) });
+    this.#audit = [...this.#audit, Object.freeze(clone(event))];
   }
 
   auditEvents() {
@@ -112,26 +172,67 @@ export class IdentityOrganizationTenantEnvironmentService {
     now = () => new Date().toISOString(),
     injectFailure = () => {},
   } = {}) {
-    if (!repository)
-      fail("CONFIGURATION_ERROR", "Durable or reference repository required");
+    if (
+      !repository ||
+      REPOSITORY_METHODS.some(
+        (method) => typeof repository[method] !== "function",
+      )
+    ) {
+      fail("CONFIGURATION_ERROR", "Atomic foundation repository required");
+    }
     this.repository = repository;
     this.now = now;
     this.injectFailure = injectFailure;
+    try {
+      assertStateShape(repository.snapshot());
+      if (!Array.isArray(repository.auditEvents()))
+        throw boundedAdapterFailure();
+    } catch {
+      fail("CONFIGURATION_ERROR", "Atomic foundation repository required");
+    }
   }
 
-  #audit({ action, outcome, actor, scope, requestId, code }) {
-    this.repository.appendAudit({
-      sequence: this.repository.auditEvents().length + 1,
+  #auditEvent({ action, outcome, actor, scope, requestId, code }) {
+    let sequence;
+    try {
+      sequence = this.repository.auditEvents().length + 1;
+    } catch {
+      throw boundedAdapterFailure();
+    }
+    return {
+      sequence,
       occurredAt: this.now(),
       action,
       outcome,
-      actorId: typeof actor?.actorId === "string" ? actor.actorId : "unknown",
+      actorId:
+        typeof actor?.actorId === "string" && actor.actorId.trim()
+          ? actor.actorId
+          : "unknown",
       organizationId: scope?.organizationId ?? "unknown",
       tenantId: scope?.tenantId ?? "unknown",
       environmentId: scope?.environmentId ?? "unknown",
       requestId,
       ...(code ? { code } : {}),
-    });
+    };
+  }
+
+  #appendAttempt(event) {
+    try {
+      this.repository.appendAudit(event);
+    } catch {
+      throw boundedAdapterFailure();
+    }
+  }
+
+  #snapshot() {
+    try {
+      const state = this.repository.snapshot();
+      assertStateShape(state);
+      return state;
+    } catch (error) {
+      if (error instanceof FoundationError) throw error;
+      throw boundedAdapterFailure();
+    }
   }
 
   #executeMutation({
@@ -154,8 +255,9 @@ export class IdentityOrganizationTenantEnvironmentService {
       actorMembership(actor, scope, permission);
       requireText(idempotencyKey, "idempotencyKey");
       const fingerprint = digest({ action, scope, payload });
-      const current = this.repository.snapshot();
-      const replay = current.idempotency.get(idempotencyKey);
+      const replayKey = idempotencyNamespace(action, scope, idempotencyKey);
+      const current = this.#snapshot();
+      const replay = current.idempotency.get(replayKey);
       if (replay) {
         if (replay.fingerprint !== fingerprint) {
           fail(
@@ -163,18 +265,37 @@ export class IdentityOrganizationTenantEnvironmentService {
             "Idempotency key was used for a different request",
           );
         }
+        this.#appendAttempt(
+          this.#auditEvent({
+            action,
+            outcome: "replayed",
+            actor,
+            scope,
+            requestId,
+          }),
+        );
         return clone(replay.response);
       }
 
       const next = clone(current);
       const response = operation(next, scope, requestId);
-      next.idempotency.set(idempotencyKey, {
+      next.idempotency.set(replayKey, {
         fingerprint,
         response: clone(response),
       });
-      this.injectFailure("before-commit", { action, requestId });
-      this.repository.commit(next);
-      this.#audit({ action, outcome: "succeeded", actor, scope, requestId });
+      this.injectFailure("before-atomic-commit", { action, requestId });
+      const event = this.#auditEvent({
+        action,
+        outcome: "succeeded",
+        actor,
+        scope,
+        requestId,
+      });
+      try {
+        this.repository.commitWithAudit(next, event);
+      } catch {
+        throw boundedAdapterFailure();
+      }
       return clone(response);
     } catch (error) {
       const normalized =
@@ -185,14 +306,18 @@ export class IdentityOrganizationTenantEnvironmentService {
               "Mutation failed before commit",
               { retryable: true },
             );
-      this.#audit({
-        action,
-        outcome: "failed",
-        actor,
-        scope,
-        requestId,
-        code: normalized.code,
-      });
+      if (normalized.code !== "REPOSITORY_UNAVAILABLE") {
+        this.#appendAttempt(
+          this.#auditEvent({
+            action,
+            outcome: "failed",
+            actor,
+            scope,
+            requestId,
+            code: normalized.code,
+          }),
+        );
+      }
       throw normalized;
     }
   }
@@ -224,26 +349,30 @@ export class IdentityOrganizationTenantEnvironmentService {
         ) {
           fail("CONFLICT", "Foundation resource already exists");
         }
+        const created_at = this.now();
         next.organizations.set(verifiedScope.organizationId, {
           id: verifiedScope.organizationId,
-          name: organizationName,
-          status: "active",
+          kind: "organization",
           version: 1,
+          created_at,
+          status: "active",
         });
         next.tenants.set(verifiedScope.tenantId, {
           id: verifiedScope.tenantId,
-          organizationId: verifiedScope.organizationId,
-          name: tenantName,
-          status: "active",
+          kind: "tenant",
           version: 1,
+          created_at,
+          status: "active",
+          organization_id: verifiedScope.organizationId,
         });
         next.environments.set(verifiedScope.environmentId, {
           id: verifiedScope.environmentId,
-          organizationId: verifiedScope.organizationId,
-          tenantId: verifiedScope.tenantId,
-          name: environmentName,
-          status: "active",
+          kind: "environment",
           version: 1,
+          created_at,
+          status: "active",
+          organization_id: verifiedScope.organizationId,
+          tenant_id: verifiedScope.tenantId,
         });
         return {
           requestId,
@@ -264,7 +393,7 @@ export class IdentityOrganizationTenantEnvironmentService {
     try {
       scope = requireScope(rawScope);
       actorMembership(actor, scope, "foundation:read");
-      const state = this.repository.snapshot();
+      const state = this.#snapshot();
       const environment = state.environments.get(scope.environmentId);
       const tenant = state.tenants.get(scope.tenantId);
       const organization = state.organizations.get(scope.organizationId);
@@ -272,33 +401,41 @@ export class IdentityOrganizationTenantEnvironmentService {
         !environment ||
         !tenant ||
         !organization ||
-        environment.tenantId !== scope.tenantId ||
-        environment.organizationId !== scope.organizationId ||
-        tenant.organizationId !== scope.organizationId
+        environment.tenant_id !== scope.tenantId ||
+        environment.organization_id !== scope.organizationId ||
+        tenant.organization_id !== scope.organizationId ||
+        organization.status !== "active" ||
+        tenant.status !== "active"
       ) {
         fail("NOT_FOUND", "Resource not found");
       }
-      this.#audit({
-        action: "environment.read",
-        outcome: "succeeded",
-        actor,
-        scope,
-        requestId,
-      });
+      this.#appendAttempt(
+        this.#auditEvent({
+          action: "environment.read",
+          outcome: "succeeded",
+          actor,
+          scope,
+          requestId,
+        }),
+      );
       return clone({ requestId, organization, tenant, environment });
     } catch (error) {
       const normalized =
         error instanceof FoundationError
           ? error
           : new FoundationError("INTERNAL_ERROR", "Read failed");
-      this.#audit({
-        action: "environment.read",
-        outcome: "failed",
-        actor,
-        scope,
-        requestId,
-        code: normalized.code,
-      });
+      if (normalized.code !== "REPOSITORY_UNAVAILABLE") {
+        this.#appendAttempt(
+          this.#auditEvent({
+            action: "environment.read",
+            outcome: "failed",
+            actor,
+            scope,
+            requestId,
+            code: normalized.code,
+          }),
+        );
+      }
       throw normalized;
     }
   }
@@ -328,6 +465,19 @@ export class IdentityOrganizationTenantEnvironmentService {
         const id = verifiedScope[`${kind}Id`];
         const resource = collection.get(id);
         if (!resource) fail("NOT_FOUND", "Resource not found");
+        const organization = next.organizations.get(
+          verifiedScope.organizationId,
+        );
+        const tenant = next.tenants.get(verifiedScope.tenantId);
+        if (
+          !organization ||
+          !tenant ||
+          tenant.organization_id !== verifiedScope.organizationId ||
+          (kind !== "organization" && organization.status !== "active") ||
+          (kind === "environment" && tenant.status !== "active")
+        ) {
+          fail("NOT_FOUND", "Resource not found");
+        }
         if (resource.version !== ifMatch)
           fail("PRECONDITION_FAILED", "Resource version is stale");
         if (!TRANSITIONS[resource.status]?.has(targetStatus)) {
@@ -335,14 +485,14 @@ export class IdentityOrganizationTenantEnvironmentService {
         }
         if (
           kind === "tenant" &&
-          resource.organizationId !== verifiedScope.organizationId
+          resource.organization_id !== verifiedScope.organizationId
         ) {
           fail("NOT_FOUND", "Resource not found");
         }
         if (
           kind === "environment" &&
-          (resource.organizationId !== verifiedScope.organizationId ||
-            resource.tenantId !== verifiedScope.tenantId)
+          (resource.organization_id !== verifiedScope.organizationId ||
+            resource.tenant_id !== verifiedScope.tenantId)
         ) {
           fail("NOT_FOUND", "Resource not found");
         }
