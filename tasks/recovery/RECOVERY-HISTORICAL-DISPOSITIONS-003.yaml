@@ -1,0 +1,44 @@
+id: RECOVERY-HISTORICAL-DISPOSITIONS-003
+title: Replace generic historical test and ownership plans with capability-specific evidence
+status: in_progress
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+role_file_digest: 8b05d11c936e7d0eac9ea63cf5b34cc594b620205292054bfcd6e01046050d9d
+author_thread: /root/schema_historical_dispositions_003
+author_worktree: C:\source\upfs-schema-historical-dispositions-003
+author_branch: codex/recovery-historical-dispositions-003
+base_commit: 5bd8f385020fd9cf4e568ddebb45cfb191c866fc
+rejected_candidate: 9c914d04bcf91b606cb5199eb9f7e32233c56034
+rejection_review: docs/reviews/RECOVERY-HISTORICAL-DISPOSITIONS-002-QA.md
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/recovery/RECOVERY-HISTORICAL-DISPOSITIONS-003.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-DISPOSITIONS-003.md
+prohibited_files:
+  - tasks/queue.yaml
+  - specs/**
+  - contracts/**
+  - scripts/**
+  - apps/**
+  - services/**
+  - .github/**
+  - docs/adr/**
+  - tasks/recovery/TASK-0111+
+acceptance_criteria:
+  - Preserve exactly 110 contiguous unique TASK-0001 through TASK-0110 rows, 18 nonempty fields, and dispositions 0 accepted, 57 remediation required, 40 external prerequisite, and 13 not implemented unless new evidence proves a change.
+  - Every ownership field identifies concrete existing capability files or one unique architecture-aligned intended path whose creation remains unauthorized pending a future accepted assignment.
+  - Every test field names an exact existing or intended test command, capability input, positive assertion, applicable negative cases, and expected fail-closed result.
+  - After task-number normalization, at least 100 ownership fields and 100 test fields are unique, no normalized group exceeds three rows, and manual samples across every decade remain semantically capability-specific.
+  - Preserve both prior rejection reports and all post-TASK-0110 work unchanged.
+required_checks:
+  - Exact row, field, vocabulary, disposition, dependency, source, task, and handoff validation
+  - Normalized semantic uniqueness and maximum-group-size validation
+  - Concrete path existence or explicit unique intended-path marker validation
+  - Criteria-to-test keyword coverage and manual decade sampling
+  - npm run format:check; npm test; npm run validate; npm run queue:check; npm run traceability:check
+  - powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - git diff --check; git fsck --strict --no-reflogs; exact-signature sensitive-data scan
+security:
+  - The matrix grants no edit authority and prohibits shared queue, specification, historical-evidence, dependency-owned, and post-TASK-0110 files.
+  - Capability tests must cover applicable authorization denial, cross-tenant isolation, replay, concurrency, audit, leakage, failure, rollback, and drift behavior without promoting synthetic evidence.
+rollback: Revert only the committed matrix/task/handoff changes through reviewed corrective-forward flow; preserve both prior candidates and QA rejections.

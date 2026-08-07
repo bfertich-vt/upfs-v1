@@ -913,9 +913,14 @@ export function validateHistoricalClosures(root, tasks, errors) {
     else {
       if (fs.existsSync(closure))
         errors.push(`${task.id} has a closure record but is not complete.`);
-      if (rows.get(task.id)?.[9] !== "blocked")
+      const incompleteDispositions = new Set([
+        "REMEDIATION_REQUIRED",
+        "EXTERNAL_PREREQUISITE",
+        "NOT_IMPLEMENTED",
+      ]);
+      if (!incompleteDispositions.has(rows.get(task.id)?.[9]))
         errors.push(
-          `${MATRIX} ${task.id} must remain blocked without accepted closure evidence.`,
+          `${MATRIX} ${task.id} must use an audited incomplete disposition without accepted closure evidence.`,
         );
     }
   }

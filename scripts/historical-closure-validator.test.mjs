@@ -223,6 +223,10 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
     ),
     path.join(root, closureRel),
   );
+  fs.copyFileSync(
+    path.join(source, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md"),
+    path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md"),
+  );
 
   const attestationRel =
     "docs/reviews/attestations/TASK-0001-closure-verdict.json";
@@ -687,6 +691,36 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
     blockedQueue,
     /TASK-0001 has a closure record but is not complete/,
   );
+  const invalidIncompleteDisposition = originalMatrix
+    .split(/\r?\n/)
+    .map((line) =>
+      line.startsWith("| TASK-0002 |")
+        ? line.replace("| REMEDIATION_REQUIRED |", "| blocked |")
+        : line,
+    )
+    .join("\n");
+  fs.writeFileSync(matrixPath, invalidIncompleteDisposition);
+  expectInvalid(
+    root,
+    originalQueue,
+    /TASK-0002 must use an audited incomplete disposition/,
+  );
+  fs.writeFileSync(
+    matrixPath,
+    invalidIncompleteDisposition.replace(
+      /^\| TASK-0002 \|.*$/m,
+      originalMatrix
+        .split(/\r?\n/)
+        .find((line) => line.startsWith("| TASK-0002 |"))
+        .replace("| REMEDIATION_REQUIRED |", "| ACCEPTED |"),
+    ),
+  );
+  expectInvalid(
+    root,
+    originalQueue,
+    /TASK-0002 must use an audited incomplete disposition/,
+  );
+  fs.writeFileSync(matrixPath, originalMatrix);
   const otherComplete = originalQueue.replace(
     /(id: TASK-0002[\s\S]*?status:) blocked/,
     "$1 complete",
