@@ -6,6 +6,7 @@ import test from "node:test";
 import {
   validateNodeWorkflowPin,
   validateTrivyWorkflowPin,
+  validateWorkflowPins,
 } from "./validate-repository.mjs";
 
 const root = process.cwd();
@@ -29,7 +30,7 @@ function fixture() {
   );
   fs.writeFileSync(
     path.join(directory, "package.json"),
-    JSON.stringify({ dependencies: { yaml: "2.8.1" } }),
+    fs.readFileSync(path.join(root, "package.json")),
   );
   return directory;
 }
@@ -65,6 +66,18 @@ function invalid(name, mutate, message) {
   });
 }
 
+function invalidBaseline(name, mutate, message) {
+  test(name, () => {
+    const directory = fixture();
+    try {
+      mutate(directory);
+      assert.throws(() => validateWorkflowPins(directory), new RegExp(message));
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
+  });
+}
+
 test("accepts canonical formatted YAML while enforcing the exact Node pin", () => {
   const directory = fixture();
   try {
@@ -85,6 +98,46 @@ invalid(
   "rejects a pinned setup-node action without node-version",
   (workflow) => workflow.replace('node-version: "24.16.0"', "cache: npm"),
   "exact Node.js version",
+);
+invalidBaseline(
+  "rejects a mutable checkout action tag",
+  (directory) =>
+    mutateWorkflow(directory, (workflow) =>
+      workflow.replace(
+        "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+        "actions/checkout@v4.2.2",
+      ),
+    ),
+  "immutable 40-character commit pin",
+);
+invalidBaseline(
+  "rejects omission of the pull-request trigger",
+  (directory) =>
+    mutateWorkflow(directory, (workflow) =>
+      workflow.replace("  pull_request:\n", ""),
+    ),
+  "must run for pull requests",
+);
+invalidBaseline(
+  "rejects evidence archival that tolerates a missing report",
+  (directory) =>
+    mutateWorkflow(directory, (workflow) =>
+      workflow.replace("if-no-files-found: error", "if-no-files-found: warn"),
+    ),
+  "fail closed",
+);
+invalidBaseline(
+  "rejects ranged validation dependencies",
+  (directory) => {
+    const file = path.join(directory, "package.json");
+    fs.writeFileSync(
+      file,
+      fs
+        .readFileSync(file, "utf8")
+        .replace('"yaml": "2.9.0"', '"yaml": "^2.9.0"'),
+    );
+  },
+  "must pin yaml 2.9.0",
 );
 invalid(
   "rejects a different Node version",

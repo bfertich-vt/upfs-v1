@@ -1,0 +1,54 @@
+task_id: RECOVERY-TASK-0001-REVALIDATION-001
+title: Revalidate TASK-0001 repository baseline and specification CI
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 194a7db2d3cb7504b08fe5c47d056ed868b44d7e
+dependencies: []
+normative_sources:
+  - AGENTS.md
+  - docs/MASTER_PLAN.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/12_testing/test_strategy.md
+authorized_files:
+  - package.json
+  - package-lock.json
+  - scripts/validate-repository.mjs
+  - scripts/validate-repository.test.mjs
+  - docs/REPOSITORY_GOVERNANCE.md
+  - tasks/recovery/RECOVERY-TASK-0001-REVALIDATION-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-REVALIDATION-001.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/MASTER_PLAN_TRACEABILITY.md
+  - docs/reviews/**
+  - tasks/recovery/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R5.yaml
+  - tasks/production/**
+  - specs/**
+  - apps/**
+  - services/**
+  - contracts/**
+acceptance_map:
+  local_and_pr_validators: scripts/validate.ps1 invokes the repository validator; both workflows run on pull requests; validation executes contract, documentation, test, security, and evidence gates.
+  governance: docs/REPOSITORY_GOVERNANCE.md documents required protection and CODEOWNERS controls and distinguishes current enforced controls from missing approval enforcement.
+  pinned_tooling: package manifests use exact versions; workflow actions use immutable commit SHAs; Node and Trivy versions and security settings are validated.
+  fail_closed_evidence: repository validation writes a passed/failed JSON report; CI rejects failed or missing reports and archives the report.
+required_checks:
+  - npm ci --ignore-scripts
+  - node --test scripts/validate-repository.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run validate
+  - npm run queue:check
+  - npm run traceability:check
+  - npm test
+  - git diff --check
+security:
+  - No runtime, tenant, authorization, financial, contract, or migration behavior changes.
+  - Fail closed on mutable workflow actions, ranged validator dependencies, missing PR triggers, and missing or failed validation evidence.
+  - Do not record credentials, tokens, private payloads, or customer data.
+rollback: Correct forward or revert only this candidate after review; never weaken a gate to obtain green status.
+independent_review: Required from a separate QA/Security worktree at the exact committed candidate; author must not self-accept.
