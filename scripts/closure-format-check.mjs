@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import prettier from "prettier";
@@ -27,6 +27,7 @@ const candidates = [
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R10.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R13.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R14.yaml",
+  "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R15.yaml",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R2.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R3.md",
@@ -39,6 +40,7 @@ const candidates = [
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R10.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R13.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R14.md",
+  "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R15.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R2-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R3-QA.md",
@@ -55,12 +57,12 @@ export function canonicalStageAState(body) {
   const value = {
     version: 1,
     task_id: "TASK-0001",
-    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R14",
-    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R13",
+    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R15",
+    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R14",
     predecessor_disposition: "REJECTED",
     task_status: "blocked",
     attestation_status: "absent",
-    review_target: "R14_HANDOFF_CANDIDATE",
+    review_target: "R15_HANDOFF_CANDIDATE",
     activation_phase: "STAGE_A_REVIEW_PENDING",
     next_action: "FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED",
   };
@@ -71,15 +73,84 @@ export function canonicalStageAState(body) {
 }
 
 export function canonicalTaskOneRow() {
-  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R14.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R14 clean committed HEAD authority, tests, task, and handoff only. | None for this corrective control. | Canonical row, complete ADS inventory, ASCII paths, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R14 handoff. |";
+  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R15.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R15 canonical sanitized Git authority, tests, task, and handoff only. | None for this corrective control. | Canonical row, complete ADS inventory, ASCII paths, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R15 handoff. |";
 }
 
-function nulGit(root, args) {
-  try {
-    return execFileSync("git", args, { cwd: root, encoding: null });
-  } catch {
-    return Buffer.alloc(0);
+function canonicalGitContext(root) {
+  const worktree = fs.realpathSync.native(path.resolve(root));
+  const dotGit = path.join(worktree, ".git");
+  const stat = fs.lstatSync(dotGit);
+  let gitDir;
+  if (stat.isDirectory()) gitDir = fs.realpathSync.native(dotGit);
+  else if (stat.isFile()) {
+    const match = /^gitdir: ([^\r\n]+)\r?\n?$/.exec(
+      fs.readFileSync(dotGit, "utf8"),
+    );
+    if (!match) throw new Error("canonical .git file is malformed");
+    gitDir = fs.realpathSync.native(path.resolve(worktree, match[1]));
+  } else throw new Error("canonical .git entry is not a file or directory");
+  const commonFile = path.join(gitDir, "commondir");
+  const commonDir = fs.existsSync(commonFile)
+    ? fs.realpathSync.native(
+        path.resolve(gitDir, fs.readFileSync(commonFile, "utf8").trim()),
+      )
+    : gitDir;
+  const index = path.join(gitDir, "index");
+  if (!fs.statSync(index).isFile())
+    throw new Error("canonical index is absent");
+  return { worktree, gitDir, commonDir, index };
+}
+
+function sanitizedGitEnvironment(context) {
+  const env = {};
+  for (const [key, value] of Object.entries(process.env))
+    if (!/^GIT_/i.test(key)) env[key] = value;
+  env.GIT_CONFIG_NOSYSTEM = "1";
+  env.GIT_CONFIG_GLOBAL = process.platform === "win32" ? "NUL" : "/dev/null";
+  env.GIT_INDEX_FILE = context.index;
+  env.GIT_COMMON_DIR = context.commonDir;
+  env.GIT_OBJECT_DIRECTORY = path.join(context.commonDir, "objects");
+  return env;
+}
+
+function checkedGit(context, args, errors, options = {}) {
+  const result = spawnSync(
+    options.gitCommand || "git",
+    [
+      ...(options.gitCommandPrefix || []),
+      `--git-dir=${context.gitDir}`,
+      `--work-tree=${context.worktree}`,
+      ...args,
+    ],
+    {
+      cwd: context.worktree,
+      encoding: null,
+      env: sanitizedGitEnvironment(context),
+      windowsHide: true,
+      timeout: options.gitTimeoutMs || 30000,
+      maxBuffer: 32 * 1024 * 1024,
+    },
+  );
+  if (
+    result.error ||
+    result.signal ||
+    result.status !== 0 ||
+    (Buffer.isBuffer(result.stderr) && result.stderr.length)
+  ) {
+    const reason =
+      result.error?.code ||
+      result.signal ||
+      (result.status !== 0 ? `status ${result.status}` : "unexpected stderr");
+    errors.push(`Canonical Git command failed closed (${args[0]}): ${reason}.`);
+    return { ok: false, stdout: Buffer.alloc(0) };
   }
+  if (!Buffer.isBuffer(result.stdout)) {
+    errors.push(
+      `Canonical Git command returned malformed output (${args[0]}).`,
+    );
+    return { ok: false, stdout: Buffer.alloc(0) };
+  }
+  return { ok: true, stdout: result.stdout };
 }
 
 function stateLookalike(rel) {
@@ -121,11 +192,14 @@ function portableAsciiPath(rel) {
     );
 }
 
-function authoritativeScope(root, errors) {
-  const records = nulGit(root, ["ls-files", "--stage", "-z"])
-    .toString("utf8")
-    .split("\0")
-    .filter(Boolean);
+function authoritativeScope(root, context, errors, options) {
+  const result = checkedGit(
+    context,
+    ["ls-files", "--stage", "-z"],
+    errors,
+    options,
+  );
+  const records = result.stdout.toString("utf8").split("\0").filter(Boolean);
   const paths = [];
   for (const record of records) {
     const match = /^(100644|100755) [a-f0-9]{40} 0\t(.+)$/.exec(record);
@@ -161,8 +235,8 @@ function authoritativeScope(root, errors) {
   ])
     if (!paths.includes(rel))
       errors.push(`Mandatory root authority file missing from index: ${rel}`);
-  const flags = nulGit(root, ["ls-files", "-v", "-z"])
-    .toString("utf8")
+  const flags = checkedGit(context, ["ls-files", "-v", "-z"], errors, options)
+    .stdout.toString("utf8")
     .split("\0")
     .filter(Boolean);
   if (
@@ -230,24 +304,44 @@ function validateAdsScope(root, relativePaths) {
   return [];
 }
 
-export async function validateClosureFormatting(root) {
+export async function validateClosureFormatting(root, options = {}) {
   const listed = candidates.filter((rel) =>
     fs.existsSync(path.join(root, rel)),
   );
   const errors = [];
-  const porcelain = nulGit(root, [
-    "status",
-    "--porcelain=v2",
-    "-z",
-    "--untracked-files=all",
-  ]);
+  let context;
+  try {
+    context = canonicalGitContext(root);
+  } catch (error) {
+    errors.push(`Canonical Git context failed closed: ${error.message}.`);
+    return { errors, listed };
+  }
+  const porcelainResult = checkedGit(
+    context,
+    ["status", "--porcelain=v2", "-z", "--untracked-files=all"],
+    errors,
+    options,
+  );
+  const porcelain = porcelainResult.stdout;
+  if (
+    porcelainResult.ok &&
+    porcelain.length &&
+    !/^(?:[12u?!] |# )/.test(porcelain.toString("utf8"))
+  )
+    errors.push("Canonical Git status returned malformed porcelain-v2 output.");
   if (porcelain.length)
     errors.push(
       "Authoritative closure validation requires a clean committed HEAD.",
     );
   if (
-    nulGit(root, ["diff", "--cached", "--name-only", "-z"]).length ||
-    nulGit(root, ["diff", "--name-only", "-z"]).length
+    checkedGit(
+      context,
+      ["diff", "--cached", "--name-only", "-z"],
+      errors,
+      options,
+    ).stdout.length ||
+    checkedGit(context, ["diff", "--name-only", "-z"], errors, options).stdout
+      .length
   )
     errors.push(
       "HEAD, index, and worktree authoritative bytes must be identical.",
@@ -282,14 +376,13 @@ export async function validateClosureFormatting(root) {
     );
   const stateRel = "docs/governance/task-closures/TASK-0001-stage-a-state.json";
   const statePath = path.join(root, stateRel);
-  const gitPaths = nulGit(root, [
-    "ls-files",
-    "-z",
-    "--cached",
-    "--others",
-    "--exclude-standard",
-  ])
-    .toString("utf8")
+  const gitPaths = checkedGit(
+    context,
+    ["ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+    errors,
+    options,
+  )
+    .stdout.toString("utf8")
     .split("\0")
     .filter(Boolean);
   let treePaths = [];
@@ -321,8 +414,13 @@ export async function validateClosureFormatting(root) {
         .native(statePath)
         .startsWith(`${fs.realpathSync.native(root)}${path.sep}`);
   } catch {}
-  const entries = nulGit(root, ["ls-files", "--stage", "-z", "--", stateRel])
-    .toString("utf8")
+  const entries = checkedGit(
+    context,
+    ["ls-files", "--stage", "-z", "--", stateRel],
+    errors,
+    options,
+  )
+    .stdout.toString("utf8")
     .split("\0")
     .filter(Boolean);
   const indexEntry = entries[0] || "";
@@ -336,26 +434,42 @@ export async function validateClosureFormatting(root) {
     errors.push(
       `${stateRel} must be one contained regular Git blob with mode 100644.`,
     );
-  const flags = nulGit(root, ["ls-files", "-v", "-z", "--", stateRel]).toString(
-    "utf8",
-  );
+  const flags = checkedGit(
+    context,
+    ["ls-files", "-v", "-z", "--", stateRel],
+    errors,
+    options,
+  ).stdout.toString("utf8");
   if (flags !== `H ${stateRel}\0`)
     errors.push(
       `${stateRel} must not use intent-to-add, skip-worktree, or assume-unchanged index state.`,
     );
-  const indexed = nulGit(root, ["show", `:${stateRel}`]);
+  const indexed = checkedGit(
+    context,
+    ["show", `:${stateRel}`],
+    errors,
+    options,
+  ).stdout;
   const worktree = regular ? fs.readFileSync(statePath) : Buffer.alloc(0);
-  const unstaged = nulGit(root, ["diff", "--name-only", "-z", "--", stateRel]);
+  const unstaged = checkedGit(
+    context,
+    ["diff", "--name-only", "-z", "--", stateRel],
+    errors,
+    options,
+  ).stdout;
   if (unstaged.length || !indexed.equals(worktree))
     errors.push(
       `${stateRel} index blob and regular worktree bytes must be exactly equal and unstaged-clean.`,
     );
   if (!canonicalStageAState(indexed.toString("utf8")))
     errors.push(
-      `${stateRel} must be the one exact canonical R11 Stage A state record.`,
+      `${stateRel} must be the one exact canonical R15 Stage A state record.`,
     );
   try {
-    validateAdsScope(root, authoritativeScope(root, errors));
+    validateAdsScope(
+      context.worktree,
+      authoritativeScope(context.worktree, context, errors, options),
+    );
   } catch (error) {
     errors.push(
       `Closure-authorizing storage scope failed closed: ${error.message}`,

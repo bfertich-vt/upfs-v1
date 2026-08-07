@@ -49,6 +49,21 @@ function fixture() {
   return root;
 }
 
+async function withGitEnvironment(values, action) {
+  const prior = new Map();
+  for (const [key, value] of Object.entries(values)) {
+    prior.set(key, process.env[key]);
+    process.env[key] = value;
+  }
+  try {
+    return await action();
+  } finally {
+    for (const [key, value] of prior)
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+  }
+}
+
 test("closure formatting covers Prettier files and stable exclusions", async () => {
   const root = fixture();
   assert.deepEqual((await validateClosureFormatting(root)).errors, []);
@@ -105,7 +120,7 @@ test("R5 authorization includes every modified validator test surface", () => {
   assert.match(task, /  - scripts\/historical-closure-validator\.test\.mjs/);
 });
 
-test("TASK-0001 R14 requires clean committed HEAD authority across closure-authorizing scope", async () => {
+test("TASK-0001 R15 requires clean committed HEAD authority across closure-authorizing scope", async () => {
   const root = fixture();
   const matrix = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
   const original = fs.readFileSync(matrix, "utf8");
@@ -150,7 +165,7 @@ test("TASK-0001 R14 requires clean committed HEAD authority across closure-autho
     valid.replace('-R14"', '-R13"'),
     valid.replace('"REJECTED"', '"ACCEPTED"'),
     valid.replace('"absent"', '"issued"'),
-    valid.replace('"R14_HANDOFF_CANDIDATE"', '"R11_HANDOFF_CANDIDATE"'),
+    valid.replace('"R15_HANDOFF_CANDIDATE"', '"R11_HANDOFF_CANDIDATE"'),
     valid.replace('"STAGE_A_REVIEW_PENDING"', '"ACTIVATION_PENDING"'),
     valid.replace(
       '"FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED"',
@@ -305,4 +320,169 @@ test("TASK-0001 R14 requires clean committed HEAD authority across closure-autho
     [],
     "intent-to-add",
   );
+});
+
+test("R15 ignores inherited Git redirects and uses the canonical index", async () => {
+  const root = fixture();
+  const alternate = path.join(root, "alternate.index");
+  execFileSync("git", ["read-tree", "HEAD"], {
+    cwd: root,
+    env: { ...process.env, GIT_INDEX_FILE: alternate },
+  });
+  fs.appendFileSync(path.join(root, "AGENTS.md"), "dirty canonical worktree\n");
+  const redirected = {
+    GIT_DIR: path.join(root, "missing.git"),
+    GIT_WORK_TREE: path.join(root, "missing-worktree"),
+    GIT_INDEX_FILE: alternate,
+    GIT_COMMON_DIR: path.join(root, "missing-common"),
+    GIT_OBJECT_DIRECTORY: path.join(root, "missing-objects"),
+    GIT_ALTERNATE_OBJECT_DIRECTORIES: path.join(root, "missing-alternates"),
+    GIT_CEILING_DIRECTORIES: root,
+    GIT_DISCOVERY_ACROSS_FILESYSTEM: "1",
+    GIT_CONFIG_COUNT: "1",
+    GIT_CONFIG_KEY_0: "core.bare",
+    GIT_CONFIG_VALUE_0: "true",
+    GIT_OPTIONAL_LOCKS: "0",
+    GIT_NAMESPACE: "masked",
+    GIT_REPLACE_REF_BASE: "refs/replace-masked/",
+  };
+  const result = await withGitEnvironment(redirected, () =>
+    validateClosureFormatting(root),
+  );
+  assert.ok(
+    result.errors.some((error) => error.includes("clean committed HEAD")),
+    result.errors.join("\n"),
+  );
+});
+
+test("R15 Git execution failures and malformed output fail closed", async () => {
+  const root = fixture();
+  const missing = await validateClosureFormatting(root, {
+    gitCommand: path.join(root, "definitely-missing-git"),
+  });
+  assert.ok(missing.errors.some((error) => error.includes("failed closed")));
+
+  const fake = path.join(root, "fake-git.mjs");
+  fs.writeFileSync(
+    fake,
+    "const mode=process.env.UPFS_FAKE_GIT; if(mode==='timeout') await new Promise(r=>setTimeout(r,1000)); else process.stdout.write('malformed');\n",
+  );
+  const malformed = await withGitEnvironment(
+    { UPFS_FAKE_GIT: "malformed" },
+    () =>
+      validateClosureFormatting(root, {
+        gitCommand: process.execPath,
+        gitCommandPrefix: [fake],
+      }),
+  );
+  assert.ok(
+    malformed.errors.some((error) => error.includes("malformed porcelain-v2")),
+  );
+  const timedOut = await withGitEnvironment({ UPFS_FAKE_GIT: "timeout" }, () =>
+    validateClosureFormatting(root, {
+      gitCommand: process.execPath,
+      gitCommandPrefix: [fake],
+      gitTimeoutMs: 25,
+    }),
+  );
+  assert.ok(timedOut.errors.some((error) => error.includes("failed closed")));
+});
+
+test("R15 rejects representative porcelain-v2 dirty states", async () => {
+  const cases = [
+    [
+      "unstaged modification",
+      (root) => fs.appendFileSync(path.join(root, "AGENTS.md"), "dirty\n"),
+    ],
+    [
+      "staged modification",
+      (root) => {
+        fs.appendFileSync(path.join(root, "AGENTS.md"), "dirty\n");
+        execFileSync("git", ["add", "AGENTS.md"], { cwd: root });
+      },
+    ],
+    [
+      "both staged and unstaged",
+      (root) => {
+        fs.appendFileSync(path.join(root, "AGENTS.md"), "staged\n");
+        execFileSync("git", ["add", "AGENTS.md"], { cwd: root });
+        fs.appendFileSync(path.join(root, "AGENTS.md"), "unstaged\n");
+      },
+    ],
+    [
+      "untracked",
+      (root) => fs.writeFileSync(path.join(root, "untracked.txt"), "dirty\n"),
+    ],
+    ["unstaged deletion", (root) => fs.rmSync(path.join(root, "AGENTS.md"))],
+    [
+      "staged deletion",
+      (root) =>
+        execFileSync("git", ["rm", "AGENTS.md"], {
+          cwd: root,
+          stdio: "ignore",
+        }),
+    ],
+    [
+      "staged rename",
+      (root) =>
+        execFileSync("git", ["mv", "AGENTS.md", "AGENTS-renamed.md"], {
+          cwd: root,
+        }),
+    ],
+    [
+      "staged new file",
+      (root) => {
+        fs.writeFileSync(path.join(root, "new.txt"), "new\n");
+        execFileSync("git", ["add", "new.txt"], { cwd: root });
+      },
+    ],
+    [
+      "intent to add",
+      (root) => {
+        fs.writeFileSync(path.join(root, "intent.txt"), "intent\n");
+        execFileSync("git", ["add", "-N", "intent.txt"], { cwd: root });
+      },
+    ],
+    [
+      "assume unchanged",
+      (root) => {
+        execFileSync(
+          "git",
+          ["update-index", "--assume-unchanged", "AGENTS.md"],
+          { cwd: root },
+        );
+        fs.appendFileSync(path.join(root, "AGENTS.md"), "masked\n");
+      },
+    ],
+    [
+      "skip worktree",
+      (root) =>
+        execFileSync("git", ["update-index", "--skip-worktree", "AGENTS.md"], {
+          cwd: root,
+        }),
+    ],
+    [
+      "unmerged",
+      (root) => {
+        const blob = execFileSync("git", ["rev-parse", "HEAD:AGENTS.md"], {
+          cwd: root,
+          encoding: "utf8",
+        }).trim();
+        execFileSync("git", ["update-index", "--force-remove", "AGENTS.md"], {
+          cwd: root,
+        });
+        execFileSync("git", ["update-index", "--index-info"], {
+          cwd: root,
+          input: `100644 ${blob} 1\tAGENTS.md\n100644 ${blob} 2\tAGENTS.md\n100644 ${blob} 3\tAGENTS.md\n`,
+        });
+      },
+    ],
+  ];
+  for (const [name, mutate] of cases) {
+    const root = fixture();
+    mutate(root);
+    const result = await validateClosureFormatting(root);
+    assert.notDeepEqual(result.errors, [], `${name}: accepted dirty state`);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });

@@ -1,0 +1,39 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002-R15
+title: Require canonical sanitized Git authority
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: cd1b4b09476e881d40e7f0e91dc34e5f4072ec68
+dependencies: [RECOVERY-TASK-0001-CLOSURE-002-R14]
+inputs:
+  [
+    AGENTS.md,
+    agents/BACKEND.md,
+    agents/QA_SECURITY.md,
+    docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R14-QA.md,
+  ]
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0001-stage-a-state.json
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R15.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R15.md
+acceptance:
+  - Git authority is resolved from the canonical worktree without trusting inherited Git redirects.
+  - Child Git commands use sanitized environment and explicit canonical repository, worktree, index, common-directory, and object paths.
+  - Every Git error, nonzero status, signal, timeout, or malformed output prevents acceptance.
+  - Porcelain-v2 dirty states and redirect attacks have production-code regression fixtures.
+  - TASK-0001 remains blocked without attestation.
+security:
+  - Alternate Git metadata cannot mask mutable canonical repository state.
+tests:
+  - node --test scripts/closure-format-check.test.mjs scripts/historical-closure-validator.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve history and correct forward; never validate redirected Git state.
+independent_review: Fresh QA reviews exact R15 handoff candidate; only if accepted may it attest exact candidate.
