@@ -95,7 +95,7 @@ test("R5 authorization includes every modified validator test surface", () => {
   assert.match(task, /  - scripts\/historical-closure-validator\.test\.mjs/);
 });
 
-test("TASK-0001 whole row and R8 state blob are closed-world canonical", async () => {
+test("TASK-0001 whole row and R9 indexed state are repository-wide canonical", async () => {
   const root = fixture();
   const matrix = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
   const original = fs.readFileSync(matrix, "utf8");
@@ -111,7 +111,7 @@ test("TASK-0001 whole row and R8 state blob are closed-world canonical", async (
     "ATTESTATION",
     "  ",
     ".",
-    "r8",
+    "r9",
   ]) {
     fs.writeFileSync(
       matrix,
@@ -137,10 +137,10 @@ test("TASK-0001 whole row and R8 state blob are closed-world canonical", async (
       '  "task_status": "blocked",',
       '  "extra": true,\n  "task_status": "blocked",',
     ),
-    valid.replace('-R8"', '-R7"'),
+    valid.replace('-R9"', '-R8"'),
     valid.replace('"REJECTED"', '"ACCEPTED"'),
     valid.replace('"absent"', '"issued"'),
-    valid.replace('"R8_HANDOFF_CANDIDATE"', '"R7_HANDOFF_CANDIDATE"'),
+    valid.replace('"R9_HANDOFF_CANDIDATE"', '"R8_HANDOFF_CANDIDATE"'),
     valid.replace('"STAGE_A_REVIEW_PENDING"', '"ACTIVATION_PENDING"'),
     valid.replace(
       '"FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED"',
@@ -163,6 +163,15 @@ test("TASK-0001 whole row and R8 state blob are closed-world canonical", async (
     );
     fs.rmSync(target);
   }
+  const nested = path.join(root, "docs/alternate/TASK-0001-stage-a-state.json");
+  fs.mkdirSync(path.dirname(nested), { recursive: true });
+  fs.copyFileSync(state, nested);
+  assert.notDeepEqual(
+    (await validateClosureFormatting(root)).errors,
+    [],
+    "nested duplicate",
+  );
+  fs.rmSync(nested);
   const blob = execFileSync("git", ["hash-object", state], {
     cwd: root,
     encoding: "utf8",
@@ -196,4 +205,47 @@ test("TASK-0001 whole row and R8 state blob are closed-world canonical", async (
       stdio: "ignore",
     });
   }
+  const badBlob = execFileSync("git", ["hash-object", "-w", "--stdin"], {
+    cwd: root,
+    input: "{}\n",
+    encoding: "utf8",
+  }).trim();
+  execFileSync(
+    "git",
+    [
+      "update-index",
+      "--cacheinfo",
+      `100644,${badBlob},docs/governance/task-closures/TASK-0001-stage-a-state.json`,
+    ],
+    { cwd: root },
+  );
+  assert.notDeepEqual(
+    (await validateClosureFormatting(root)).errors,
+    [],
+    "split index/worktree",
+  );
+  execFileSync("git", ["reset", "--hard", "HEAD"], {
+    cwd: root,
+    stdio: "ignore",
+  });
+  fs.writeFileSync(state, "{}\n");
+  assert.notDeepEqual(
+    (await validateClosureFormatting(root)).errors,
+    [],
+    "dirty worktree",
+  );
+  execFileSync("git", ["reset", "--hard", "HEAD"], {
+    cwd: root,
+    stdio: "ignore",
+  });
+  execFileSync("git", ["rm", "--cached", state], {
+    cwd: root,
+    stdio: "ignore",
+  });
+  execFileSync("git", ["add", "-N", state], { cwd: root });
+  assert.notDeepEqual(
+    (await validateClosureFormatting(root)).errors,
+    [],
+    "intent-to-add",
+  );
 });

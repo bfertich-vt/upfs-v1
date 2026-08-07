@@ -23,6 +23,7 @@ const candidates = [
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R6.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R7.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R8.yaml",
+  "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R9.yaml",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R2.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R3.md",
@@ -31,6 +32,7 @@ const candidates = [
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R6.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R7.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R8.md",
+  "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R9.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R2-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R3-QA.md",
@@ -47,12 +49,12 @@ export function canonicalStageAState(body) {
   const value = {
     version: 1,
     task_id: "TASK-0001",
-    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R8",
-    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R7",
+    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R9",
+    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R8",
     predecessor_disposition: "REJECTED",
     task_status: "blocked",
     attestation_status: "absent",
-    review_target: "R8_HANDOFF_CANDIDATE",
+    review_target: "R9_HANDOFF_CANDIDATE",
     activation_phase: "STAGE_A_REVIEW_PENDING",
     next_action: "FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED",
   };
@@ -63,7 +65,43 @@ export function canonicalStageAState(body) {
 }
 
 export function canonicalTaskOneRow() {
-  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R8.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R8 closed-world matrix state control, tests, task, and handoff only. | None for this corrective control. | Canonical whole-row and state-blob validation, formatting, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R8 handoff. |";
+  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R9.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R9 indexed-state binding, tests, task, and handoff only. | None for this corrective control. | Canonical row, repository-wide uniqueness, indexed-blob/worktree equality, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R9 handoff. |";
+}
+
+function nulGit(root, args) {
+  try {
+    return execFileSync("git", args, { cwd: root, encoding: null });
+  } catch {
+    return Buffer.alloc(0);
+  }
+}
+
+function stateLookalike(rel) {
+  const folded = rel
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  return folded.includes("task0001stageastate");
+}
+
+function worktreePaths(root, current = root, output = []) {
+  const excluded = new Set([
+    ".git",
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    ".next",
+  ]);
+  for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+    if (entry.isDirectory() && excluded.has(entry.name)) continue;
+    const absolute = path.join(current, entry.name);
+    const rel = path.relative(root, absolute).replaceAll("\\", "/");
+    output.push(rel);
+    if (entry.isDirectory() && !entry.isSymbolicLink())
+      worktreePaths(root, absolute, output);
+  }
+  return output;
 }
 
 export async function validateClosureFormatting(root) {
@@ -101,13 +139,20 @@ export async function validateClosureFormatting(root) {
     );
   const stateRel = "docs/governance/task-closures/TASK-0001-stage-a-state.json";
   const statePath = path.join(root, stateRel);
-  const stateDir = path.dirname(statePath);
-  const lookalikes = fs.existsSync(stateDir)
-    ? fs
-        .readdirSync(stateDir)
-        .filter((name) => /task-?0001.*stage.*a.*state/i.test(name))
-    : [];
-  if (lookalikes.length !== 1 || lookalikes[0] !== path.basename(stateRel))
+  const gitPaths = nulGit(root, [
+    "ls-files",
+    "-z",
+    "--cached",
+    "--others",
+    "--exclude-standard",
+  ])
+    .toString("utf8")
+    .split("\0")
+    .filter(Boolean);
+  const lookalikes = new Set(
+    [...gitPaths, ...worktreePaths(root)].filter(stateLookalike),
+  );
+  if (lookalikes.size !== 1 || !lookalikes.has(stateRel))
     errors.push(
       `${stateRel} must be the repository's only TASK-0001 Stage A state record.`,
     );
@@ -121,15 +166,14 @@ export async function validateClosureFormatting(root) {
         .native(statePath)
         .startsWith(`${fs.realpathSync.native(root)}${path.sep}`);
   } catch {}
-  let indexEntry = "";
-  try {
-    indexEntry = execFileSync("git", ["ls-files", "-s", "--", stateRel], {
-      cwd: root,
-      encoding: "utf8",
-    }).trim();
-  } catch {}
+  const entries = nulGit(root, ["ls-files", "--stage", "-z", "--", stateRel])
+    .toString("utf8")
+    .split("\0")
+    .filter(Boolean);
+  const indexEntry = entries[0] || "";
   if (
     !regular ||
+    entries.length !== 1 ||
     !/^100644 [a-f0-9]{40} 0\tdocs\/governance\/task-closures\/TASK-0001-stage-a-state\.json$/.test(
       indexEntry,
     )
@@ -137,7 +181,21 @@ export async function validateClosureFormatting(root) {
     errors.push(
       `${stateRel} must be one contained regular Git blob with mode 100644.`,
     );
-  if (!regular || !canonicalStageAState(fs.readFileSync(statePath, "utf8")))
+  const flags = nulGit(root, ["ls-files", "-v", "-z", "--", stateRel]).toString(
+    "utf8",
+  );
+  if (flags !== `H ${stateRel}\0`)
+    errors.push(
+      `${stateRel} must not use intent-to-add, skip-worktree, or assume-unchanged index state.`,
+    );
+  const indexed = nulGit(root, ["show", `:${stateRel}`]);
+  const worktree = regular ? fs.readFileSync(statePath) : Buffer.alloc(0);
+  const unstaged = nulGit(root, ["diff", "--name-only", "-z", "--", stateRel]);
+  if (unstaged.length || !indexed.equals(worktree))
+    errors.push(
+      `${stateRel} index blob and regular worktree bytes must be exactly equal and unstaged-clean.`,
+    );
+  if (!canonicalStageAState(indexed.toString("utf8")))
     errors.push(
       `${stateRel} must be the one exact canonical R8 Stage A state record.`,
     );
