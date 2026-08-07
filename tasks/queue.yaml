@@ -42,7 +42,7 @@ tasks:
       evidence_excerpt: "# Handoff report"
   - id: TASK-0003
     title: Implement registry generator and canonical transaction contract
-    status: blocked
+    status: complete
     dependencies: [TASK-0001, TASK-0002]
     inputs:
       - AGENTS.md

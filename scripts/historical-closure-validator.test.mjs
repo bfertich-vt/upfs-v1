@@ -213,6 +213,7 @@ test("TASK-0002 protected-review activation is exact and fails closed", (t) => {
     "tasks/queue.yaml",
     "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md",
     "docs/governance/task-closures/TASK-0002.json",
+    "docs/governance/task-closures/TASK-0003.json",
   ]) {
     fs.mkdirSync(path.dirname(path.join(root, relative)), { recursive: true });
     fs.copyFileSync(path.join(source, relative), path.join(root, relative));
@@ -335,10 +336,102 @@ test("TASK-0002 protected-review activation is exact and fails closed", (t) => {
     /TASK-0002 has a closure record but is not complete/,
   );
   const later = queue.replace(
-    /(id: TASK-0003[\s\S]*?status:) blocked/,
+    /(id: TASK-0004[\s\S]*?status:) blocked/,
     "$1 complete",
   );
-  expectInvalid(root, later, /TASK-0003\.json cannot be resolved/);
+  expectInvalid(root, later, /TASK-0004\.json cannot be resolved/);
+});
+
+test("TASK-0003 protected-review activation binds exact accepted and rejection evidence", (t) => {
+  const source = process.cwd();
+  const root = fs.mkdtempSync(
+    path.join(os.tmpdir(), "upfs-task-0003-activation-"),
+  );
+  execFileSync("git", ["clone", "--shared", source, root], { stdio: "ignore" });
+  execFileSync("git", ["checkout", "--detach", "HEAD"], {
+    cwd: root,
+    stdio: "ignore",
+  });
+  for (const relative of [
+    "tasks/queue.yaml",
+    "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md",
+    "docs/governance/task-closures/TASK-0002.json",
+    "docs/governance/task-closures/TASK-0003.json",
+  ]) {
+    fs.mkdirSync(path.dirname(path.join(root, relative)), { recursive: true });
+    fs.copyFileSync(path.join(source, relative), path.join(root, relative));
+  }
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const queuePath = path.join(root, "tasks/queue.yaml");
+  const matrixPath = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
+  const closurePath = path.join(
+    root,
+    "docs/governance/task-closures/TASK-0003.json",
+  );
+  const queue = fs.readFileSync(queuePath, "utf8");
+  const matrix = fs.readFileSync(matrixPath, "utf8");
+  const closure = JSON.parse(fs.readFileSync(closurePath, "utf8"));
+  assert.doesNotThrow(() => validateQueueDocument(queue, root));
+  const mutate = (change, pattern = /exact TASK-0003 protected evidence/) => {
+    const candidate = structuredClone(closure);
+    change(candidate);
+    fs.writeFileSync(closurePath, `${JSON.stringify(candidate, null, 2)}\n`);
+    expectInvalid(root, queue, pattern);
+    fs.writeFileSync(closurePath, `${JSON.stringify(closure, null, 2)}\n`);
+  };
+  const substitutions = [
+    (r) => (r.remediation.implementation_commit = "a".repeat(40)),
+    (r) => (r.remediation.candidate_commit = "a".repeat(40)),
+    (r) => (r.independent_qa.review_commit = "a".repeat(40)),
+    (r) => (r.independent_qa.review_sha256 = "a".repeat(64)),
+    (r) => (r.protected_review.pr_head = "a".repeat(40)),
+    (r) => (r.protected_review.tree = "a".repeat(40)),
+    (r) => (r.hosted.checks[0].run_id = 1),
+    (r) => (r.hosted.checks[0].job_id = 1),
+    (r) => (r.hosted.checks[1].conclusion = "failure"),
+    (r) => (r.hosted.validation_artifact.artifact_id = 1),
+    (r) =>
+      (r.hosted.validation_artifact.archive_digest = `sha256:${"a".repeat(64)}`),
+    (r) => (r.hosted.validation_artifact.content_sha256 = "a".repeat(64)),
+    (r) => (r.protected_merge.commit = "a".repeat(40)),
+    (r) => (r.protected_merge.head_tree = "a".repeat(40)),
+    (r) => (r.protected_merge.merged_at = "2026-08-07T17:15:24-04:00"),
+    (r) => (r.hosted.post_merge_checks[0].run_id = 1),
+    (r) => (r.rejected_candidates[0] = "a".repeat(40)),
+    (r) => r.rejected_candidates.pop(),
+  ];
+  for (const substitution of substitutions) mutate(substitution);
+  mutate(
+    (r) => r.limitations.splice(0),
+    /limitations must disclose|unimplemented durable/,
+  );
+  fs.writeFileSync(
+    matrixPath,
+    matrix.replace(
+      /\| TASK-0003 ([^\n]*?)\| Proven reference implementation \| ACCEPTED \|/,
+      "| TASK-0003 $1| Proven production implementation | ACCEPTED |",
+    ),
+  );
+  expectInvalid(
+    root,
+    queue,
+    /classification must remain Proven reference implementation/,
+  );
+  fs.writeFileSync(matrixPath, matrix);
+  const blocked = queue.replace(
+    /(id: TASK-0003[\s\S]*?status:) complete/,
+    "$1 blocked",
+  );
+  expectInvalid(
+    root,
+    blocked,
+    /TASK-0003 has a closure record but is not complete/,
+  );
+  const later = queue.replace(
+    /(id: TASK-0004[\s\S]*?status:) blocked/,
+    "$1 complete",
+  );
+  expectInvalid(root, later, /TASK-0004\.json cannot be resolved/);
 });
 
 test("TASK-0001 accepted closure passes and all evidence substitutions fail closed", (t) => {
@@ -418,7 +511,12 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
     )
     .split(/\r?\n/)
     .map((line) => {
-      if (!line.startsWith("| TASK-0002 |")) return line;
+      if (
+        !["| TASK-0002 |", "| TASK-0003 |"].some((prefix) =>
+          line.startsWith(prefix),
+        )
+      )
+        return line;
       const fields = line
         .slice(1, -1)
         .split("|")
