@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const VERSION = /^\d+\.\d+\.\d+$/;
+const CONTROL_CHARACTER = /[\u0000-\u001f\u007f]/;
 const TAXONOMY_FIELDS = [
   "domain",
   "family",
@@ -129,14 +130,15 @@ export class CanonicalTransactionService {
   }
 
   upsert({ actor, transaction, idempotencyKey, ifMatch }) {
-    const scope = this.#scope(actor, "transaction:write");
-    if (!scope)
-      return this.#denial(
+    const canonicalActor = normalizeVerifiedActor(actor);
+    if (!canonicalActor)
+      return this.#error(
         actor ? 404 : 401,
         actor ? "resource_not_found" : "authentication_required",
-        null,
-        actor,
       );
+    const scope = this.#scope(canonicalActor, "transaction:write");
+    if (!scope)
+      return this.#denial(404, "resource_not_found", null, canonicalActor);
     if (
       transaction?.tenant_id !== scope.tenantId ||
       transaction?.environment_id !== scope.environmentId
@@ -145,7 +147,7 @@ export class CanonicalTransactionService {
         404,
         "resource_not_found",
         scope,
-        actor,
+        canonicalActor,
         transaction?.id,
       );
     }
@@ -165,7 +167,7 @@ export class CanonicalTransactionService {
     const validation = validateTransaction(transaction);
     if (validation) return this.#error(400, validation);
     const payloadHash = sha256(JSON.stringify(stable(transaction)));
-    const idem = `${scope.tenantId}|${scope.environmentId}|${actor.issuer}|${actor.subject}|${idempotencyKey}`;
+    const idem = `${scope.tenantId}|${scope.environmentId}|${canonicalActor.issuer}|${canonicalActor.subject}|${idempotencyKey}`;
     const replay = this.#idempotency.get(idem);
     if (replay) {
       if (replay.payloadHash !== payloadHash)
@@ -174,7 +176,7 @@ export class CanonicalTransactionService {
         "transaction.upsert",
         "replayed",
         scope,
-        actor,
+        canonicalActor,
         transaction.id,
         replay.result.body.version,
       );
@@ -192,13 +194,15 @@ export class CanonicalTransactionService {
       ...structuredClone(transaction),
       version,
       system_time: { from: now, to: null },
-      created_by: prior?.created_by ?? `${actor.issuer}|${actor.subject}`,
-      updated_by: `${actor.issuer}|${actor.subject}`,
+      created_by:
+        prior?.created_by ??
+        `${canonicalActor.issuer}|${canonicalActor.subject}`,
+      updated_by: `${canonicalActor.issuer}|${canonicalActor.subject}`,
       provenance: [
         ...transaction.provenance,
         {
           kind: "canonicalized",
-          actor: `${actor.issuer}|${actor.subject}`,
+          actor: `${canonicalActor.issuer}|${canonicalActor.subject}`,
           at: now,
           source_ref: `transaction:${transaction.id}:v${version}`,
         },
@@ -219,7 +223,7 @@ export class CanonicalTransactionService {
         "transaction.upsert",
         "failed",
         scope,
-        actor,
+        canonicalActor,
         transaction.id,
         prior?.version ?? null,
       );
@@ -238,7 +242,7 @@ export class CanonicalTransactionService {
       "transaction.upsert",
       prior ? "updated" : "created",
       scope,
-      actor,
+      canonicalActor,
       transaction.id,
       version,
     );
@@ -246,25 +250,25 @@ export class CanonicalTransactionService {
   }
 
   get({ actor, id }) {
-    const scope = this.#scope(actor, "transaction:read");
-    if (!scope)
-      return this.#denial(
+    const canonicalActor = normalizeVerifiedActor(actor);
+    if (!canonicalActor)
+      return this.#error(
         actor ? 404 : 401,
         actor ? "resource_not_found" : "authentication_required",
-        null,
-        actor,
-        id,
       );
+    const scope = this.#scope(canonicalActor, "transaction:read");
+    if (!scope)
+      return this.#denial(404, "resource_not_found", null, canonicalActor, id);
     const record = this.#records.get(
       `${scope.tenantId}|${scope.environmentId}|${id}`,
     );
     if (!record)
-      return this.#denial(404, "resource_not_found", scope, actor, id);
+      return this.#denial(404, "resource_not_found", scope, canonicalActor, id);
     this.#appendAudit(
       "transaction.read",
       "read",
       scope,
-      actor,
+      canonicalActor,
       id,
       record.version,
     );
@@ -276,25 +280,25 @@ export class CanonicalTransactionService {
   }
 
   history({ actor, id }) {
-    const scope = this.#scope(actor, "transaction:read");
-    if (!scope)
-      return this.#denial(
+    const canonicalActor = normalizeVerifiedActor(actor);
+    if (!canonicalActor)
+      return this.#error(
         actor ? 404 : 401,
         actor ? "resource_not_found" : "authentication_required",
-        null,
-        actor,
-        id,
       );
+    const scope = this.#scope(canonicalActor, "transaction:read");
+    if (!scope)
+      return this.#denial(404, "resource_not_found", null, canonicalActor, id);
     const records = this.#history.get(
       `${scope.tenantId}|${scope.environmentId}|${id}`,
     );
     if (!records)
-      return this.#denial(404, "resource_not_found", scope, actor, id);
+      return this.#denial(404, "resource_not_found", scope, canonicalActor, id);
     this.#appendAudit(
       "transaction.history",
       "read",
       scope,
-      actor,
+      canonicalActor,
       id,
       records.at(-1).version,
     );
@@ -309,10 +313,8 @@ export class CanonicalTransactionService {
     if (
       !actor ||
       actor.verified !== true ||
-      typeof actor.issuer !== "string" ||
-      !actor.issuer ||
-      typeof actor.subject !== "string" ||
-      !actor.subject
+      !isCanonicalString(actor.issuer, 2048) ||
+      !isCanonicalString(actor.subject, 300)
     )
       return null;
     let scope;
@@ -446,10 +448,8 @@ export function validateTransaction(t) {
     t.provider_categories.some(
       (entry) =>
         !entry ||
-        typeof entry.provider !== "string" ||
-        !entry.provider ||
-        typeof entry.category !== "string" ||
-        !entry.category ||
+        !isCanonicalString(entry.provider, 300) ||
+        !isCanonicalString(entry.category, 300) ||
         Object.keys(entry).some(
           (key) => !["provider", "category"].includes(key),
         ),
@@ -462,12 +462,7 @@ export function validateTransaction(t) {
     Array.isArray(t.taxonomy) ||
     Object.keys(t.taxonomy).sort().join("|") !==
       TAXONOMY_FIELDS.slice().sort().join("|") ||
-    TAXONOMY_FIELDS.some(
-      (key) =>
-        typeof t.taxonomy[key] !== "string" ||
-        !t.taxonomy[key] ||
-        t.taxonomy[key].length > 100,
-    )
+    TAXONOMY_FIELDS.some((key) => !isCanonicalString(t.taxonomy[key], 100))
   )
     return "invalid_taxonomy";
   if (
@@ -479,13 +474,10 @@ export function validateTransaction(t) {
         Object.keys(entry).some(
           (key) => !["kind", "actor", "at", "source_ref"].includes(key),
         ) ||
-        typeof entry.kind !== "string" ||
-        !entry.kind ||
-        typeof entry.actor !== "string" ||
-        !entry.actor ||
+        !isCanonicalString(entry.kind, 300) ||
+        !isCanonicalString(entry.actor, 300) ||
         !isValidDateTime(entry.at) ||
-        typeof entry.source_ref !== "string" ||
-        !entry.source_ref,
+        !isCanonicalString(entry.source_ref, 300),
     )
   )
     return "invalid_provenance";
@@ -509,12 +501,39 @@ function validUniqueStrings(value) {
   return (
     Array.isArray(value) &&
     value.length > 0 &&
-    value.every(
-      (entry) =>
-        typeof entry === "string" && entry.length > 0 && entry.length <= 300,
-    ) &&
+    value.every((entry) => isCanonicalString(entry, 300)) &&
     new Set(value).size === value.length
   );
+}
+
+function isCanonicalString(value, maximumLength) {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= maximumLength &&
+    value === value.trim() &&
+    !CONTROL_CHARACTER.test(value)
+  );
+}
+
+function normalizeVerifiedActor(actor) {
+  if (
+    !actor ||
+    actor.verified !== true ||
+    typeof actor.issuer !== "string" ||
+    typeof actor.subject !== "string"
+  )
+    return null;
+  const issuer = actor.issuer.trim();
+  const subject = actor.subject.trim();
+  if (
+    !isCanonicalString(issuer, 2048) ||
+    !isCanonicalString(subject, 300) ||
+    CONTROL_CHARACTER.test(actor.issuer) ||
+    CONTROL_CHARACTER.test(actor.subject)
+  )
+    return null;
+  return Object.freeze({ ...actor, issuer, subject });
 }
 
 function validInterval(value) {

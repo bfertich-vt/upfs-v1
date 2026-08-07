@@ -105,6 +105,77 @@ test("validates the canonical financial, taxonomy, bitemporal, and evidence mode
     assert.notEqual(validateTransaction(candidate), null);
 });
 
+test("rejects whitespace and control-only canonical metadata without mutation or leakage", () => {
+  const candidates = [
+    { ...tx, source_observations: ["   "] },
+    { ...tx, source_observations: ["observation:\tunsafe"] },
+    { ...tx, evidence_refs: ["\r\n"] },
+    {
+      ...tx,
+      provider_categories: [{ provider: "   ", category: "FOOD" }],
+    },
+    {
+      ...tx,
+      provider_categories: [{ provider: "synthetic", category: " \t " }],
+    },
+    ...Object.keys(tx.taxonomy).map((field) => ({
+      ...tx,
+      taxonomy: { ...tx.taxonomy, [field]: "   " },
+    })),
+    { ...tx, taxonomy: { ...tx.taxonomy, family: "living\u0000unsafe" } },
+    ...["kind", "actor", "source_ref"].map((field) => ({
+      ...tx,
+      provenance: [{ ...tx.provenance[0], [field]: "   " }],
+    })),
+    {
+      ...tx,
+      provenance: [{ ...tx.provenance[0], actor: "connector:\tunsafe" }],
+    },
+    {
+      ...tx,
+      provenance: [{ ...tx.provenance[0], source_ref: "\n" }],
+    },
+  ];
+  const s = service();
+  for (const [index, transaction] of candidates.entries()) {
+    const result = s.upsert({
+      actor,
+      transaction,
+      idempotencyKey: `invalid-metadata-${index}`.padEnd(20, "x"),
+    });
+    assert.equal(result.status, 400);
+    assert.match(result.body.code, /^invalid_/);
+    assert.equal(JSON.stringify(result).includes("unsafe"), false);
+  }
+  assert.deepEqual(s.audit(), []);
+  assert.equal(
+    s.upsert({ actor, transaction: tx, idempotencyKey: "valid-after-invalid" })
+      .status,
+    201,
+  );
+  assert.equal(s.history({ actor, id: tx.id }).body.length, 1);
+});
+
+test("requires canonical metadata boundaries and accepts valid normal values", () => {
+  for (const candidate of [
+    { ...tx, evidence_refs: [" evidence:1"] },
+    { ...tx, source_observations: ["observation:1 "] },
+    {
+      ...tx,
+      provider_categories: [
+        { provider: "synthetic-provider", category: " FOOD_AND_DRINK" },
+      ],
+    },
+    { ...tx, taxonomy: { ...tx.taxonomy, class: "food " } },
+    {
+      ...tx,
+      provenance: [{ ...tx.provenance[0], source_ref: " observation:1" }],
+    },
+  ])
+    assert.notEqual(validateTransaction(candidate), null);
+  assert.equal(validateTransaction(tx), null);
+});
+
 test("derives tenant and environment scope from verified actor and rejects forged scope without disclosure", () => {
   const s = service();
   assert.equal(
@@ -132,6 +203,77 @@ test("derives tenant and environment scope from verified actor and rejects forge
     "resource_not_found",
   );
   assert.equal(s.get({ actor: null, id: tx.id }).status, 401);
+});
+
+test("fails closed before scope or state mutation for malformed actor claims", () => {
+  let scopeCalls = 0;
+  const s = service({
+    deriveScope: () => {
+      scopeCalls += 1;
+      return {
+        authorized: true,
+        tenantId: ids.tenant,
+        environmentId: ids.environment,
+      };
+    },
+  });
+  for (const malformedActor of [
+    { ...actor, issuer: "   " },
+    { ...actor, subject: "\t\r\n" },
+    { ...actor, issuer: "https://issuer.invalid\u0000spoof" },
+    { ...actor, subject: "user\tspoof" },
+  ]) {
+    const result = s.upsert({
+      actor: malformedActor,
+      transaction: tx,
+      idempotencyKey: "malformed-actor-key",
+    });
+    assert.deepEqual(result, {
+      status: 404,
+      body: { code: "resource_not_found", retryable: false },
+    });
+  }
+  assert.equal(scopeCalls, 0);
+  assert.deepEqual(s.audit(), []);
+  assert.equal(
+    s.upsert({ actor, transaction: tx, idempotencyKey: "malformed-actor-key" })
+      .status,
+    201,
+  );
+  assert.equal(s.history({ actor, id: tx.id }).body.length, 1);
+});
+
+test("canonically trims valid actor boundaries for authorization and attribution", () => {
+  let derivedActor;
+  const s = service({
+    deriveScope: (candidate) => {
+      derivedActor = candidate;
+      return {
+        authorized: true,
+        tenantId: ids.tenant,
+        environmentId: ids.environment,
+      };
+    },
+  });
+  const result = s.upsert({
+    actor: {
+      ...actor,
+      issuer: `  ${actor.issuer}  `,
+      subject: `  ${actor.subject}  `,
+    },
+    transaction: tx,
+    idempotencyKey: "trimmed-actor-key-01",
+  });
+  assert.equal(result.status, 201);
+  assert.equal(derivedActor.issuer, actor.issuer);
+  assert.equal(derivedActor.subject, actor.subject);
+  assert.equal(result.body.created_by, `${actor.issuer}|${actor.subject}`);
+  assert.equal(result.body.updated_by, `${actor.issuer}|${actor.subject}`);
+  assert.equal(
+    result.body.provenance.at(-1).actor,
+    `${actor.issuer}|${actor.subject}`,
+  );
+  assert.equal(s.audit()[0].actor, `${actor.issuer}|${actor.subject}`);
 });
 
 test("supports payload-bound replay, optimistic concurrency, and safe returned copies", () => {

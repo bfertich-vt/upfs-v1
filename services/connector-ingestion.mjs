@@ -59,8 +59,8 @@ export class ConnectorIngestionService {
     signature,
     idempotencyKey,
   }) {
-    if (!actor?.subject || !actor.issuer)
-      return error(401, "authentication_required");
+    const canonicalActor = normalizeVerifiedActor(actor);
+    if (!canonicalActor) return error(401, "authentication_required");
     const connector = this.#connectors.get(connectorId);
     if (!connector) return error(404, "connector_not_found");
     if (
@@ -78,10 +78,14 @@ export class ConnectorIngestionService {
     if (!idempotencyKey || idempotencyKey.length < 16)
       return error(400, "idempotency_key_required");
     if (
-      !connector.authorize?.(actor, connector.tenantId, connector.environmentId)
+      !connector.authorize?.(
+        canonicalActor,
+        connector.tenantId,
+        connector.environmentId,
+      )
     )
       return error(403, "forbidden");
-    const key = `${actor.issuer}|${actor.subject}|${connector.id}|${idempotencyKey}`;
+    const key = `${canonicalActor.issuer}|${canonicalActor.subject}|${connector.id}|${idempotencyKey}`;
     const payloadHash = digest(payload);
     const prior = this.#idempotency.get(key);
     if (prior)
@@ -102,7 +106,7 @@ export class ConnectorIngestionService {
       observed_at: new Date(timestamp * 1000).toISOString(),
     };
     const evidenceResult = await this.evidence.intake({
-      actor,
+      actor: canonicalActor,
       tenantId: connector.tenantId,
       environmentId: connector.environmentId,
       evidence: raw,
@@ -127,7 +131,7 @@ export class ConnectorIngestionService {
         tenant_id: connector.tenantId,
         environment_id: connector.environmentId,
         resource_id: evidenceId,
-        actor: `${actor.issuer}|${actor.subject}`,
+        actor: `${canonicalActor.issuer}|${canonicalActor.subject}`,
         content_hash: raw.content_hash,
       });
       return this.#remember(key, payloadHash, quarantined);
@@ -179,7 +183,7 @@ export class ConnectorIngestionService {
       ],
     };
     const result = this.canonical.upsert({
-      actor,
+      actor: canonicalActor,
       transaction,
       idempotencyKey: `canonical-${idempotencyKey}`,
     });
@@ -191,7 +195,7 @@ export class ConnectorIngestionService {
       environment_id: connector.environmentId,
       resource_id: transaction.id,
       evidence_id: evidenceId,
-      actor: `${actor.issuer}|${actor.subject}`,
+      actor: `${canonicalActor.issuer}|${canonicalActor.subject}`,
       provider_transaction_id: normalized.value.provider_transaction_id,
     });
     return this.#remember(key, payloadHash, {
@@ -219,6 +223,23 @@ export class ConnectorIngestionService {
       crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
     );
   }
+}
+
+function normalizeVerifiedActor(actor) {
+  if (
+    !actor ||
+    actor.verified !== true ||
+    typeof actor.issuer !== "string" ||
+    typeof actor.subject !== "string" ||
+    /[\u0000-\u001f\u007f]/.test(actor.issuer) ||
+    /[\u0000-\u001f\u007f]/.test(actor.subject)
+  )
+    return null;
+  const issuer = actor.issuer.trim();
+  const subject = actor.subject.trim();
+  if (!issuer || !subject || issuer.length > 2048 || subject.length > 300)
+    return null;
+  return Object.freeze({ ...actor, issuer, subject });
 }
 
 export function normalizeProviderTransaction(payload) {

@@ -139,7 +139,7 @@ test("rejects forged signatures, stale timestamps, replay, and idempotency confl
   assert.equal(first.status, 201);
 });
 test("enforces authenticated actor and connector-derived tenant/environment scope", async () => {
-  const { service } = make();
+  const { service, evidence, canonical } = make();
   assert.equal(
     (
       await service.ingest(
@@ -152,11 +152,52 @@ test("enforces authenticated actor and connector-derived tenant/environment scop
     (
       await service.ingest({
         ...args(service, { nonce: "nonce-forbid-012345" }),
-        actor: { issuer: actor.issuer, subject: "other" },
+        actor: { issuer: actor.issuer, subject: "other", verified: true },
       })
     ).status,
     403,
   );
+  for (const malformedActor of [
+    { ...actor, issuer: "   " },
+    { ...actor, subject: "\t\r\n" },
+    { ...actor, issuer: "issuer\u0000spoof" },
+    { ...actor, subject: "subject\tspoof" },
+  ]) {
+    const result = await service.ingest(
+      args(service, {
+        actor: malformedActor,
+        nonce: `nonce-malformed-${malformedActor.subject.length}`.padEnd(
+          20,
+          "x",
+        ),
+      }),
+    );
+    assert.deepEqual(result, {
+      status: 401,
+      body: { code: "authentication_required", retryable: false },
+    });
+  }
+  assert.deepEqual(evidence.audit(), []);
+  assert.deepEqual(canonical.audit(), []);
+  assert.deepEqual(service.audit(), []);
+});
+
+test("canonically trims a valid actor before connector authorization and persistence", async () => {
+  const { service } = make();
+  const result = await service.ingest(
+    args(service, {
+      actor: {
+        ...actor,
+        issuer: `  ${actor.issuer}  `,
+        subject: `  ${actor.subject}  `,
+      },
+      nonce: "nonce-trimmed-012345",
+      idempotencyKey: "idempotency-trimmed-01",
+    }),
+  );
+  assert.equal(result.status, 201);
+  assert.equal(result.body.created_by, `${actor.issuer}|${actor.subject}`);
+  assert.equal(service.audit()[0].actor, `${actor.issuer}|${actor.subject}`);
 });
 test("ignores forged client scope and keeps audit free of transaction payload data", async () => {
   const { service } = make();
