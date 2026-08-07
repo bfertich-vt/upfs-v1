@@ -1,10 +1,61 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.example.invalid/upfs/raw-evidence/1.0.0",
+  "$id": "https://schemas.example.invalid/upfs/raw-evidence/1.1.0",
   "title": "RawEvidenceObservation",
-  "type": "object", "additionalProperties": false,
-  "required": ["id", "tenant_id", "environment_id", "source", "media_type", "content", "content_hash", "observed_at"],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "organization_id",
+    "tenant_id",
+    "environment_id",
+    "correlation_id",
+    "source",
+    "media_type",
+    "content",
+    "content_size",
+    "content_hash",
+    "observed_at",
+    "provenance"
+  ],
   "properties": {
-    "id": {"type": "string", "minLength": 1, "maxLength": 200}, "tenant_id": {"type": "string", "minLength": 1}, "environment_id": {"type": "string", "minLength": 1}, "source": {"type": "string", "minLength": 1, "maxLength": 200}, "media_type": {"type": "string", "minLength": 1, "maxLength": 200}, "content": {"type": "string", "maxLength": 10000000}, "content_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "observed_at": {"type": "string", "format": "date-time"}
+    "id": { "type": "string", "format": "uuid" },
+    "organization_id": { "type": "string", "format": "uuid" },
+    "tenant_id": { "type": "string", "format": "uuid" },
+    "environment_id": { "type": "string", "format": "uuid" },
+    "correlation_id": { "type": "string", "format": "uuid" },
+    "source": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+    },
+    "media_type": {
+      "enum": ["application/json", "application/pdf", "text/csv", "text/plain"]
+    },
+    "content": { "type": "string", "minLength": 1, "maxLength": 10000000 },
+    "content_size": { "type": "integer", "minimum": 1, "maximum": 10000000 },
+    "content_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "observed_at": { "type": "string", "format": "date-time" },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_system", "source_record_id", "captured_at"],
+      "properties": {
+        "source_system": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+        },
+        "source_record_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+        },
+        "captured_at": { "type": "string", "format": "date-time" }
+      }
+    }
   }
 }

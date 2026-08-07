@@ -11,6 +11,7 @@ import { CanonicalTransactionService } from "./transaction-registry.mjs";
 const tenantId = "11111111-1111-4111-8111-111111111111";
 const environmentId = "22222222-2222-4222-8222-222222222222";
 const accountId = "33333333-3333-4333-8333-333333333333";
+const organizationId = "44444444-4444-4444-8444-444444444444";
 const actor = {
   issuer: "https://issuer.example.invalid",
   subject: "synthetic-user",
@@ -37,8 +38,15 @@ const make = (
   const configuredProvider =
     typeof provider === "function" ? provider : () => provider;
   const evidence = new RawEvidenceIntakeService({
-    authorize: (_a, t, e) => t === tenantId && e === environmentId,
-    classify,
+    deriveScope: (a) =>
+      a?.subject === actor.subject
+        ? {
+            organization_id: organizationId,
+            tenant_id: tenantId,
+            environment_id: environmentId,
+          }
+        : null,
+    scan: classify,
     now: () => now,
   });
   const canonical = new CanonicalTransactionService({
@@ -55,6 +63,7 @@ const make = (
     connectors: [
       {
         id: "conn-1",
+        organizationId,
         get provider() {
           return configuredProvider();
         },
@@ -103,14 +112,20 @@ test("maps signed provider payload through quarantined evidence into canonical t
     { provider: "synthetic", category: "FOOD_AND_DRINK" },
   ]);
   assert.deepEqual(result.body.evidence_refs.length, 1);
+  const quarantined = await evidence.get({
+    actor,
+    id: result.body.evidence_id,
+  });
+  assert.equal(quarantined.body.status, "quarantined");
+  assert.equal(quarantined.body.organization_id, organizationId);
+  assert.match(quarantined.body.correlation_id, /^[0-9a-f-]{36}$/);
   assert.equal(
-    evidence.get({
-      actor,
-      tenantId,
-      environmentId,
-      id: result.body.evidence_id,
-    }).body.status,
-    "quarantined",
+    quarantined.body.content_size,
+    Buffer.byteLength(JSON.stringify(payload)),
+  );
+  assert.equal(
+    quarantined.body.provenance.source_record_id,
+    payload.provider_transaction_id,
   );
   assert.equal(canonical.audit()[0].action, "transaction.upsert");
   assert.equal(service.audit()[0].action, "connector.ingest.canonicalized");
@@ -233,8 +248,9 @@ test("quarantines scanner failures or suspicious evidence without canonical writ
   }));
   const result = await service.ingest(args(service));
   assert.equal(result.status, 422);
-  assert.equal(result.body.code, "evidence_quarantined");
+  assert.equal(result.body.code, "malware_detected");
   assert.deepEqual(canonical.audit(), []);
+  assert.deepEqual(service.audit(), []);
 });
 test("rejects malformed provider payload before evidence intake", async () => {
   assert.equal(
