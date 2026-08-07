@@ -1,0 +1,53 @@
+id: RECOVERY-HISTORICAL-DISPOSITIONS-001
+title: Regenerate evidence-backed TASK-0001 through TASK-0110 dispositions
+status: in_progress
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+author_thread: /root/schema_historical_dispositions_001
+author_worktree: C:\source\upfs-schema-historical-dispositions-001
+author_branch: codex/recovery-historical-dispositions-001
+base_commit: 6dcd1860b874acb46a574f9a50762d2e97936770
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/recovery/RECOVERY-HISTORICAL-DISPOSITIONS-001.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-DISPOSITIONS-001.md
+prohibited_files:
+  - tasks/queue.yaml
+  - specs/**
+  - contracts/**
+  - scripts/**
+  - apps/**
+  - services/**
+  - .github/**
+  - docs/adr/**
+  - tasks/recovery/TASK-0111*
+  - tasks/recovery/TASK-0112*
+  - tasks/recovery/TASK-0113*
+  - tasks/recovery/TASK-0114*
+  - tasks/recovery/TASK-0115*
+  - tasks/recovery/TASK-0116*
+  - tasks/recovery/TASK-0117*
+  - tasks/recovery/TASK-0118*
+  - tasks/recovery/TASK-0119*
+  - tasks/recovery/TASK-0120*
+  - tasks/recovery/TASK-0121*
+  - tasks/recovery/TASK-0122*
+  - tasks/recovery/TASK-0123*
+acceptance_criteria:
+  - Matrix contains exactly 110 contiguous unique rows from TASK-0001 through TASK-0110 and exactly 18 nonempty fields per row.
+  - Every row records task-specific requirements, evidence classification, one four-state disposition, dependencies, security evidence, missing work, and next action.
+  - ACCEPTED requires protected task-specific implementation and independent-review evidence; queue status and file existence are never treated as acceptance.
+  - TASK-0112 through TASK-0123 remain excluded and frozen.
+required_checks:
+  - Exact row, vocabulary, count, dependency, source, task, and handoff parser
+  - npm run format:check
+  - npm test
+  - npm run validate
+  - npm run queue:check
+  - npm run traceability:check
+  - git diff --check and git fsck --strict --no-reflogs
+  - Sensitive-data scan of the authorized diff
+security:
+  - Distinguish contract and synthetic test evidence from production runtime and tenant-isolation evidence.
+  - Do not introduce secrets, credentials, customer data, provider data, or private financial data.
+rollback: Revert only the committed matrix/task/handoff changes through reviewed corrective-forward flow; preserve prior candidates and reviews.
