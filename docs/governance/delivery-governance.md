@@ -37,9 +37,15 @@ or missing keys, alternate types, and noncanonical serialization are not
 verdict evidence. Narrative reviews remain immutable criterion evidence and
 are never parsed for authorization.
 
-Closure uses two stages to avoid circular self-approval. The remediation
-candidate leaves the task blocked. Fresh QA reviews it and introduces the
-attestation as the sole new file in a distinct single-parent commit. The
+Closure keeps the historical remediation review separate from Stage A closure
+control review. The old remediation candidate and QA remain bound as historical
+acceptance evidence. Stage A names its own exact candidate and fresh narrative
+review. The attestation binds that Stage A candidate, and its commit must have
+the Stage A narrative review commit as its exact parent. Its entire Git diff is
+parsed as NUL-delimited, rename/copy-aware status data and must be exactly one
+added canonical attestation path backed by a regular Git blob; interposed
+commits, extra paths, modifications, deletions, renames, copies, symlinks, and
+gitlinks fail closed. The
 supervisor may then create a separate activation candidate that binds that
 commit, restores the active closure record, and promotes the queue and matrix.
 Different fresh QA reviews the activation candidate before hosted integration.

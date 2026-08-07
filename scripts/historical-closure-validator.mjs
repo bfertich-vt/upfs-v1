@@ -253,13 +253,10 @@ function strictAttestationTopology(root, qa, taskId, label, errors) {
     )
   )
     return;
-  ancestor(
-    root,
-    qa.review_commit,
-    qa.attestation_parent,
-    `${label}.attestation ancestry`,
-    errors,
-  );
+  if (qa.attestation_parent !== qa.review_commit)
+    errors.push(
+      `${label}.attestation_parent must equal review_commit exactly.`,
+    );
   const parents = git(
     root,
     ["show", "-s", "--format=%P", qa.attestation_commit],
@@ -287,18 +284,42 @@ function strictAttestationTopology(root, qa, taskId, label, errors) {
       "diff-tree",
       "--no-commit-id",
       "--name-status",
+      "-z",
+      "--find-renames",
+      "--find-copies",
+      "--find-copies-harder",
       "-r",
       qa.attestation_commit,
-      "--",
-      qa.attestation,
     ],
     `${label}.attestation introduction`,
     errors,
-  )?.trim();
-  if (introduced !== `A\t${qa.attestation}`)
+    true,
+  );
+  if (!exactAttestationDiff(introduced, canonical))
     errors.push(
-      `${label}.attestation must be introduced at attestation_commit.`,
+      `${label}.attestation commit diff must contain exactly one added canonical attestation.`,
     );
+  const entry = git(
+    root,
+    ["ls-tree", "-z", qa.attestation_commit, "--", canonical],
+    `${label}.attestation tree entry`,
+    errors,
+    true,
+  );
+  const entryPattern = new RegExp(
+    `^100(?:644|755) blob [a-f0-9]{40}\\t${canonical.replaceAll("/", "\\/")}\\u0000$`,
+  );
+  if (!entryPattern.test(entry?.toString("utf8") || ""))
+    errors.push(
+      `${label}.attestation must be a regular blob at the canonical path.`,
+    );
+}
+
+export function exactAttestationDiff(status, canonical) {
+  return (
+    Buffer.isBuffer(status) &&
+    status.equals(Buffer.from(`A\0${canonical}\0`, "utf8"))
+  );
 }
 
 function criterionEvidenceCell(body, criterion) {
@@ -371,6 +392,7 @@ function validateAccepted(root, task, tasks, row, errors) {
         "historical",
         "remediation",
         "independent_qa",
+        "stage_a",
         "hosted",
         "protected_merge",
         "acceptance_mapping",
@@ -478,16 +500,7 @@ function validateAccepted(root, task, tasks, row, errors) {
   if (
     exact(
       qa,
-      [
-        "review",
-        "review_sha256",
-        "review_commit",
-        "reviewed_candidate",
-        "attestation",
-        "attestation_sha256",
-        "attestation_commit",
-        "attestation_parent",
-      ],
+      ["review", "review_sha256", "review_commit", "reviewed_candidate"],
       `${rel}.independent_qa`,
       errors,
     )
@@ -519,19 +532,67 @@ function validateAccepted(root, task, tasks, row, errors) {
       `${rel}.independent_qa`,
       errors,
     );
+  }
+
+  const stageA = record.stage_a;
+  if (
+    exact(
+      stageA,
+      [
+        "candidate_commit",
+        "review",
+        "review_sha256",
+        "review_commit",
+        "attestation",
+        "attestation_sha256",
+        "attestation_commit",
+        "attestation_parent",
+      ],
+      `${rel}.stage_a`,
+      errors,
+    )
+  ) {
+    const stageReview = fileBytes(
+      root,
+      stageA.review,
+      stageA.review_sha256,
+      `${rel}.stage_a.review`,
+      errors,
+    );
+    const immutableStageReview = immutableBytes(
+      root,
+      stageA.review,
+      stageA.review_commit,
+      stageA.review_sha256,
+      `${rel}.stage_a.review`,
+      errors,
+    );
+    if (
+      stageReview &&
+      immutableStageReview &&
+      !stageReview.equals(immutableStageReview)
+    )
+      errors.push(`${rel}.stage_a.review differs from its review-commit blob.`);
+    strictReviewTopology(
+      root,
+      { ...stageA, reviewed_candidate: stageA.candidate_commit },
+      { candidate_commit: stageA.candidate_commit },
+      `${rel}.stage_a`,
+      errors,
+    );
     const attestation = fileBytes(
       root,
-      qa.attestation,
-      qa.attestation_sha256,
-      `${rel}.independent_qa.attestation`,
+      stageA.attestation,
+      stageA.attestation_sha256,
+      `${rel}.stage_a.attestation`,
       errors,
     );
     const immutableAttestation = immutableBytes(
       root,
-      qa.attestation,
-      qa.attestation_commit,
-      qa.attestation_sha256,
-      `${rel}.independent_qa.attestation`,
+      stageA.attestation,
+      stageA.attestation_commit,
+      stageA.attestation_sha256,
+      `${rel}.stage_a.attestation`,
       errors,
     );
     if (
@@ -540,25 +601,19 @@ function validateAccepted(root, task, tasks, row, errors) {
       !attestation.equals(immutableAttestation)
     )
       errors.push(
-        `${rel}.independent_qa.attestation differs from its attestation-commit blob.`,
+        `${rel}.stage_a.attestation differs from its attestation-commit blob.`,
       );
     if (
       !immutableAttestation ||
       !structuredVerdictAttestation(immutableAttestation, {
         task_id: task.id,
-        reviewed_candidate: qa.reviewed_candidate,
+        reviewed_candidate: stageA.candidate_commit,
       })
     )
       errors.push(
-        `${rel}.independent_qa attestation is not the exact canonical ACCEPTED structure.`,
+        `${rel}.stage_a attestation is not the exact canonical ACCEPTED structure.`,
       );
-    strictAttestationTopology(
-      root,
-      qa,
-      task.id,
-      `${rel}.independent_qa`,
-      errors,
-    );
+    strictAttestationTopology(root, stageA, task.id, `${rel}.stage_a`, errors);
   }
 
   const hosted = record.hosted;

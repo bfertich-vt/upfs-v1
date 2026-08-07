@@ -6,7 +6,10 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import test from "node:test";
 import { validateQueueDocument } from "./queue-validator.mjs";
-import { structuredVerdictAttestation } from "./historical-closure-validator.mjs";
+import {
+  exactAttestationDiff,
+  structuredVerdictAttestation,
+} from "./historical-closure-validator.mjs";
 
 function expectInvalid(root, queue, pattern) {
   assert.throws(() => validateQueueDocument(queue, root), pattern);
@@ -31,6 +34,51 @@ function commitTree(root, tree, parents, message) {
       },
     },
   ).trim();
+}
+
+function blob(root, body) {
+  return execFileSync("git", ["hash-object", "-w", "--stdin"], {
+    cwd: root,
+    encoding: "utf8",
+    input: body,
+  }).trim();
+}
+
+function commitIndex(root, parent, entries, message, extraParents = []) {
+  const index = path.join(
+    os.tmpdir(),
+    `upfs-closure-index-${process.pid}-${crypto.randomUUID()}`,
+  );
+  const environment = { ...process.env, GIT_INDEX_FILE: index };
+  try {
+    execFileSync("git", ["read-tree", parent], { cwd: root, env: environment });
+    for (const entry of entries) {
+      if (entry.remove)
+        execFileSync("git", ["update-index", "--force-remove", entry.path], {
+          cwd: root,
+          env: environment,
+        });
+      else
+        execFileSync(
+          "git",
+          [
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            `${entry.mode},${entry.oid},${entry.path}`,
+          ],
+          { cwd: root, env: environment },
+        );
+    }
+    const tree = execFileSync("git", ["write-tree"], {
+      cwd: root,
+      env: environment,
+      encoding: "utf8",
+    }).trim();
+    return commitTree(root, tree, [parent, ...extraParents], message);
+  } finally {
+    fs.rmSync(index, { force: true });
+  }
 }
 
 test("structured verdict attestation implements one closed canonical grammar", () => {
@@ -82,6 +130,30 @@ test("structured verdict attestation implements one closed canonical grammar", (
   );
 });
 
+test("attestation whole-commit diff permits only one canonical addition", () => {
+  const canonical = "docs/reviews/attestations/TASK-0001-closure-verdict.json";
+  assert.equal(
+    exactAttestationDiff(Buffer.from(`A\0${canonical}\0`), canonical),
+    true,
+  );
+  for (const status of [
+    `A\0${canonical}\0A\0unauthorized.txt\0`,
+    `M\0${canonical}\0`,
+    `D\0${canonical}\0`,
+    `R100\0old.json\0${canonical}\0`,
+    `C100\0old.json\0${canonical}\0`,
+    `T\0${canonical}\0`,
+    `A\0${canonical}\0M\0.gitmodules\0`,
+    `A\0${canonical}\0A\0symlink\0`,
+    "",
+  ])
+    assert.equal(
+      exactAttestationDiff(Buffer.from(status), canonical),
+      false,
+      status,
+    );
+});
+
 test("TASK-0001 accepted closure passes and all evidence substitutions fail closed", (t) => {
   const source = process.cwd();
   const root = fs.mkdtempSync(
@@ -113,6 +185,31 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
     cwd: root,
     stdio: "ignore",
   });
+  const stageReviewRel = "docs/reviews/TASK-0001-stage-a-fixture-QA.md";
+  const stageReviewBody =
+    "# Independent Stage A review\n\nFixture review evidence.\n";
+  fs.mkdirSync(path.dirname(path.join(root, stageReviewRel)), {
+    recursive: true,
+  });
+  fs.writeFileSync(path.join(root, stageReviewRel), stageReviewBody);
+  execFileSync("git", ["add", stageReviewRel], { cwd: root });
+  execFileSync(
+    "git",
+    [
+      "-c",
+      "user.name=Independent QA",
+      "-c",
+      "user.email=qa@example.invalid",
+      "commit",
+      "-m",
+      "qa: review Stage A fixture",
+    ],
+    { cwd: root, stdio: "ignore" },
+  );
+  const stageReviewCommit = execFileSync("git", ["rev-parse", "HEAD"], {
+    cwd: root,
+    encoding: "utf8",
+  }).trim();
   const evidence =
     "docs/governance/task-closures/evidence/TASK-0001-validation-report.json";
   fs.mkdirSync(path.dirname(path.join(root, evidence)), { recursive: true });
@@ -131,7 +228,7 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
     "docs/reviews/attestations/TASK-0001-closure-verdict.json";
   const attestationPath = path.join(root, attestationRel);
   fs.mkdirSync(path.dirname(attestationPath), { recursive: true });
-  const attestationBody = `${JSON.stringify({ version: 1, task_id: "TASK-0001", reviewed_candidate: "a408443dc7fc866777f83de681ec7688ac35e1ff", verdict: "ACCEPTED", reviewer_role: "Independent QA/Security" }, null, 2)}\n`;
+  const attestationBody = `${JSON.stringify({ version: 1, task_id: "TASK-0001", reviewed_candidate: attestationParent, verdict: "ACCEPTED", reviewer_role: "Independent QA/Security" }, null, 2)}\n`;
   fs.writeFileSync(attestationPath, attestationBody);
   execFileSync("git", ["add", attestationRel], { cwd: root });
   execFileSync(
@@ -151,6 +248,104 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
     cwd: root,
     encoding: "utf8",
   }).trim();
+  const attestationBlob = blob(root, attestationBody);
+  const reviewBlob = blob(root, stageReviewBody);
+  const unrelatedBlob = blob(root, "unauthorized payload\n");
+  const maliciousReview = (extras, message) =>
+    commitIndex(
+      root,
+      attestationParent,
+      [{ mode: "100644", oid: reviewBlob, path: stageReviewRel }, ...extras],
+      message,
+    );
+  const extraFileAttestation = commitIndex(
+    root,
+    stageReviewCommit,
+    [
+      { mode: "100644", oid: attestationBlob, path: attestationRel },
+      { mode: "100644", oid: unrelatedBlob, path: "unauthorized-change.txt" },
+    ],
+    "qa: smuggle extra file",
+  );
+  const preseedReview = maliciousReview(
+    [{ mode: "100644", oid: unrelatedBlob, path: attestationRel }],
+    "qa: preseed attestation fixture",
+  );
+  const modifiedAttestation = commitIndex(
+    root,
+    preseedReview,
+    [{ mode: "100644", oid: attestationBlob, path: attestationRel }],
+    "qa: modify preseeded attestation",
+  );
+  const deletedAttestation = commitIndex(
+    root,
+    preseedReview,
+    [{ remove: true, path: attestationRel }],
+    "qa: delete preseeded attestation",
+  );
+  const sourceRel = "docs/reviews/attestations/source.json";
+  const renameReview = maliciousReview(
+    [{ mode: "100644", oid: attestationBlob, path: sourceRel }],
+    "qa: add rename source fixture",
+  );
+  const renamedAttestation = commitIndex(
+    root,
+    renameReview,
+    [
+      { remove: true, path: sourceRel },
+      { mode: "100644", oid: attestationBlob, path: attestationRel },
+    ],
+    "qa: rename into attestation path",
+  );
+  const copiedAttestation = commitIndex(
+    root,
+    renameReview,
+    [{ mode: "100644", oid: attestationBlob, path: attestationRel }],
+    "qa: copy into attestation path",
+  );
+  const symlinkAttestation = commitIndex(
+    root,
+    stageReviewCommit,
+    [{ mode: "120000", oid: unrelatedBlob, path: attestationRel }],
+    "qa: symlink attestation",
+  );
+  const gitlinkAttestation = commitIndex(
+    root,
+    stageReviewCommit,
+    [{ mode: "160000", oid: attestationParent, path: attestationRel }],
+    "qa: gitlink attestation",
+  );
+  const interposed = commitIndex(
+    root,
+    stageReviewCommit,
+    [{ mode: "100644", oid: unrelatedBlob, path: "interposed.txt" }],
+    "author: interposed ordinary commit",
+  );
+  const interposedAttestation = commitIndex(
+    root,
+    interposed,
+    [{ mode: "100644", oid: attestationBlob, path: attestationRel }],
+    "qa: attest after interposition",
+  );
+  const side = commitIndex(
+    root,
+    stageReviewCommit,
+    [{ mode: "100644", oid: unrelatedBlob, path: "side.txt" }],
+    "author: side commit",
+  );
+  const interposedMerge = commitIndex(
+    root,
+    stageReviewCommit,
+    [],
+    "author: interposed merge",
+    [side],
+  );
+  const mergeInterposedAttestation = commitIndex(
+    root,
+    interposedMerge,
+    [{ mode: "100644", oid: attestationBlob, path: attestationRel }],
+    "qa: attest after merge interposition",
+  );
 
   const queuePath = path.join(root, "tasks/queue.yaml");
   const closurePath = path.join(
@@ -174,15 +369,22 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
   fs.writeFileSync(matrixPath, originalMatrix);
   const originalClosure = JSON.parse(fs.readFileSync(closurePath, "utf8"));
   delete originalClosure.independent_qa.verdict;
-  Object.assign(originalClosure.independent_qa, {
+  originalClosure.stage_a = {
+    candidate_commit: attestationParent,
+    review: stageReviewRel,
+    review_sha256: crypto
+      .createHash("sha256")
+      .update(stageReviewBody)
+      .digest("hex"),
+    review_commit: stageReviewCommit,
     attestation: attestationRel,
     attestation_sha256: crypto
       .createHash("sha256")
       .update(attestationBody)
       .digest("hex"),
     attestation_commit: attestationCommit,
-    attestation_parent: attestationParent,
-  });
+    attestation_parent: stageReviewCommit,
+  };
   const writeClosure = (value) =>
     fs.writeFileSync(closurePath, `${JSON.stringify(value, null, 2)}\n`);
   writeClosure(originalClosure);
@@ -193,6 +395,17 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
     expectInvalid(root, queue, pattern);
     writeClosure(originalClosure);
   };
+  const mutateStageTopology = (
+    reviewCommit,
+    attestationParentCommit,
+    attestationCommitValue,
+    pattern,
+  ) =>
+    mutate((record) => {
+      record.stage_a.review_commit = reviewCommit;
+      record.stage_a.attestation_parent = attestationParentCommit;
+      record.stage_a.attestation_commit = attestationCommitValue;
+    }, pattern);
 
   assert.deepEqual(validateQueueDocument(originalQueue, root), {
     state: "active",
@@ -287,10 +500,76 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
     record.hosted.checks.forEach((check) => {
       check.head_sha = record.hosted.head_sha;
     });
-  }, /exact canonical ACCEPTED structure/);
+  }, /remediation ancestry/);
   mutate((record) => {
-    record.independent_qa.attestation_sha256 = "a".repeat(64);
+    record.stage_a.candidate_commit = record.remediation.candidate_commit;
+  }, /review_commit must have the exact reviewed candidate as its sole parent/);
+  mutate((record) => {
+    record.stage_a.attestation_parent = record.stage_a.candidate_commit;
+  }, /attestation_parent must equal review_commit exactly/);
+  mutate((record) => {
+    record.stage_a.attestation_sha256 = "a".repeat(64);
   }, /stale or incorrect SHA-256/);
+  mutate((record) => {
+    record.stage_a.candidate_commit = record.remediation.candidate_commit;
+  }, /exact reviewed candidate as its sole parent|exact canonical ACCEPTED structure/);
+  mutate((record) => {
+    record.independent_qa.reviewed_candidate = record.stage_a.candidate_commit;
+  }, /reviewed_candidate must equal remediation\.candidate_commit/);
+  mutateStageTopology(
+    stageReviewCommit,
+    stageReviewCommit,
+    extraFileAttestation,
+    /exactly one added canonical attestation/,
+  );
+  mutateStageTopology(
+    preseedReview,
+    preseedReview,
+    modifiedAttestation,
+    /must not be pre-seeded|exactly one added canonical attestation/,
+  );
+  mutateStageTopology(
+    preseedReview,
+    preseedReview,
+    deletedAttestation,
+    /must not be pre-seeded|exactly one added canonical attestation|stale or incorrect SHA-256/,
+  );
+  mutateStageTopology(
+    renameReview,
+    renameReview,
+    renamedAttestation,
+    /exactly one added canonical attestation/,
+  );
+  mutateStageTopology(
+    renameReview,
+    renameReview,
+    copiedAttestation,
+    /exactly one added canonical attestation/,
+  );
+  mutateStageTopology(
+    stageReviewCommit,
+    stageReviewCommit,
+    symlinkAttestation,
+    /regular blob|exact canonical ACCEPTED structure/,
+  );
+  mutateStageTopology(
+    stageReviewCommit,
+    stageReviewCommit,
+    gitlinkAttestation,
+    /regular blob|exact canonical ACCEPTED structure/,
+  );
+  mutateStageTopology(
+    stageReviewCommit,
+    interposed,
+    interposedAttestation,
+    /attestation_parent must equal review_commit exactly/,
+  );
+  mutateStageTopology(
+    stageReviewCommit,
+    interposedMerge,
+    mergeInterposedAttestation,
+    /attestation_parent must equal review_commit exactly/,
+  );
   mutate((record) => {
     record.hosted.pull_request = 999;
   }, /protected_merge does not bind/);

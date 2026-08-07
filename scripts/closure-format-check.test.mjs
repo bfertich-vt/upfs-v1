@@ -64,3 +64,12 @@ test("closure formatting covers Prettier files and stable exclusions", async () 
     ),
   );
 });
+
+test("R5 authorization includes every modified validator test surface", () => {
+  const task = fs.readFileSync(
+    "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R5.yaml",
+    "utf8",
+  );
+  assert.match(task, /  - scripts\/closure-format-check\.test\.mjs/);
+  assert.match(task, /  - scripts\/historical-closure-validator\.test\.mjs/);
+});
