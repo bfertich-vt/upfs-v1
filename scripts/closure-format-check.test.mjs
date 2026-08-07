@@ -17,6 +17,16 @@ function fixture() {
     "scripts/queue-validator.mjs",
     "docs/governance/task-closures/rejected/TASK-0001-r1.json",
     "docs/governance/task-closures/TASK-0001-stage-a-state.json",
+    "MANIFEST.sha256",
+    "CODEOWNERS",
+    ".env.example",
+    ".gitattributes",
+    ".gitignore",
+    "SECURITY.md",
+    "START_HERE.md",
+    "AGENTS.md",
+    "package.json",
+    "package-lock.json",
   ]) {
     fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
     fs.copyFileSync(path.resolve(rel), path.join(root, rel));
@@ -95,7 +105,7 @@ test("R5 authorization includes every modified validator test surface", () => {
   assert.match(task, /  - scripts\/historical-closure-validator\.test\.mjs/);
 });
 
-test("TASK-0001 R12 batches ADS checks across closure-authorizing scope", async () => {
+test("TASK-0001 R13 inventories complete index and ADS scope across closure-authorizing scope", async () => {
   const root = fixture();
   const matrix = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
   const original = fs.readFileSync(matrix, "utf8");
@@ -111,7 +121,7 @@ test("TASK-0001 R12 batches ADS checks across closure-authorizing scope", async 
     "ATTESTATION",
     "  ",
     ".",
-    "r12",
+    "r13",
   ]) {
     fs.writeFileSync(
       matrix,
@@ -140,7 +150,7 @@ test("TASK-0001 R12 batches ADS checks across closure-authorizing scope", async 
     valid.replace('-R12"', '-R11"'),
     valid.replace('"REJECTED"', '"ACCEPTED"'),
     valid.replace('"absent"', '"issued"'),
-    valid.replace('"R12_HANDOFF_CANDIDATE"', '"R11_HANDOFF_CANDIDATE"'),
+    valid.replace('"R13_HANDOFF_CANDIDATE"', '"R11_HANDOFF_CANDIDATE"'),
     valid.replace('"STAGE_A_REVIEW_PENDING"', '"ACTIVATION_PENDING"'),
     valid.replace(
       '"FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED"',

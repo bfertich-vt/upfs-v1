@@ -25,8 +25,8 @@ const candidates = [
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R8.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R9.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R10.yaml",
-  "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R11.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R12.yaml",
+  "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R13.yaml",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R2.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R3.md",
@@ -37,8 +37,8 @@ const candidates = [
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R8.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R9.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R10.md",
-  "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R11.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R12.md",
+  "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R13.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R2-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R3-QA.md",
@@ -55,12 +55,12 @@ export function canonicalStageAState(body) {
   const value = {
     version: 1,
     task_id: "TASK-0001",
-    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R12",
-    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R11",
+    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R13",
+    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R12",
     predecessor_disposition: "REJECTED",
     task_status: "blocked",
     attestation_status: "absent",
-    review_target: "R12_HANDOFF_CANDIDATE",
+    review_target: "R13_HANDOFF_CANDIDATE",
     activation_phase: "STAGE_A_REVIEW_PENDING",
     next_action: "FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED",
   };
@@ -71,7 +71,7 @@ export function canonicalStageAState(body) {
 }
 
 export function canonicalTaskOneRow() {
-  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R12.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R12 closure-scope ADS batch, tests, task, and handoff only. | None for this corrective control. | Canonical row, complete ADS inventory, ASCII paths, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R12 handoff. |";
+  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R13.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R13 complete index ADS inventory, tests, task, and handoff only. | None for this corrective control. | Canonical row, complete ADS inventory, ASCII paths, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R13 handoff. |";
 }
 
 function nulGit(root, args) {
@@ -121,24 +121,58 @@ function portableAsciiPath(rel) {
     );
 }
 
-function closureScope(root, paths) {
-  const roots = /^(?:docs|tasks|scripts|specs|agents|\.github)\//;
-  const rootFiles =
-    /^(?:package(?:-lock)?\.json|AGENTS\.md|README\.md|[^/]*\.(?:json|ya?ml|toml|config|lock))$/i;
-  return [
-    ...new Set(
-      paths
-        .filter((rel) => roots.test(rel) || rootFiles.test(rel))
-        .filter((rel) => {
-          try {
-            const stat = fs.lstatSync(path.join(root, rel));
-            return stat.isFile() && !stat.isSymbolicLink();
-          } catch {
-            return false;
-          }
-        }),
-    ),
-  ].sort();
+function authoritativeScope(root, errors) {
+  const records = nulGit(root, ["ls-files", "--stage", "-z"])
+    .toString("utf8")
+    .split("\0")
+    .filter(Boolean);
+  const paths = [];
+  for (const record of records) {
+    const match = /^(100644|100755) [a-f0-9]{40} 0\t(.+)$/.exec(record);
+    if (!match) {
+      errors.push(
+        `Unsupported, conflicted, or non-regular index entry: ${record}`,
+      );
+      continue;
+    }
+    const rel = match[2];
+    try {
+      const stat = fs.lstatSync(path.join(root, rel));
+      if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1)
+        throw new Error();
+    } catch {
+      errors.push(
+        `Tracked authority file lacks one regular worktree file: ${rel}`,
+      );
+    }
+    paths.push(rel);
+  }
+  for (const rel of [
+    "MANIFEST.sha256",
+    "CODEOWNERS",
+    ".env.example",
+    ".gitattributes",
+    ".gitignore",
+    "SECURITY.md",
+    "START_HERE.md",
+    "AGENTS.md",
+    "package.json",
+    "package-lock.json",
+  ])
+    if (!paths.includes(rel))
+      errors.push(`Mandatory root authority file missing from index: ${rel}`);
+  const flags = nulGit(root, ["ls-files", "-v", "-z"])
+    .toString("utf8")
+    .split("\0")
+    .filter(Boolean);
+  if (
+    flags.length !== paths.length ||
+    flags.some((entry) => !entry.startsWith("H "))
+  )
+    errors.push(
+      "Authoritative index has skip/assume/intent or inventory disagreement.",
+    );
+  return [...new Set(paths)].sort();
 }
 
 function validateAdsScope(root, relativePaths) {
@@ -304,7 +338,7 @@ export async function validateClosureFormatting(root) {
       `${stateRel} must be the one exact canonical R11 Stage A state record.`,
     );
   try {
-    validateAdsScope(root, closureScope(root, treePaths));
+    validateAdsScope(root, authoritativeScope(root, errors));
   } catch (error) {
     errors.push(
       `Closure-authorizing storage scope failed closed: ${error.message}`,
