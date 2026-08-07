@@ -7,8 +7,8 @@
 - Agent thread ID: `/root/backend_task_0004_closure_r3` (runtime canonical task identity; the runtime exposes no separate native custom-role field).
 - Worktree and branch: `C:\source\upfs-backend-task-0004-closure-r3`; `recovery/task-0004-closure-r3`.
 - Rejection base: independent QA rejection `461a06e6269fe48d6713ec2355bb1d4a97deb4f4`, whose parent is rejected R2 candidate `7db97a36bbd3f028cb4795b91f15915b723d3f22`.
-- Implementation commit: `286ee50c560496cf344a1a48054702c19fdd07fe`.
-- Final candidate commit: pending this handoff-only commit.
+- Implementation commit: `286ee507a0fd855fd37b0d768ed04033dfc64de6`.
+- Handoff-binding commit: `fdec3e0b9984306dcce1e9d87bce895b28a8bf63`; this corrective handoff-byte commit is the exact candidate for independent review.
 - Files changed: `services/evidence-intake.mjs`; `services/evidence-intake.test.mjs`; `tasks/recovery/RECOVERY-TASK-0004-CLOSURE-003.yaml`; this handoff.
 - Prohibited files unchanged: queue, closure matrix, contracts, registry artifact, specifications, connector implementation/tests, historical handoff, later tasks, workflows, and packages.
 
