@@ -46,4 +46,3 @@ security:
   - No secrets, credentials, customer data, private financial data, provider data, production access, or tenant-controlled runtime path.
   - Preserve conservative unknown runtime and tenant-isolation classifications; documentation correction is not production evidence.
 rollback: Revert only the R4 commits through reviewed corrective-forward flow; preserve the rejected R3 evidence and every historical object.
-
