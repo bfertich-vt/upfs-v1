@@ -1,0 +1,42 @@
+id: RECOVERY-HISTORICAL-DISPOSITIONS-004
+title: Bind every historical matrix row to its exact structured queue inputs
+status: in_progress
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+role_file_digest: 8b05d11c936e7d0eac9ea63cf5b34cc594b620205292054bfcd6e01046050d9d
+author_thread: /root/schema_historical_dispositions_004
+author_worktree: C:\source\upfs-schema-historical-dispositions-004
+author_branch: codex/recovery-historical-dispositions-004
+base_commit: 583d8063572a94429e822bad8716f220456d6178
+rejected_candidate: fd9ab051e6e4968efb8854716477a8698d9e4a78
+rejected_implementation: bd881f0f138cb01928123a3b05bf80df1ee8f302
+rejection_review: docs/reviews/RECOVERY-HISTORICAL-DISPOSITIONS-003-QA.md
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/recovery/RECOVERY-HISTORICAL-DISPOSITIONS-004.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-DISPOSITIONS-004.md
+prohibited_files:
+  - tasks/queue.yaml
+  - specs/**
+  - contracts/**
+  - scripts/**
+  - apps/**
+  - services/**
+  - .github/**
+  - docs/adr/**
+  - tasks/recovery/TASK-0111+
+acceptance_criteria:
+  - Add the ten exact existing structured queue inputs omitted from TASK-0026 through TASK-0030 source bindings.
+  - Every TASK-0001 through TASK-0110 Sources field is a superset of every path in its structured queue inputs and source binding.
+  - Identify nonexistent structured inputs explicitly; do not silently omit or fabricate them.
+  - Preserve all other matrix cells byte-for-byte, exactly 110 rows and 18 fields, disposition counts, ownership/test uniqueness, and every prior rejection.
+required_checks:
+  - Exact queue-input-to-matrix-source superset and path-existence audit
+  - Exact changed-cell, row, field, disposition, ownership, and test uniqueness audits
+  - npm run format:check; npm test; npm run validate; npm run queue:check; npm run traceability:check
+  - powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - git diff --check; git fsck --strict --no-reflogs; exact-signature sensitive-data scan
+security:
+  - This planning correction grants no implementation authority and changes no production or tenant state.
+  - Preserve fail-closed source provenance; do not omit missing inputs or promote historical evidence to production acceptance.
+rollback: Revert only the committed matrix/task/handoff corrections through reviewed corrective-forward flow; preserve all rejected candidates and reviews.

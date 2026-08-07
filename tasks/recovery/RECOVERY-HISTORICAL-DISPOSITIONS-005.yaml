@@ -1,0 +1,57 @@
+id: RECOVERY-HISTORICAL-DISPOSITIONS-005
+title: Reconstruct accepted historical dispositions and accept protected TASK-0001
+status: in_progress
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+role_file_digest: 8b05d11c936e7d0eac9ea63cf5b34cc594b620205292054bfcd6e01046050d9d
+author_thread: /root/schema_historical_dispositions_005
+author_worktree: C:\source\upfs-schema-historical-dispositions-005
+author_branch: codex/recovery-historical-dispositions-005
+base_commit: daeb6d9f4c04800e453ee92a91d8f69ef3138c3a
+accepted_disposition_source: 194d955dc9187d3bd5f74626af88192c0d1687a2
+task_0001_implementation: 521d003da45cc97619afedab4404d2c436dcc828
+task_0001_final_pr_head: ee01b09e3f86fd37461c4b98a05c41f54868a157
+task_0001_protected_merge: daeb6d9f4c04800e453ee92a91d8f69ef3138c3a
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/recovery/RECOVERY-HISTORICAL-DISPOSITIONS-001.yaml
+  - tasks/recovery/RECOVERY-HISTORICAL-DISPOSITIONS-002.yaml
+  - tasks/recovery/RECOVERY-HISTORICAL-DISPOSITIONS-003.yaml
+  - tasks/recovery/RECOVERY-HISTORICAL-DISPOSITIONS-004.yaml
+  - tasks/recovery/RECOVERY-HISTORICAL-DISPOSITIONS-005.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-DISPOSITIONS-001.md
+  - docs/handoffs/RECOVERY-HISTORICAL-DISPOSITIONS-002.md
+  - docs/handoffs/RECOVERY-HISTORICAL-DISPOSITIONS-003.md
+  - docs/handoffs/RECOVERY-HISTORICAL-DISPOSITIONS-004.md
+  - docs/handoffs/RECOVERY-HISTORICAL-DISPOSITIONS-005.md
+  - docs/reviews/RECOVERY-HISTORICAL-DISPOSITIONS-001-QA.md
+  - docs/reviews/RECOVERY-HISTORICAL-DISPOSITIONS-002-QA.md
+  - docs/reviews/RECOVERY-HISTORICAL-DISPOSITIONS-003-QA.md
+  - docs/reviews/RECOVERY-HISTORICAL-DISPOSITIONS-004-QA.md
+prohibited_files:
+  - tasks/queue.yaml
+  - specs/**
+  - contracts/**
+  - scripts/**
+  - apps/**
+  - services/**
+  - .github/**
+  - docs/adr/**
+  - tasks/recovery/TASK-0111+
+acceptance_criteria:
+  - Reconstruct the exact independently accepted 001 through 004 disposition artifacts from source head 194d955dc9187d3bd5f74626af88192c0d1687a2 and preserve every rejection.
+  - Change only TASK-0001 substantive row fields from the accepted matrix baseline.
+  - Bind TASK-0001 acceptance to its exact implementation, complete handoff, two independent Codex QA reviews, local gates, protected PR checks, protected merge, and post-merge checks.
+  - Preserve 110 ordered unique rows, 18 fields per row, disposition counts 1/56/40/13, ownership uniqueness 110, test uniqueness 110, and zero structured-source omissions.
+  - Identify TASK-0002 as the earliest dependency-complete unresolved historical task without granting implementation authority.
+required_checks:
+  - Exact changed-cell and accepted-source-identity audit
+  - Row, field, disposition, dependency, source, ownership, and test uniqueness audits
+  - npm run format:check; npm test; npm run validate; npm run queue:check; npm run traceability:check
+  - powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - git diff --check; git fsck --strict --no-reflogs; exact-signature sensitive-data scan
+security:
+  - Accept TASK-0001 only as repository governance/control-plane capability; do not claim application, tenant, provider, deployment, or production-runtime capability.
+  - Independent Codex QA/Security is repository review evidence and must not be described as human or native GitHub approval.
+  - This disposition work changes no product, tenant, contract, queue, specification, workflow, validator, or runtime state.
+rollback: Revert only the committed reconstruction and TASK-0001 disposition update through reviewed corrective-forward flow; preserve all source branches, rejections, reviews, PRs, runs, and merge evidence.
