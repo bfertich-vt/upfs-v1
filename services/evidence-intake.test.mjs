@@ -390,6 +390,117 @@ test("malformed derived scope is bounded to identical denial without mutation or
   }
 });
 
+test("derived scope rejects every unexpected own key and descriptor before scanner or state", async () => {
+  const localSymbol = Symbol("hidden-local");
+  const globalSymbol = Symbol.for("hidden-global");
+  const malformed = [
+    Object.assign({ ...ids }, { [localSymbol]: "secret" }),
+    Object.assign({ ...ids }, { [globalSymbol]: "secret" }),
+    Object.assign({ ...ids }, { [Symbol.iterator]: () => [] }),
+    Object.defineProperty({ ...ids }, "hidden", {
+      value: "secret",
+      enumerable: false,
+    }),
+    Object.defineProperty({ ...ids }, localSymbol, {
+      value: "secret",
+      enumerable: false,
+    }),
+    { ...ids, "tenant\uff3fid": ids.tenant_id },
+    Object.defineProperty({ ...ids }, "organization_id", {
+      get() {
+        throw new Error(`accessor:${content}`);
+      },
+      enumerable: true,
+    }),
+    new Proxy({ ...ids }, {
+      ownKeys() {
+        throw new Error(`ownKeys:${content}`);
+      },
+    }),
+    new Proxy({ ...ids }, {
+      getOwnPropertyDescriptor() {
+        throw new Error(`descriptor:${content}`);
+      },
+    }),
+    new Proxy(Object.preventExtensions({ ...ids }), {
+      ownKeys() {
+        return ["organization_id", "tenant_id"];
+      },
+    }),
+    new Proxy({ ...ids }, {
+      ownKeys() {
+        return [
+          "organization_id",
+          "tenant_id",
+          "tenant_id",
+          "environment_id",
+        ];
+      },
+    }),
+    Object.assign(Object.create({ inherited: "secret" }), ids),
+  ];
+
+  for (const scope of malformed) {
+    let scannerCalls = 0;
+    const service = make({
+      deriveScope: async () => scope,
+      scan: async () => {
+        scannerCalls += 1;
+        return clear;
+      },
+    });
+    assert.deepEqual(await service.intake(input()), {
+      status: 403,
+      body: { code: "forbidden", retryable: false },
+    });
+    assert.equal(scannerCalls, 0);
+    assert.deepEqual(service.audit(), []);
+    assert.deepEqual(await service.get({ actor, id: evidence.id }), {
+      status: 404,
+      body: { code: "resource_not_found", retryable: false },
+    });
+  }
+});
+
+test("malformed derived scope denies get before scoped record lookup", async () => {
+  let scope = ids;
+  const service = make({ deriveScope: async () => scope });
+  assert.equal((await service.intake(input())).status, 201);
+  const auditBefore = service.audit();
+  scope = Object.assign({ ...ids }, { [Symbol.for("hidden")]: true });
+  assert.deepEqual(await service.get({ actor, id: evidence.id }), {
+    status: 404,
+    body: { code: "resource_not_found", retryable: false },
+  });
+  assert.deepEqual(service.audit(), auditBefore);
+  scope = Object.assign(Object.create(null), ids);
+  assert.equal((await service.get({ actor, id: evidence.id })).status, 200);
+});
+
+test("scope shape rejection retains no state and valid plain or null-prototype retry succeeds", async () => {
+  for (const corrected of [
+    { ...ids },
+    Object.assign(Object.create(null), ids),
+  ]) {
+    let scope = Object.assign({ ...ids }, { [Symbol("hidden")]: true });
+    let scannerCalls = 0;
+    const service = make({
+      deriveScope: async () => scope,
+      scan: async () => {
+        scannerCalls += 1;
+        return clear;
+      },
+    });
+    assert.equal((await service.intake(input())).body.code, "forbidden");
+    assert.equal(scannerCalls, 0);
+    assert.deepEqual(service.audit(), []);
+    scope = corrected;
+    assert.equal((await service.intake(input())).status, 201);
+    assert.equal(scannerCalls, 1);
+    assert.equal(service.audit().length, 1);
+  }
+});
+
 test("malformed scope denial permits corrected retry without retained state", async () => {
   let scope = { ...ids, organization_id: Symbol("secret") };
   let scannerCalls = 0;

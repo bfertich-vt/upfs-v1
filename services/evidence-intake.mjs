@@ -90,18 +90,22 @@ function normalizeScope(value) {
   try {
     if (!value || typeof value !== "object" || Array.isArray(value))
       return null;
-    const descriptors = Object.getOwnPropertyDescriptors(value);
-    const keys = Object.keys(descriptors);
+    const prototype = Reflect.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null) return null;
+    const keys = Reflect.ownKeys(value);
     const expected = ["environment_id", "organization_id", "tenant_id"];
     if (
       keys.length !== expected.length ||
-      keys.sort().some((key, index) => key !== expected[index])
+      keys.some((key) => typeof key !== "string") ||
+      [...keys].sort().some((key, index) => key !== expected[index])
     )
       return null;
     const normalized = {};
     for (const key of expected) {
-      const descriptor = descriptors[key];
+      const descriptor = Reflect.getOwnPropertyDescriptor(value, key);
       if (
+        !descriptor ||
+        descriptor.enumerable !== true ||
         !("value" in descriptor) ||
         typeof descriptor.value !== "string" ||
         !UUID.test(descriptor.value)
