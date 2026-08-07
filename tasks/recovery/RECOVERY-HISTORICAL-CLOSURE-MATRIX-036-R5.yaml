@@ -1,0 +1,44 @@
+id: RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R5
+title: Remove the R4 task record EOF blank-line defect
+status: in_progress
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+author_thread: /root/schema_historical_closure_matrix_r5
+author_worktree: C:\source\upfs-schema-historical-closure-matrix-r5
+author_branch: codex/recovery-historical-closure-matrix-r5
+base_commit: a9905d536082c71fd92acaa510695748d5560ec4
+correction_commit: c847273c4bfb8a442d7d274c757d98137e3261f8
+rejected_candidate: 4fc689c7bec4935ff56ea8f5b0f6b3b1d4ae02f4
+preserved_rejection_commit: a9905d536082c71fd92acaa510695748d5560ec4
+authorized_files:
+  - tasks/recovery/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R4.yaml
+  - tasks/recovery/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R5.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R5.md
+prohibited_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/reviews/**
+  - docs/handoffs/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R4.md
+  - tasks/queue.yaml
+  - specs/**
+  - apps/**
+  - services/**
+  - contracts/**
+  - scripts/**
+  - .github/**
+acceptance_criteria:
+  - Remove only the single rejected blank line at EOF from the R4 structured task record.
+  - Preserve the R4 candidate, its rejection, all matrix rows, and every prior handoff and review without rewriting history.
+  - Prove the byte diff is exactly one deleted blank line and all required repository gates pass.
+required_checks:
+  - Byte-level and Git diff scope verification
+  - Exact 18-field parser and contiguous TASK-0001 through TASK-0110 ID check
+  - npm run format:check
+  - npm run validate
+  - npm run queue:check
+  - npm run traceability:check
+  - npm test
+  - git diff --check
+security:
+  - No secrets, credentials, customer data, private financial data, provider data, production access, or tenant-controlled runtime path.
+  - Preserve conservative historical classifications; this whitespace correction is not production evidence.
+rollback: Revert only the R5 commits through reviewed corrective-forward flow; preserve all rejected and accepted historical evidence.
