@@ -148,7 +148,7 @@ test("R5 authorization includes every modified validator test surface", () => {
   assert.match(task, /  - scripts\/historical-closure-validator\.test\.mjs/);
 });
 
-test("TASK-0001 R17 requires clean committed HEAD authority across closure-authorizing scope", async () => {
+test("TASK-0001 R18 requires clean committed HEAD authority across closure-authorizing scope", async () => {
   const root = fixture();
   const matrix = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
   const original = fs.readFileSync(matrix, "utf8");
@@ -190,10 +190,10 @@ test("TASK-0001 R17 requires clean committed HEAD authority across closure-autho
       '  "task_status": "blocked",',
       '  "extra": true,\n  "task_status": "blocked",',
     ),
-    valid.replace('-R16"', '-R13"'),
+    valid.replace('-R17"', '-R13"'),
     valid.replace('"REJECTED"', '"ACCEPTED"'),
     valid.replace('"absent"', '"issued"'),
-    valid.replace('"R17_HANDOFF_CANDIDATE"', '"R11_HANDOFF_CANDIDATE"'),
+    valid.replace('"R18_HANDOFF_CANDIDATE"', '"R11_HANDOFF_CANDIDATE"'),
     valid.replace('"STAGE_A_REVIEW_PENDING"', '"ACTIVATION_PENDING"'),
     valid.replace(
       '"FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED"',
@@ -478,18 +478,54 @@ test("R17 rejects forged linked-worktree .git and commondir metadata", async () 
   }
 });
 
-test("R17 object plumbing is canonical despite inherited redirect", async () => {
+test("R18 object parity command is exact, singular, and mutation-sensitive", async () => {
   const root = fixture();
-  const alternate = path.join(root, "alternate-objects");
-  fs.mkdirSync(alternate);
-  const result = await withGitEnvironment(
-    {
-      GIT_OBJECT_DIRECTORY: alternate,
-      GIT_ALTERNATE_OBJECT_DIRECTORIES: alternate,
-    },
-    () => validateClosureFormatting(root),
-  );
-  assert.deepEqual(result.errors, []);
+  const objects = path.join(root, ".git", "objects");
+  const exactArgs = [
+    "rev-parse",
+    "--path-format=absolute",
+    "--git-path",
+    "objects",
+  ];
+  const invoke = async (output) => {
+    const calls = [];
+    const result = await validateClosureFormatting(root, {
+      checkedGitResult: ({ command, args, spawnArgs }) => {
+        if (JSON.stringify(args) !== JSON.stringify(exactArgs))
+          return undefined;
+        calls.push({ command, args, spawnArgs });
+        return { stdout: Buffer.from(output), stderr: Buffer.alloc(0) };
+      },
+    });
+    assert.equal(
+      calls.length,
+      1,
+      "object parity command must execute exactly once",
+    );
+    assert.equal(calls[0].command, "git");
+    assert.deepEqual(calls[0].args, exactArgs);
+    assert.deepEqual(calls[0].spawnArgs.slice(-exactArgs.length), exactArgs);
+    return result;
+  };
+  assert.deepEqual((await invoke(`${objects}\n`)).errors, []);
+  const wrongDirectory = path.join(root, "wrong-existing-directory");
+  fs.mkdirSync(wrongDirectory);
+  for (const [name, output] of [
+    ["wrong existing directory", `${wrongDirectory}\n`],
+    ["nonexistent path", `${path.join(root, "missing-objects")}\n`],
+    ["blank", ""],
+    ["leading blank", `\n${objects}\n`],
+    ["trailing blank", `${objects}\n\n`],
+    ["extra line", `${objects}\nextra\n`],
+    ["CR ambiguity", `${objects}\r\n`],
+    ["NUL", `${objects}\0\n`],
+    ["leading whitespace", ` ${objects}\n`],
+    ["trailing whitespace", `${objects} \n`],
+    ["file instead of directory", `${path.join(root, "AGENTS.md")}\n`],
+  ]) {
+    const result = await invoke(output);
+    assert.notDeepEqual(result.errors, [], `${name} bypassed object parity`);
+  }
 });
 
 test("R16 Git execution failures and malformed output fail closed", async () => {

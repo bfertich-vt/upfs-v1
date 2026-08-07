@@ -30,6 +30,7 @@ const candidates = [
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R15.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R16.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R17.yaml",
+  "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R18.yaml",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R2.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R3.md",
@@ -45,6 +46,7 @@ const candidates = [
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R15.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R16.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R17.md",
+  "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R18.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R2-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R3-QA.md",
@@ -61,12 +63,12 @@ export function canonicalStageAState(body) {
   const value = {
     version: 1,
     task_id: "TASK-0001",
-    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R17",
-    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R16",
+    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R18",
+    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R17",
     predecessor_disposition: "REJECTED",
     task_status: "blocked",
     attestation_status: "absent",
-    review_target: "R17_HANDOFF_CANDIDATE",
+    review_target: "R18_HANDOFF_CANDIDATE",
     activation_phase: "STAGE_A_REVIEW_PENDING",
     next_action: "FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED",
   };
@@ -77,7 +79,7 @@ export function canonicalStageAState(body) {
 }
 
 export function canonicalTaskOneRow() {
-  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R17.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R17 filesystem-aware Git identity, tests, task, and handoff only. | None for this corrective control. | Canonical row, complete ADS inventory, ASCII paths, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R17 handoff. |";
+  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R18.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R18 mutation-sensitive object parity coverage, task, and handoff only. | None for this corrective control. | Canonical row, complete ADS inventory, ASCII paths, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R18 handoff. |";
 }
 
 function pathIdentity(value, expectedType) {
@@ -285,23 +287,36 @@ function sanitizedGitEnvironment(context) {
 }
 
 function checkedGit(context, args, errors, options = {}) {
-  const result = spawnSync(
-    options.gitCommand || "git",
-    [
-      ...(options.gitCommandPrefix || []),
-      `--git-dir=${context.gitDir}`,
-      `--work-tree=${context.worktree}`,
-      ...args,
-    ],
-    {
-      cwd: context.worktree,
-      encoding: null,
-      env: sanitizedGitEnvironment(context),
-      windowsHide: true,
-      timeout: options.gitTimeoutMs || 30000,
-      maxBuffer: 32 * 1024 * 1024,
-    },
-  );
+  const command = options.gitCommand || "git";
+  const spawnArgs = [
+    ...(options.gitCommandPrefix || []),
+    `--git-dir=${context.gitDir}`,
+    `--work-tree=${context.worktree}`,
+    ...args,
+  ];
+  const injected = options.checkedGitResult?.({
+    command,
+    args: [...args],
+    spawnArgs: [...spawnArgs],
+  });
+  const result =
+    injected === undefined
+      ? spawnSync(command, spawnArgs, {
+          cwd: context.worktree,
+          encoding: null,
+          env: sanitizedGitEnvironment(context),
+          windowsHide: true,
+          timeout: options.gitTimeoutMs || 30000,
+          maxBuffer: 32 * 1024 * 1024,
+        })
+      : {
+          status: 0,
+          signal: null,
+          error: undefined,
+          stdout: Buffer.alloc(0),
+          stderr: Buffer.alloc(0),
+          ...injected,
+        };
   if (
     result.error ||
     result.signal ||
@@ -635,7 +650,7 @@ export async function validateClosureFormatting(root, options = {}) {
     );
   if (!canonicalStageAState(indexed.toString("utf8")))
     errors.push(
-      `${stateRel} must be the one exact canonical R17 Stage A state record.`,
+      `${stateRel} must be the one exact canonical R18 Stage A state record.`,
     );
   try {
     validateAdsScope(

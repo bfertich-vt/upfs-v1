@@ -1,0 +1,39 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002-R18
+title: Add mutation-sensitive object-parity coverage
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 30cbddf3013f3fc7059bdd9c6dc167bf18fe441f
+dependencies: [RECOVERY-TASK-0001-CLOSURE-002-R17]
+inputs:
+  [
+    AGENTS.md,
+    agents/BACKEND.md,
+    agents/QA_SECURITY.md,
+    docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R17-QA.md,
+  ]
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0001-stage-a-state.json
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R18.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R18.md
+acceptance:
+  - Test-only dependency injection can override one exact checked Git command while all other calls remain real.
+  - The exact object-parity command executes once and controlled malformed or mismatched outputs fail closed.
+  - Removing the object-parity command or comparison makes the fixture fail.
+  - R17 production behavior remains unchanged outside the injectable checked-command seam.
+  - TASK-0001 remains blocked without attestation.
+security:
+  - Object-store parity is backed by mutation-sensitive production-code tests.
+tests:
+  - node --test scripts/closure-format-check.test.mjs scripts/historical-closure-validator.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve history and correct forward; retain R17 production parity behavior.
+independent_review: Fresh QA reviews exact R18 handoff candidate; only if accepted may it attest exact candidate.
