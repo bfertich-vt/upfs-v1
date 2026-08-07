@@ -1,0 +1,74 @@
+task_id: RECOVERY-TASK-0002-CLOSURE-002
+title: Correct TASK-0002 tenant isolation, atomic audit, schema, and lifecycle defects
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0002
+base_commit: 870014d0d02873eeab4f14efa741cc43e06c7fd5
+dependencies: [RECOVERY-TASK-0002-CLOSURE-001-QA]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - specs/03_architecture/system_architecture.md
+  - specs/04_schema/identity_tenant_model.md
+  - specs/05_apis/api_standards.md
+  - specs/10_security/security_baseline.md
+  - specs/10_security/threat_model.md
+  - specs/12_testing/test_strategy.md
+  - contracts/schemas/identity-foundation.schema.json
+  - tasks/recovery/RECOVERY-TASK-0002-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0002-CLOSURE-001.md
+  - docs/reviews/RECOVERY-TASK-0002-CLOSURE-001-QA.md
+authorized_files:
+  - services/identity-organization-tenant-and-environment-foundation.mjs
+  - services/identity-organization-tenant-and-environment-foundation.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0002-CLOSURE-002.yaml
+  - docs/handoffs/RECOVERY-TASK-0002-CLOSURE-002.md
+prohibited_files:
+  - tasks/recovery/RECOVERY-TASK-0002-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0002-CLOSURE-001.md
+  - docs/reviews/RECOVERY-TASK-0002-CLOSURE-001-QA.md
+  - contracts/**
+  - specs/**
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/handoffs/TASK-0002.md
+  - TASK-0001 records
+  - TASK-0003+
+  - TASK-0111+
+  - unrelated services, applications, scripts, workflows, and package files
+acceptance:
+  - Namespace idempotency by verified organization, tenant, environment, operation, and caller key without a cross-tenant collision oracle.
+  - Commit domain state, idempotency state, and the success audit event atomically; injected commit or audit failure leaves no partial state.
+  - Validate the injected repository contract at composition and return bounded fail-closed errors rather than raw adapter exceptions.
+  - Enforce opaque UUID identifiers, nonempty immutable actor identity, and resource shapes conforming to the supplied identity foundation schema.
+  - Use the normative lifecycle value deactivated and deny child environment reads or mutations when a parent tenant or organization is not active.
+  - Append a redacted audit event for every replay attempt while producing only one domain mutation.
+  - Preserve the R1 rejection and distinguish rejected R1 commits from the new R2 implementation and exact externally reviewed final candidate.
+security:
+  - Same idempotency key may be used independently by different verified scopes with no collision or existence disclosure.
+  - Cross-tenant, forged-scope, parent-inactive, malformed-identity, adapter-failure, audit-failure, replay, and stale-version paths fail closed.
+  - Audit and errors exclude payload values, names, credentials, tokens, financial data, and adapter exception text.
+tests:
+  - node --test services/identity-organization-tenant-and-environment-foundation.test.mjs
+  - Same-key cross-tenant success and changed-payload replay rejection within one verified scope
+  - Atomic domain/idempotency/audit failure with retry and corrective-forward recovery
+  - Incomplete or throwing adapter rejection with bounded errors
+  - UUID, actor identity, schema resource shape, and deactivated lifecycle validation
+  - Parent organization/tenant lifecycle denial for child reads and mutations
+  - Redacted append-only replay-attempt audit evidence
+  - Authorization, forged-scope, cross-tenant, concurrency, lifecycle, rollback, and leakage negatives
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run queue:check
+  - npm run traceability:check
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve R1 and its rejection; correct forward or perform a reviewed revert of only R2 commits without deleting audit evidence.
+independent_review: A fresh QA/Security agent, distinct from the R1 reviewer and author, must review the exact committed R2 candidate from an isolated worktree.

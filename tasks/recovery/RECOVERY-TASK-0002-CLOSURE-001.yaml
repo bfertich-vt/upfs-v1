@@ -1,0 +1,70 @@
+task_id: RECOVERY-TASK-0002-CLOSURE-001
+title: Close TASK-0002 identity, organization, tenant, and environment foundation
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0002
+base_commit: e84699d502d684ec1772e507379d47770f00f132
+dependencies: [TASK-0001]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - specs/03_architecture/system_architecture.md
+  - specs/05_apis/api_standards.md
+  - specs/10_security/security_baseline.md
+  - specs/10_security/threat_model.md
+  - specs/12_testing/test_strategy.md
+  - contracts/schemas/identity-foundation.schema.json
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/handoffs/TASK-0002.md
+authorized_files:
+  - services/identity-organization-tenant-and-environment-foundation.mjs
+  - services/identity-organization-tenant-and-environment-foundation.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0002-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0002-CLOSURE-001.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/handoffs/TASK-0002.md
+  - specs/**
+  - TASK-0001 records
+  - TASK-0003+
+  - TASK-0111+
+  - unrelated services, applications, scripts, workflows, and package files
+acceptance:
+  - Establish a production-capable domain/service boundary for verified identities, organizations, tenants, and environments without claiming durable persistence or deployment.
+  - Derive tenant and environment scope from a verified actor and deny access by default.
+  - Enforce organization, tenant, and environment lifecycle constraints with deterministic tenant-scoped evidence.
+  - Return non-disclosing denials for cross-tenant access and prevent unauthorized reads and writes.
+  - Require idempotency for mutations, reject changed-payload replay, and enforce optimistic concurrency for state-sensitive writes.
+  - Append redacted immutable audit events for attempted and completed mutations.
+  - Injected failure leaves an auditable outcome and supports documented corrective-forward recovery without partial state.
+  - Truthfully identify the supplied in-memory repository as a reference composition seam requiring a durable production adapter.
+security:
+  - Missing, malformed, unverified, or unauthorized actors fail closed.
+  - Actor-derived organization, tenant, and environment bindings cannot be overridden by request data.
+  - Cross-tenant and cross-environment access reveals no resource existence or sensitive values.
+  - Audit records exclude credentials, tokens, financial data, and unredacted mutation payloads.
+tests:
+  - node --test services/identity-organization-tenant-and-environment-foundation.test.mjs
+  - Missing or invalid actor and unauthorized action denials
+  - Forged tenant/environment scope and cross-tenant read/write non-disclosure
+  - Duplicate idempotency replay and changed-payload replay rejection
+  - Stale version and invalid lifecycle transition rejection
+  - Audit redaction and append-only behavior
+  - Injected failure atomicity, audit evidence, rollback, and corrective-forward recovery
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run queue:validate
+  - npm run traceability:validate
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve history; use a reviewed revert of the task commits or corrective-forward lifecycle recovery through the service boundary.
+independent_review: A fresh QA/Security agent must review the exact committed handoff candidate from an isolated worktree without editing implementation.
