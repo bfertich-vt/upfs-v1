@@ -111,21 +111,21 @@ failure, rollback, schema, lifecycle, and leakage evidence remains immutable.
 
 ## Commands and results
 
-| Command/evidence | Result |
-| --- | --- |
-| `npm ci` | PASS in 5.4 s; 106 packages installed; 0 vulnerabilities. |
-| `node --test scripts/historical-closure-validator.test.mjs` | PASS in 170.1 s; 5/5. An initial dependency-missing attempt and one 124 s harness timeout produced no verdict; both are preserved as setup/transient evidence and the complete rerun passed. |
-| Temporary-clone generic-mechanism adversarial harness | PASS in 8.8 s; TASK-0003 reuse rejected. |
-| `powershell -ExecutionPolicy Bypass -File scripts/validate.ps1` | PASS in 7.6 s; 325 Markdown, 65 JSON, 5 YAML. |
-| `npm run format:check` | PASS in 5.4 s; 48 pinned-Prettier files and closure structure. |
-| `npm run queue:check` | PASS in 9.6 s. |
-| `npm run traceability:check` | PASS in 31.6 s. |
-| `npm test` | PASS in 300.2 s; 961 total, 960 passed, 0 failed, 1 pre-existing skip. |
-| `npm audit --audit-level=high` | PASS in 2.6 s; 0 vulnerabilities. |
-| `git fsck --full --strict` | PASS in 17.0 s; only preserved dangling blobs/trees reported. |
-| `git diff --check` | PASS in 0.4 s. |
-| GitHub PR/run/job/artifact API inspection and fresh artifact download | PASS; exact identities, conclusions, archive digest, file digest, and passed content match the closure record. |
-| Exact seven-path diff, ancestry/tree, TASK-0001 blob equality, candidate HEAD, and clean implementation-state checks | PASS at `ae03aca...` before this sole review artifact was added. |
+| Command/evidence                                                                                                     | Result                                                                                                                                                                                       |
+| -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm ci`                                                                                                             | PASS in 5.4 s; 106 packages installed; 0 vulnerabilities.                                                                                                                                    |
+| `node --test scripts/historical-closure-validator.test.mjs`                                                          | PASS in 170.1 s; 5/5. An initial dependency-missing attempt and one 124 s harness timeout produced no verdict; both are preserved as setup/transient evidence and the complete rerun passed. |
+| Temporary-clone generic-mechanism adversarial harness                                                                | PASS in 8.8 s; TASK-0003 reuse rejected.                                                                                                                                                     |
+| `powershell -ExecutionPolicy Bypass -File scripts/validate.ps1`                                                      | PASS in 7.6 s; 325 Markdown, 65 JSON, 5 YAML.                                                                                                                                                |
+| `npm run format:check`                                                                                               | PASS in 5.4 s; 48 pinned-Prettier files and closure structure.                                                                                                                               |
+| `npm run queue:check`                                                                                                | PASS in 9.6 s.                                                                                                                                                                               |
+| `npm run traceability:check`                                                                                         | PASS in 31.6 s.                                                                                                                                                                              |
+| `npm test`                                                                                                           | PASS in 300.2 s; 961 total, 960 passed, 0 failed, 1 pre-existing skip.                                                                                                                       |
+| `npm audit --audit-level=high`                                                                                       | PASS in 2.6 s; 0 vulnerabilities.                                                                                                                                                            |
+| `git fsck --full --strict`                                                                                           | PASS in 17.0 s; only preserved dangling blobs/trees reported.                                                                                                                                |
+| `git diff --check`                                                                                                   | PASS in 0.4 s.                                                                                                                                                                               |
+| GitHub PR/run/job/artifact API inspection and fresh artifact download                                                | PASS; exact identities, conclusions, archive digest, file digest, and passed content match the closure record.                                                                               |
+| Exact seven-path diff, ancestry/tree, TASK-0001 blob equality, candidate HEAD, and clean implementation-state checks | PASS at `ae03aca...` before this sole review artifact was added.                                                                                                                             |
 
 ## Risks, rollback, and promotion boundary
 
