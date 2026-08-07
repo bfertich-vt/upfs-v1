@@ -11,9 +11,9 @@
 - Worktree: `C:\source\upfs-schema-historical-closure-matrix-r3`.
 - Branch: `codex/recovery-historical-closure-matrix-r3`.
 - Base commit: `a7514bfb494805dd591277cfab980f33de20830a`.
-- Commit: candidate `2e3707172c7798513254838616039709b5fbca20`.
-- Reconstruction commits: matrix/R2 task `589de0a`; R2 handoff `7e3b19d`; R2 QA review `e4e2a62`; R3 task `4853ab078211cc6c62352a2dece8557b885d3079`; evidence-neutral EOF normalization `2e3707172c7798513254838616039709b5fbca20`.
-- Independent reviewer and result: pending. A distinct QA/Security agent must review exact candidate `2e3707172c7798513254838616039709b5fbca20` from an isolated worktree without editing implementation.
+- Commit: candidate `2e370717294a45a2e4109aaf4cfc47694f72e77c`.
+- Reconstruction commits: matrix/R2 task `589de0a`; R2 handoff `7e3b19d`; R2 QA review `e4e2a62`; R3 task `4853ab078211cc6c62352a2dece8557b885d3079`; evidence-neutral EOF normalization `2e370717294a45a2e4109aaf4cfc47694f72e77c`.
+- Independent reviewer and result: pending. A distinct QA/Security agent must review exact candidate `2e370717294a45a2e4109aaf4cfc47694f72e77c` from an isolated worktree without editing implementation.
 
 ## Governing inputs read before editing
 
@@ -69,7 +69,7 @@ No queue, historical task status, product, specification, contract, validator, w
 - `git diff --check a7514bfb494805dd591277cfab980f33de20830a..HEAD`: PASS.
 - `npm test`: PASS; 932 total, 931 passed, 0 failed, 1 documented opt-in skip; duration 253025.5278 ms.
 
-The first combined gate invocation is preserved as a setup/diagnostic failure: the fresh worktree lacked dependencies (`prettier` and `yaml` were unavailable), an ad-hoc regex incorrectly scanned explanatory prose instead of matrix data rows, and `git diff --check` found one inherited trailing blank line at the end of the accepted R2 YAML. Lockfile installation resolved the environment issue, the parser was correctly scoped to data rows, and commit `2e3707172c7798513254838616039709b5fbca20` removed only that EOF blank line. No matrix row, classification, disposition, assertion, validator, or gate was changed.
+The first combined gate invocation is preserved as a setup/diagnostic failure: the fresh worktree lacked dependencies (`prettier` and `yaml` were unavailable), an ad-hoc regex incorrectly scanned explanatory prose instead of matrix data rows, and `git diff --check` found one inherited trailing blank line at the end of the accepted R2 YAML. Lockfile installation resolved the environment issue, the parser was correctly scoped to data rows, and commit `2e370717294a45a2e4109aaf4cfc47694f72e77c` removed only that EOF blank line. No matrix row, classification, disposition, assertion, validator, or gate was changed.
 
 ## Negative tests and security/tenant analysis
 
