@@ -1,0 +1,70 @@
+task_id: RECOVERY-TASK-0004-CLOSURE-002
+title: Correct TASK-0004 timestamp and derived-scope validation
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0004
+base_commit: 73e35437c5cad0224106fbe623aad5ea8c4d3641
+dependencies: [RECOVERY-TASK-0004-CLOSURE-001, RECOVERY-TASK-0004-REGISTRY-001]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - specs/04_schema/canonical_model.md
+  - specs/04_schema/identity_tenant_model.md
+  - specs/05_apis/api_standards.md
+  - specs/10_security/security_baseline.md
+  - specs/10_security/threat_model.md
+  - specs/12_testing/test_strategy.md
+  - contracts/schemas/raw-evidence.schema.json
+  - tasks/recovery/RECOVERY-TASK-0004-CLOSURE-001.yaml
+  - tasks/recovery/RECOVERY-TASK-0004-REGISTRY-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0004-CLOSURE-001.md
+  - docs/handoffs/RECOVERY-TASK-0004-REGISTRY-001.md
+  - docs/reviews/RECOVERY-TASK-0004-CLOSURE-001-QA.md
+authorized_files:
+  - services/evidence-intake.mjs
+  - services/evidence-intake.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0004-CLOSURE-002.yaml
+  - docs/handoffs/RECOVERY-TASK-0004-CLOSURE-002.md
+prohibited_files:
+  - contracts/**
+  - artifacts/**
+  - services/connector-ingestion.mjs
+  - services/connector-ingestion.test.mjs
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - specs/**
+  - package and workflow files
+  - TASK-0005 and later task files
+acceptance:
+  - Canonical UTC timestamps reject impossible calendar dates and noncanonical representations without Date normalization.
+  - Valid leap-year, calendar, time, and one-to-nine-digit fractional-second boundaries remain accepted.
+  - Derived scope accepts only exact own primitive-string UUID fields and bounds every malformed adapter value to a non-disclosing denial.
+  - Timestamp and scope rejection occurs before scanner, record, idempotency, and audit mutation.
+  - Corrected retry succeeds without state retained from the rejection.
+  - Existing connector and deterministic registry behavior remains unchanged and green.
+  - Capability remains classified as a reference implementation only.
+security:
+  - Never coerce or interpolate attacker-controlled scope values.
+  - Getter, proxy, Symbol, BigInt, object, array, missing, and extra scope values fail closed without raw error or value leakage.
+  - Scope denials use identical bounded envelopes and leave no record, idempotency entry, audit, or scanner call.
+tests:
+  - node --test services/evidence-intake.test.mjs services/connector-ingestion.test.mjs services/transaction-registry.test.mjs services/registry-generator.test.mjs
+  - Exhaustive leap-year, month, day, hour, minute, second, fraction, timezone, and canonical-form cases
+  - Malformed Symbol, BigInt, object, getter, proxy, and throwing-toString scope cases through intake and get
+  - No leakage, no mutation, no scanner call, and corrected retry
+  - npm test
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run queue:check
+  - npm run traceability:check
+  - npm run lint
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve the R1 rejection; before integration use a reviewed revert, and after integration correct forward in a new reviewed commit.
+independent_review: A fresh QA/Security agent must review the exact committed candidate from an isolated worktree without editing implementation.
