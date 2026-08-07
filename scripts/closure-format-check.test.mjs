@@ -147,7 +147,7 @@ test("TASK-0001 R14 requires clean committed HEAD authority across closure-autho
       '  "task_status": "blocked",',
       '  "extra": true,\n  "task_status": "blocked",',
     ),
-    valid.replace('-R12"', '-R11"'),
+    valid.replace('-R14"', '-R13"'),
     valid.replace('"REJECTED"', '"ACCEPTED"'),
     valid.replace('"absent"', '"issued"'),
     valid.replace('"R14_HANDOFF_CANDIDATE"', '"R11_HANDOFF_CANDIDATE"'),
