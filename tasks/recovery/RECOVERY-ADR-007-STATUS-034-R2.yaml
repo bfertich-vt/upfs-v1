@@ -1,0 +1,88 @@
+id: RECOVERY-ADR-007-STATUS-034-R2
+title: Reconstruct accepted ADR-007 review-status correction on current protected base
+state: candidate
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+base_commit: 194a7db2d3cb7504b08fe5c47d056ed868b44d7e
+scope: >-
+  Reconstruct only the accepted ADR-007 independent Codex QA/Security status
+  correction and its immutable historical evidence on the current protected
+  base. This is documentation/provenance only and grants no implementation,
+  provider, credential, runtime, deployment, or production approval.
+accepted_sources:
+  implementation: e14a1b076cad3272860a9651d68610942ad9f832
+  author_handoff: 2c43539f3db0f5ca0e5c3b1a92da1d3736531d1a
+  independent_qa: 5febd562c6a920e561cac65874871e033bc934f7
+allowed_files:
+  - docs/decisions/ADR-007-fdx-first-legacy-reuse.md
+  - tasks/recovery/RECOVERY-ADR-007-STATUS-034.yaml
+  - docs/handoffs/RECOVERY-ADR-007-STATUS-034.md
+  - docs/reviews/RECOVERY-ADR-007-STATUS-034-QA.md
+  - tasks/recovery/RECOVERY-ADR-007-STATUS-034-R2.yaml
+  - docs/handoffs/RECOVERY-ADR-007-STATUS-034-R2.md
+prohibited_files:
+  - tasks/queue.yaml
+  - .github/
+  - scripts/
+  - specs/
+  - contracts/
+  - services/
+  - apps/
+  - infra/
+  - TASK-0112
+  - TASK-0113
+  - TASK-0114
+  - TASK-0115
+  - TASK-0116
+  - TASK-0117
+  - TASK-0118
+  - TASK-0119
+  - TASK-0120
+  - TASK-0121
+  - TASK-0122
+  - TASK-0123
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/03_architecture/system_architecture.md
+  - specs/05_apis/api_standards.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/MASTER_PLAN.md
+  - tasks/queue.yaml
+  - docs/decisions/ADR-007-fdx-first-legacy-reuse.md
+  - docs/handoffs/TASK-0111.md
+  - docs/handoffs/TASK-0111-QA.md
+  - docs/reviews/TASK-0111-PROVENANCE-QA.md
+acceptance_criteria:
+  - The ADR records the accepted independent Codex QA/Security decision review.
+  - The accepted historical source identities and contents remain explicit.
+  - No human review, native approval, provider, version, credential, runtime,
+    deployment, production capability, or downstream authorization is claimed.
+  - TASK-0112 through TASK-0123 remain blocked and frozen; queue state is unchanged.
+required_tests:
+  - content and source-identity assertions
+  - npm run format:check
+  - npm test
+  - npm run validate
+  - npm run queue:check
+  - npm run traceability:check
+  - git diff --check
+  - secret and unsupported-claim searches
+security_and_tenant_isolation: >-
+  Documentation only. No tenant selector, authorization behavior, secret,
+  credential, customer data, private financial data, provider payload, or
+  runtime changes. Existing fail-closed admission gates remain binding.
+rollback: >-
+  Preserve this reconstruction and all historical commits. Correct forward in
+  a separately authored and reviewed commit; never rewrite history, force-push,
+  delete evidence, or change queue state to conceal a defect.
+handoff_requirements:
+  - Record role/digest/thread/worktree/branch/base/candidate/source identities.
+  - Record files, inputs, acceptance, commands/results, negative checks,
+    security/tenant analysis, limitations, prerequisites, and rollback.
+  - Require fresh independent Codex QA/Security review on the exact committed candidate.

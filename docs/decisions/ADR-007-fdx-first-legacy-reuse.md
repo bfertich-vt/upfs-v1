@@ -1,14 +1,16 @@
 # ADR-007: FDX-first architecture and legacy UPFS/Vetralysis reuse
 
-- Status: Decision recorded; independent QA/Security review pending; implementation remains blocked.
+- Status: Decision recorded; independently reviewed by Codex QA/Security;
+  implementation remains blocked.
 - Date: 2026-08-01
 - Decision owner: Schema/Search/AI task owner for TASK-0111.
 - Approval owner for implementation: unassigned; an authorized integration
   architecture owner and independent QA/Security reviewer are required before
   any downstream promotion.
 - Decision version: `ADR-007 v1`.
-- Approval: no implementation approval. This record requires independent
-  QA/Security review before TASK-0111 may be marked complete.
+- Approval: no implementation approval. Independent Codex QA/Security review
+  accepted this decision-only record; that review does not approve a provider,
+  connector, schema, credential, runtime, deployment, or downstream task.
 - FDX/provider contract version: unselected and unverified. It must be named,
   source-bound to authorized provider/FDX documentation, compatibility-tested,
   and approved before any connector, schema, or credential work starts.
@@ -109,11 +111,14 @@ does not alter historic reclassifications, delete immutable evidence, revoke a
 nonexistent credential, or roll back production because this decision produces
 no production runtime capability.
 
-## Required independent review
+## Independent review record
 
-Independent QA/Security review must verify the source bindings, zero-asset
-inventory searches, explicit no-runtime claim, scope-limited diff, queue and
-backlog consistency, checklist completeness, and the commands `npm run
-traceability:check`, `npm run validate`, `npm test`, and `git diff --check`.
-This ADR is not approval to merge, deploy, connect to a provider, or reuse an
-asset.
+Independent Codex QA/Security review accepted the original decision-only
+candidate `22d48450768e6fac0bc692178dc59e724037ce6d`; see
+`docs/handoffs/TASK-0111-QA.md`. The reviewer verified the source bindings,
+zero-asset inventory searches, explicit no-runtime claim, scope-limited diff,
+queue and backlog consistency, checklist completeness, and the commands `npm
+run traceability:check`, `npm run validate`, `npm test`, and `git diff
+--check`. This ADR is not implementation approval and does not authorize a
+merge, deployment, provider connection, FDX version selection, credential use,
+or asset reuse.

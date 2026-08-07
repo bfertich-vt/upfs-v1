@@ -1,0 +1,77 @@
+id: RECOVERY-ADR-007-STATUS-034
+title: Correct stale ADR-007 independent-review status
+state: candidate
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+scope: >-
+  Correct only stale ADR-007 independent-review status and approval wording to
+  truthfully reference the already accepted independent Codex QA/Security
+  review. This is corrective-forward documentation only; no provider,
+  credential, FDX-version, runtime, schema, deployment, or task-state change
+  is authorized.
+allowed_files:
+  - docs/decisions/ADR-007-fdx-first-legacy-reuse.md
+  - tasks/recovery/RECOVERY-ADR-007-STATUS-034.yaml
+  - docs/handoffs/RECOVERY-ADR-007-STATUS-034.md
+prohibited_files:
+  - tasks/queue.yaml
+  - README.md
+  - START_HERE.md
+  - specs/
+  - .github/
+  - scripts/
+  - contracts/
+  - services/
+  - apps/
+  - infra/
+  - CODEOWNERS
+  - docs/handoffs/TASK-0111.md
+  - docs/handoffs/TASK-0111-QA.md
+  - docs/reviews/
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/03_architecture/system_architecture.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/MASTER_PLAN.md
+  - tasks/queue.yaml
+  - docs/decisions/ADR-007-fdx-first-legacy-reuse.md
+  - docs/handoffs/TASK-0111.md
+  - docs/handoffs/TASK-0111-QA.md
+  - docs/reviews/TASK-0111-PROVENANCE-QA.md
+normative_sources:
+  - specs/00_constitution/engineering_constitution.md#Secure-by-default-delivery
+  - specs/03_architecture/system_architecture.md#Data-path
+  - specs/10_security/security_baseline.md#Security-baseline
+  - specs/12_testing/test_strategy.md#Test-strategy
+acceptance_criteria:
+  - ADR-007 accurately records the accepted independent Codex QA/Security review.
+  - ADR-007 retains no implementation approval and makes no human-review,
+    runtime, provider, credential, FDX-version, deployment, or production claim.
+  - Existing FDX/provider blocks, task classifications, tenant-isolation, and
+    security admission requirements remain unchanged.
+  - Queue state and downstream readiness remain unchanged.
+required_tests:
+  - YAML parse of this structured input
+  - npm run traceability:check
+  - npm run validate
+  - npm test
+  - git diff --check
+  - focused stale-status and unsupported-claim searches
+security_and_tenant_isolation: >-
+  Documentation-only correction. It must not add secrets, credentials, customer
+  data, private financial data, provider configuration, or authorization
+  behavior. It preserves explicit authorization-derived tenant scope, BOLA/IDOR,
+  replay/webhook, audit, and leakage requirements as future admission gates.
+rollback: >-
+  Preserve existing evidence and history. If the wording is later inaccurate,
+  use a separately reviewed corrective-forward documentation commit; do not
+  reset, force-push, delete branches, rewrite history, or change queue state.
+handoff_requirements:
+  - Record task, role binding, role-file digest, thread, worktree, branch, candidate commit, and changed files.
+  - Record inputs/specifications, acceptance evidence, tests, negative checks, security/tenant analysis, limitations, external prerequisites, and rollback.
+  - State that independent Codex QA/Security review is pending for this new candidate and is not human or native GitHub approval.
