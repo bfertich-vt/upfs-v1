@@ -1,0 +1,12 @@
+# Handoff report
+
+- Task and scope: R9 corrective-forward work from exact R8 rejection `2f6e362438873ce757ee607a6b6726acd50b3484`; enforce repository-wide state uniqueness and bind canonical bytes across Git index and worktree.
+- Files changed: TASK-0001 matrix row, Stage A state JSON, closure formatting validator/tests, R9 recovery task, and this handoff.
+- Contracts/migrations: No runtime contract or migration. Stable R9 identifiers avoid SHA self-reference; the later attestation binds the exact accepted candidate.
+- Security and tenant-isolation analysis: NUL-safe Git enumeration and explicit recursive worktree enumeration reject tracked/untracked, nested, case, Unicode-normalized, punctuation, and lookalike state records outside the one canonical path. `.git`, dependency, generated build, coverage, and framework output directories are explicitly excluded from filesystem noise. Canonical state requires exactly one stage-zero mode-100644 entry with normal flags, canonical indexed blob bytes, identical contained lstat-regular worktree bytes, and no unstaged difference. Split substitutions, intent-to-add, alternate modes, symlink, and gitlink fail. Runtime tenant behavior is unchanged.
+- Audit/evidence behavior: R8 remains rejected; TASK-0001 is blocked, no attestation exists, rejected closure evidence remains inactive, and all history is preserved.
+- Tests and commands run: Targeted closure-format and inherited historical closure suites; `scripts/validate.ps1`; format, validate, queue, traceability, full suite, audit, strict fsck, and exact-base diff.
+- Results: Targeted 6/6 passed. Repository validation passed for 276 Markdown, 65 JSON contracts, and 5 YAML contracts. Full suite 941 passed, 0 failed, 1 documented skip. Audit found zero vulnerabilities. Fsck reported only dangling local objects. Exact diff passed.
+- Rollback/corrective-forward plan: Preserve history and correct forward from implementation `b823fde6ab8e25475cd34eef24563c28e824f390`; never validate worktree bytes independently of indexed bytes.
+- Documentation updated: Canonical state/row identify R9 and rejected R8 while retaining the non-self-referential handoff target.
+- Known risks and follow-ups: Fresh QA reviews the exact R9 handoff candidate. Only if accepted may QA create the exact-candidate attestation; separate activation follows. No attestation, activation, push, merge, or TASK-0002 advancement occurred.
