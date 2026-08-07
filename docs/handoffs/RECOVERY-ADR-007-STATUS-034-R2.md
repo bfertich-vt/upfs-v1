@@ -105,4 +105,3 @@
   bound to `agents/QA_SECURITY.md` must start from the exact committed R2 head
   in an isolated worktree, reproduce the scope/content/test/security evidence,
   and record ACCEPT or concrete rejection without editing implementation.
-
