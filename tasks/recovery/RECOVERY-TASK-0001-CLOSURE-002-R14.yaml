@@ -1,0 +1,38 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002-R14
+title: Require clean committed HEAD for closure authority
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 9486c01e1bdcb01dcbbf66a73e53cdac1d5a1c14
+dependencies: [RECOVERY-TASK-0001-CLOSURE-002-R13]
+inputs:
+  [
+    AGENTS.md,
+    agents/BACKEND.md,
+    agents/QA_SECURITY.md,
+    docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R13-QA.md,
+  ]
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0001-stage-a-state.json
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R14.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R14.md
+acceptance:
+  - Authoritative validation runs only when porcelain-v2 reports a clean committed HEAD.
+  - HEAD, index, and worktree bytes/modes agree with no staged, unstaged, untracked, conflict, intent, skip, assume, sparse, deletion, rename, copy, or type-change state.
+  - Complete index/ADS/path/topology controls remain enforced against committed HEAD.
+  - TASK-0001 remains blocked without attestation.
+security:
+  - Mutable authoring state is never accepted as authoritative closure evidence.
+tests:
+  - node --test scripts/closure-format-check.test.mjs scripts/historical-closure-validator.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve history and correct forward; never validate mutable authoring state.
+independent_review: Fresh QA reviews exact R14 handoff candidate; only if accepted may it attest exact candidate.
