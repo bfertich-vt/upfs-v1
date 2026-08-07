@@ -1,0 +1,12 @@
+# Handoff report
+
+- Task and scope: R8 corrective-forward work from exact R7 rejection `6c8cf4bedd26b94f1018f3f276bc218af05ea883`; require a deterministic whole TASK-0001 row and a unique canonical regular Git state blob.
+- Files changed: TASK-0001 matrix row, Stage A state JSON, closure formatting validator/tests, R8 recovery task, and this handoff.
+- Contracts/migrations: No runtime contract or migration. Stable R8 task/handoff identifiers avoid commit-SHA self-reference; any later attestation remains responsible for binding the exact candidate SHA.
+- Security and tenant-isolation analysis: Every additive, removal, rewording, whitespace, case, punctuation, or state-prose row mutation fails exact equality after deterministic CRLF/LF normalization. Closed-world discovery rejects alternate, duplicate, and case-variant state filenames. The canonical path must be contained, lstat as a regular non-symlink file, and have one exact Git index mode-100644 blob entry; symlink, gitlink, executable-mode, directory, and lookalike attacks fail. R5 structural controls are unchanged. Runtime tenant behavior is unchanged.
+- Audit/evidence behavior: R7 is recorded as rejected through canonical state. TASK-0001 remains blocked, no attestation exists, the rejected closure stays inactive, and all history remains preserved.
+- Tests and commands run: Targeted closure-format and inherited historical-closure suites; `scripts/validate.ps1`; format, validate, queue, traceability, full suite, audit, strict fsck, and exact-base diff check.
+- Results: Targeted closed-world tests 3/3 passed and inherited historical closure tests passed. Repository validation passed for 274 Markdown, 65 JSON contracts, and 5 YAML contracts. Full suite 941 passed, 0 failed, 1 documented skip. Audit found zero vulnerabilities. Fsck reported only dangling local objects. Exact diff passed.
+- Rollback/corrective-forward plan: Preserve history and correct forward from implementation `2ada73f2776b32120e3fe1f091b55bce5a7e18bc`; never weaken whole-row equality or closed-world blob checks.
+- Documentation updated: Canonical row and state now identify R8 and its rejected R7 predecessor without embedding a candidate SHA.
+- Known risks and follow-ups: Fresh QA reviews the exact R8 handoff candidate. Only if accepted may QA create an attestation binding that exact SHA; separate activation follows. No attestation, activation, push, merge, or TASK-0002 advancement occurred.
