@@ -73,3 +73,35 @@ test("R5 authorization includes every modified validator test surface", () => {
   assert.match(task, /  - scripts\/closure-format-check\.test\.mjs/);
   assert.match(task, /  - scripts\/historical-closure-validator\.test\.mjs/);
 });
+
+test("TASK-0001 matrix binds the current R6 round without predecessor or attestation drift", async () => {
+  const root = fixture();
+  const matrix = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
+  const original = fs.readFileSync(matrix, "utf8");
+  for (const [from, to, pattern] of [
+    [
+      "RECOVERY-TASK-0001-CLOSURE-002-R6.yaml",
+      "RECOVERY-TASK-0001-CLOSURE-002-R5.yaml",
+      /current R6/,
+    ],
+    [
+      "exact R6 candidate recorded by the R6 handoff",
+      "review r5",
+      /rejected predecessor|current R6/,
+    ],
+    [
+      "no structured attestation has yet been issued",
+      "structured attestation has been issued",
+      /attestation state/,
+    ],
+    ["| blocked |", "| ACCEPTED |", /blocked\/attestation state/],
+  ]) {
+    fs.writeFileSync(matrix, original.replaceAll(from, to));
+    assert.ok(
+      (await validateClosureFormatting(root)).errors.some((error) =>
+        pattern.test(error),
+      ),
+      `${from} -> ${to}`,
+    );
+  }
+});

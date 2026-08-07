@@ -18,11 +18,13 @@ const candidates = [
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R3.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R4.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R5.yaml",
+  "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R6.yaml",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R2.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R3.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R4.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R5.md",
+  "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R6.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R2-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R3-QA.md",
@@ -62,6 +64,25 @@ export async function validateClosureFormatting(root) {
   for (const row of matrixRows)
     if (row.slice(1, -1).split("|").length !== 18)
       errors.push(`${matrixRel} ${row.slice(2, 11)} must retain 18 fields.`);
+  const taskOne =
+    matrixRows.find((row) => row.startsWith("| TASK-0001 |")) || "";
+  const r6Task = "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R6.yaml";
+  const requiredCurrentState = [
+    r6Task,
+    "R5 was rejected",
+    "exact R6 candidate recorded by the R6 handoff",
+    "no structured attestation has yet been issued",
+    "| blocked |",
+  ];
+  for (const required of requiredCurrentState)
+    if (!taskOne.includes(required))
+      errors.push(
+        `${matrixRel} TASK-0001 must describe current R6 blocked/attestation state: ${required}`,
+      );
+  if (/Fresh QA (?:must )?reviews? r[1-5]\b/i.test(taskOne))
+    errors.push(
+      `${matrixRel} TASK-0001 must not direct QA to a rejected predecessor.`,
+    );
 
   const queueRel = "scripts/queue-validator.mjs";
   const queueValidator = fs.readFileSync(path.join(root, queueRel), "utf8");
