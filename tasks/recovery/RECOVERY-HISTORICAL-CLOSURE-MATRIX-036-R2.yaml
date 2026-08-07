@@ -34,4 +34,3 @@ required_checks:
 security:
   - No secrets/customer/private financial/provider data; preserve tenant isolation and fail-closed requirements.
 rollback: Revert R2 commits only; preserve prior matrix and QA rejection.
-
