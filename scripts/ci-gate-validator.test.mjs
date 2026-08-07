@@ -973,6 +973,24 @@ test("validation workflow retains complete Git history for immutable provenance 
   );
 });
 
+test("hosted provenance hydration derives exact per-kind counts from the fail-closed manifest", () => {
+  const workflow = fs.readFileSync(
+    path.join(root, ".github", "workflows", "validate.yml"),
+    "utf8",
+  );
+  assert.match(workflow, /m\.schema_version!==2/);
+  assert.match(
+    workflow,
+    /allowed=\['handoff-candidate','erratum-source','qa-review-evidence'\]/,
+  );
+  assert.match(workflow, /Object\.keys\(m\.required_counts\)\.sort\(\)/);
+  assert.match(workflow, /m\.required_counts\.total!==m\.refs\.length/);
+  assert.match(workflow, /actual\[k\]!==m\.required_counts\[k\]/);
+  assert.match(workflow, /m\.refs\.some\(x=>!allowed\.includes\(x\.kind\)\)/);
+  assert.match(workflow, /m\.required_counts\['qa-review-evidence'\]<1/);
+  assert.doesNotMatch(workflow, /m\.refs\.length!==35/);
+});
+
 test("mutable actions and removed gates fail closed", () => {
   const fixture = temp("upfs-ci-gate-");
   fs.cpSync(path.join(root, ".github"), path.join(fixture, ".github"), {

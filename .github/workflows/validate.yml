@@ -44,7 +44,18 @@ jobs:
           node --input-type=module -e "import crypto from 'node:crypto'; import
           { execFileSync } from 'node:child_process'; import fs from 'node:fs';
           const m=JSON.parse(fs.readFileSync('scripts/fixtures/historical-provenance-v3.json'));
-          if(m.schema_version!==2||m.refs.length!==35||m.refs.filter(x=>x.kind==='handoff-candidate').length!==33||m.refs.filter(x=>x.kind==='erratum-source').length!==2)throw
+          if(m.schema_version!==2||!Array.isArray(m.refs)||!m.required_counts||typeof
+          m.required_counts!=='object'||Array.isArray(m.required_counts))throw new
+          Error('historical provenance manifest schema mismatch'); const
+          allowed=['handoff-candidate','erratum-source','qa-review-evidence']; const
+          countKeys=Object.keys(m.required_counts).sort(); const
+          requiredKeys=[...allowed,'total'].sort(); if(JSON.stringify(countKeys)!==JSON.stringify(requiredKeys)||
+          !allowed.every(k=>Number.isSafeInteger(m.required_counts[k])&&m.required_counts[k]>=0)||
+          !Number.isSafeInteger(m.required_counts.total)||m.required_counts.total<0)throw new
+          Error('historical provenance required counts schema mismatch'); const
+          actual=Object.fromEntries(allowed.map(k=>[k,m.refs.filter(x=>x.kind===k).length]));
+          if(m.refs.some(x=>!allowed.includes(x.kind))||m.required_counts.total!==m.refs.length||
+          allowed.some(k=>actual[k]!==m.required_counts[k])||m.required_counts['qa-review-evidence']<1)throw
           new Error('historical provenance manifest count mismatch'); const
           d=crypto.createHash('sha256').update(fs.readFileSync(m.bundle)).digest('hex'); if(d!==m.sha256)throw
           new Error('historical provenance bundle digest mismatch'); const
