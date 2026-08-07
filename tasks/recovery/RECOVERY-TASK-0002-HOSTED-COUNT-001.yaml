@@ -1,0 +1,60 @@
+task_id: RECOVERY-TASK-0002-HOSTED-COUNT-001
+title: Derive hosted provenance hydration counts from the immutable manifest
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0002
+base_commit: 861fcf34121512c8eb450872f1ab0d14bbac07bc
+dependencies: [RECOVERY-TASK-0002-HOSTED-HYDRATION-001-QA]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - .github/workflows/validate.yml
+  - scripts/fixtures/historical-provenance-v3.json
+  - scripts/ci-gate-validator.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0002-HOSTED-HYDRATION-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0002-HOSTED-HYDRATION-001.md
+  - docs/reviews/RECOVERY-TASK-0002-HOSTED-HYDRATION-001-QA.md
+authorized_files:
+  - .github/workflows/validate.yml
+  - scripts/ci-gate-validator.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0002-HOSTED-COUNT-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0002-HOSTED-COUNT-001.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - scripts/fixtures/historical-provenance-v3.json
+  - scripts/fixtures/historical-provenance-v3.bundle
+  - docs/governance/task-closures/**
+  - services/**
+  - apps/**
+  - contracts/**
+  - specs/**
+  - .github/workflows/security.yml
+acceptance:
+  - Preserve hosted validation failure run 31206824523 as immutable defect evidence.
+  - Verify schema version 2 and a fail-closed required_counts shape containing exactly the supported kinds plus total.
+  - Compare manifest total and every supported per-kind count to the refs dynamically, including qa-review-evidence.
+  - Reject unknown kinds, stale counts, missing or extra refs, substitutions, and semantic kind bypasses.
+  - Continue verifying the immutable bundle digest and the exact hydrated ref/object mapping.
+  - Do not weaken provenance validation, alter the immutable manifest or bundle, or introduce an unavailable-source bypass.
+security:
+  - Count and kind validation fails closed before object hydration evidence is accepted.
+  - qa-review-evidence cannot satisfy handoff-candidate or erratum-source semantics.
+  - Tenant data paths and product authorization behavior are untouched by this CI-only correction.
+tests:
+  - node --test scripts/ci-gate-validator.test.mjs
+  - npm test
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve the rejected hosted run and correct forward; reviewed revert only if it restores a stricter valid verifier.
+independent_review: A fresh QA/Security agent must review the exact committed candidate from an isolated worktree without editing implementation.

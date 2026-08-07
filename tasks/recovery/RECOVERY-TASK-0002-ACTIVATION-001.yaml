@@ -1,0 +1,65 @@
+task_id: RECOVERY-TASK-0002-ACTIVATION-001
+title: Activate independently accepted TASK-0002 reference implementation
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0002
+base_commit: 92e6ac9345e7cdd92db21e7fa65c0dcf531fd28c
+dependencies: [RECOVERY-TASK-0002-CLOSURE-002-QA, TASK-0001]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/12_testing/test_strategy.md
+  - docs/REPOSITORY_GOVERNANCE.md
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/reviews/RECOVERY-TASK-0002-CLOSURE-002-QA.md
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+authorized_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0002.json
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0002-ACTIVATION-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0002-ACTIVATION-001.md
+prohibited_files:
+  - services/**
+  - apps/**
+  - contracts/**
+  - specs/**
+  - TASK-0001 records
+  - TASK-0003+
+  - prior TASK-0002 tasks, handoffs, reviews, and implementation evidence
+  - workflows, package files, and unrelated governance records
+acceptance:
+  - Bind TASK-0002 implementation 8e77b1107f94e756f4865b3988aff7cd4a1b268b, final candidate c13b0134091937cfcb3cc4db4304ed7be3c5f740, independent QA 64782c157a50e02146cdad45049b8333033979c6, and exact review digest.
+  - Bind protected PR head 21c2eaa0a1087923d9086ddeb2647d8c57a82fc6, PR 20, exact pre-merge validation/security runs and jobs, retained validation artifact, protected merge 92e6ac9345e7cdd92db21e7fa65c0dcf531fd28c, and exact post-merge runs.
+  - Require exact tree-equivalent QA-review to PR-head topology without treating a rewritten commit identity as the independent review commit.
+  - Mark queue TASK-0002 complete and matrix TASK-0002 ACCEPTED only with an exact active closure record.
+  - Classify capability truthfully as a proven reference implementation; durable persistence, production OIDC, route wiring, deployment, and managed runtime remain unimplemented.
+  - Keep TASK-0003 and later historical tasks unchanged until their dependency-controlled closures are independently accepted.
+security:
+  - Wrong candidate, review, PR head, merge, run, job, artifact, tree, queue, matrix, classification, or limitation fails closed.
+  - Existing TASK-0001 acceptance remains byte-for-byte and semantically protected.
+  - No product, tenant, identity, credential, financial, runtime, or deployment state changes.
+tests:
+  - node --test scripts/historical-closure-validator.test.mjs
+  - Wrong implementation, candidate, QA review/digest, PR head/tree, merge, run/job, artifact, and post-merge evidence
+  - Queue/matrix drift, false production classification, incomplete limitations/evidence, and later-task promotion
+  - Existing TASK-0001 acceptance and incomplete-task disposition protections
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run queue:check
+  - npm run traceability:check
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve accepted implementation and QA evidence; before integration revert only activation commits, and after integration correct forward through a separately reviewed status record.
+independent_review: Fresh QA/Security distinct from implementation, remediation, and activation author reviews the exact activation candidate before push or promotion.

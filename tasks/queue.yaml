@@ -25,7 +25,7 @@ tasks:
       - CI produces an evidence summary and fails closed
   - id: TASK-0002
     title: Implement identity, organization, tenant, and environment foundation
-    status: blocked
+    status: complete
     dependencies: [TASK-0001]
     inputs:
       - AGENTS.md
