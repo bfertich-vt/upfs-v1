@@ -14,10 +14,13 @@ const candidates = [
   "docs/governance/task-closures/evidence/TASK-0001-validation-report.json",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R2.yaml",
+  "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R3.yaml",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R2.md",
+  "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R3.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R2-QA.md",
+  "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R3-QA.md",
 ];
 
 function noTrailingWhitespace(rel, body, errors) {

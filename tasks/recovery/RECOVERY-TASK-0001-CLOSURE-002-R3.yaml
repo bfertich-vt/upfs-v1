@@ -1,0 +1,71 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002-R3
+title: Close the TASK-0001 accepted-verdict grammar bypass
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 38e1a192d4509a30fffe950e82f02f9f05de057c
+preserved_history:
+  - eee8ead8672980a85f4e653e2e7b4af4ad3d49b8
+  - 9203e1bf014e9c121e52a7dfcd3815ba8cc12446
+  - 42186a5aa562ba2af872c625e42210b8b3926808
+  - 1cd6c3da04a1b4f3dbdd9b8a702608cf9377afb1
+  - f87ded3f58d935d6d8f829992772effb98c70e7d
+  - 38e1a192d4509a30fffe950e82f02f9f05de057c
+dependencies:
+  - RECOVERY-TASK-0001-CLOSURE-002-R2
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/QA_SECURITY.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R2.md
+  - docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R2-QA.md
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+authorized_files:
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+  - scripts/closure-format-check.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R3.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R3.md
+prohibited_files:
+  - package.json
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0001.json
+  - docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R2-QA.md
+  - tasks/production/**
+  - specs/**
+  - contracts/**
+  - apps/**
+  - services/**
+acceptance:
+  - >-
+    Exactly one canonical line is accepted, with exact case, spacing,
+    punctuation, and the exact 40-character candidate binding: **Verdict:
+    ACCEPTED** for exact candidate `<sha>`.
+  - Any additional verdict marker, mixed ACCEPTED/REJECTED marker, wrong casing or whitespace, same-line negation, approval or acceptance denial, or ordinary-language rejection of the candidate fails closed.
+  - The complete prior topology, evidence, hosted-ID, timestamp, PR-token, containment, dependency, cross-task, and formatting mutation suite remains enabled and green.
+  - TASK-0002 through TASK-0110 remain blocked; TASK-0112 through TASK-0123 remain untouched; no queue, matrix, or closure record changes.
+security:
+  - Parser-only repository governance correction; no runtime, tenant, authorization, financial, API, contract, migration, or durable-state behavior changes.
+  - Canonical grammar rejects ambiguity and denial while retaining truthful limitations about later commits and hosted checks.
+tests:
+  - node --test scripts/queue-validator.test.mjs scripts/historical-closure-validator.test.mjs scripts/closure-format-check.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run validate
+  - npm run queue:check
+  - npm run traceability:check
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve all rejected history and correct forward; never weaken or heuristically widen the canonical grammar.
+independent_review: Fresh isolated QA/Security review must bind the exact final r3 candidate; author cannot self-accept.

@@ -197,13 +197,28 @@ function strictReviewTopology(root, qa, remediation, label, errors) {
 }
 
 export function acceptedVerdict(body, candidate) {
-  const accepted = [...body.matchAll(/^\*\*Verdict:\s*ACCEPTED\*\*[^\n]*$/gim)];
-  const rejected =
-    /^\*\*(?:Verdict:\s*)?REJECTED\*\*[^\n]*$/im.test(body) ||
-    /^##\s+Disposition\s*\r?\n\s*\*\*REJECTED\*\*/im.test(body);
-  return (
-    accepted.length === 1 && !rejected && accepted[0][0].includes(candidate)
-  );
+  if (typeof body !== "string" || !SHA40.test(candidate || "")) return false;
+  const normalized = body.replace(/\r\n/g, "\n");
+  const canonical = `**Verdict: ACCEPTED** for exact candidate \`${candidate}\`.`;
+  const verdictFields = normalized
+    .split("\n")
+    .filter((line) => /\*\*Verdict\s*:/i.test(line));
+  if (verdictFields.length !== 1 || verdictFields[0] !== canonical)
+    return false;
+
+  // The canonical field above is the only verdict grammar. These patterns
+  // reject prose that would negate that field for this candidate without
+  // rejecting truthful scope limits about later commits or hosted checks.
+  const conflicts = [
+    /\bnot\s+accepted\b/i,
+    /\b(?:approval|acceptance)\s+(?:is\s+)?denied\b/i,
+    /\bthis\s+review\s+rejects?\s+(?:this\s+|the\s+)?candidate\b/i,
+    /\b(?:this|the|exact)\s+candidate\b[^\n.]{0,80}\b(?:rejected|denied)\b/i,
+    /\b(?:rejected|denied)\b[^\n.]{0,80}\b(?:this|the|exact)\s+candidate\b/i,
+    /^\s*\*\*(?:ACCEPTED|REJECTED)\*\*\s*$/im,
+    /^\s*\*\*REJECTED\*\*/im,
+  ];
+  return !conflicts.some((pattern) => pattern.test(normalized));
 }
 
 function criterionEvidenceCell(body, criterion) {

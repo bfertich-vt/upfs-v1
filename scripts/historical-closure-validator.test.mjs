@@ -32,29 +32,31 @@ function commitTree(root, tree, parents, message) {
   ).trim();
 }
 
-test("accepted verdict parser rejects ambiguity and negation", () => {
+test("accepted verdict parser implements one closed canonical grammar", () => {
   const candidate = "a".repeat(40);
-  assert.equal(
-    acceptedVerdict(
-      `**Verdict: ACCEPTED** for exact candidate \`${candidate}\`.`,
-      candidate,
-    ),
-    true,
-  );
-  assert.equal(
-    acceptedVerdict(
-      `**Verdict: ACCEPTED** for exact candidate \`${candidate}\`.\n**REJECTED**`,
-      candidate,
-    ),
-    false,
-  );
-  assert.equal(
-    acceptedVerdict(
-      `**Verdict: ACCEPTED** for exact candidate \`${candidate}\`.\n**Verdict: ACCEPTED** for exact candidate \`${candidate}\`.`,
-      candidate,
-    ),
-    false,
-  );
+  const valid = `**Verdict: ACCEPTED** for exact candidate \`${candidate}\`.`;
+  assert.equal(acceptedVerdict(valid, candidate), true);
+  for (const body of [
+    `${valid}, but this candidate is not accepted.`,
+    `${valid}; approval is denied.`,
+    `${valid}\nThis review rejects the candidate.`,
+    `${valid}\n**Verdict: REJECTED** for exact candidate \`${candidate}\`.`,
+    `${valid}\n${valid}`,
+    `**verdict: ACCEPTED** for exact candidate \`${candidate}\`.`,
+    `**Verdict: accepted** for exact candidate \`${candidate}\`.`,
+    ` **Verdict: ACCEPTED** for exact candidate \`${candidate}\`.`,
+    `**Verdict:  ACCEPTED** for exact candidate \`${candidate}\`.`,
+    `**Verdict: ACCEPTED** for exact candidate \`${candidate}\`. `,
+    `**Verdict: ACCEPTED** for exact candidate \`${"b".repeat(40)}\`.`,
+    `**Verdict: ACCEPTED**\nfor exact candidate \`${candidate}\`.`,
+    `**Verdict: ACCEPTED** for exact candidate \`${candidate}\`.\nPreamble marker: **Verdict: ACCEPTED**`,
+    `${valid}\n**REJECTED**`,
+    `${valid}\nAcceptance is denied.`,
+    `${valid}\nThe exact candidate is rejected.`,
+  ]) {
+    assert.equal(acceptedVerdict(body, candidate), false, body);
+  }
+  assert.equal(acceptedVerdict(valid, "b".repeat(40)), false);
 });
 
 test("TASK-0001 accepted closure passes and all evidence substitutions fail closed", (t) => {
