@@ -1,0 +1,77 @@
+task_id: RECOVERY-TASK-0003-CLOSURE-004
+title: Enforce shared C0/C1 canonical metadata and pre-evidence provider validation
+status: candidate
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+historical_task: TASK-0003
+base_commit: e9c87f046aaa131cdcde86e212226a7055169122
+rejected_candidate: e9c87f046aaa131cdcde86e212226a7055169122
+rejected_review: 1080d94ec9659852a5e63f278a05dd6e9aa84329
+dependencies:
+  - TASK-0001
+  - TASK-0002
+  - RECOVERY-TASK-0003-CLOSURE-001
+  - RECOVERY-TASK-0003-CLOSURE-002
+  - RECOVERY-TASK-0003-CLOSURE-003
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - specs/04_schema/canonical_model.md
+  - specs/04_schema/identity_tenant_model.md
+  - specs/05_apis/api_standards.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - contracts/schemas/transaction.schema.json
+  - contracts/schemas/canonical-transaction.schema.json
+  - contracts/schemas/provider-transaction.schema.json
+  - contracts/schemas/identity-foundation.schema.json
+  - tasks/recovery/RECOVERY-TASK-0003-CLOSURE-003.yaml
+  - docs/handoffs/RECOVERY-TASK-0003-CLOSURE-003.md
+  - docs/reviews/RECOVERY-TASK-0003-CLOSURE-003-QA.md
+authorized_files:
+  - services/transaction-registry.mjs
+  - services/transaction-registry.test.mjs
+  - services/connector-ingestion.mjs
+  - services/connector-ingestion.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0003-CLOSURE-004.yaml
+  - docs/handoffs/RECOVERY-TASK-0003-CLOSURE-004.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - contracts/**
+  - artifacts/**
+  - scripts/**
+  - .github/**
+  - package files
+  - specs/**
+  - TASK-0004+
+  - prior task, handoff, and review records
+  - unrelated files
+acceptance:
+  - One shared canonical metadata validator rejects C0 and C1 controls in actor, observations, evidence, provider/category, taxonomy, and provenance fields.
+  - Representative C1 boundaries U+0080, U+0085, and U+009F plus mixed C0/C1 values fail closed before scope or state mutation.
+  - Valid Unicode outside the C0/C1 ranges remains accepted within contract length bounds.
+  - Connector provider is nonempty, canonical, control-free, and at most 100 characters before evidence, nonce, idempotency, audit, or canonical mutation.
+  - Provider values of lengths 1 and 100 pass; values of length 101 fail; corrected same-key retry remains possible.
+  - Rejection history remains unchanged and the capability remains reference-only.
+security:
+  - Invalid metadata is never echoed in response or audit evidence.
+  - Tenant and environment scope remains derived from verified membership.
+  - Invalid actor and provider inputs cannot consume replay or idempotency state or create evidence/audit state.
+tests:
+  - node --test services/transaction-registry.test.mjs services/connector-ingestion.test.mjs
+  - npm test
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run queue:check
+  - npm run traceability:check
+  - npm run lint
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve all rejection records; use a reviewed revert before integration or a separate corrective-forward commit after integration.
+independent_review: A fresh QA/Security agent must review the exact committed candidate from an isolated worktree without editing implementation.
