@@ -1,0 +1,39 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002-R17
+title: Require filesystem-aware Git identity and object parity
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: aac12f6d5fb6fc89cc881bdb304c457550b6146a
+dependencies: [RECOVERY-TASK-0001-CLOSURE-002-R16]
+inputs:
+  [
+    AGENTS.md,
+    agents/BACKEND.md,
+    agents/QA_SECURITY.md,
+    docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R16-QA.md,
+  ]
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0001-stage-a-state.json
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R17.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R17.md
+acceptance:
+  - Sanitized Git object-store plumbing agrees with the directly derived common object store.
+  - Metadata uses exactly one nonempty LF-safe line without blanks, CR, NUL, extra lines, or surrounding whitespace.
+  - Existing path comparisons use canonical realpath and stable filesystem identity without unconditional case folding.
+  - Legitimate same-object aliases remain supported only when the filesystem proves identity.
+  - TASK-0001 remains blocked without attestation.
+security:
+  - Case-distinct or redirected filesystem objects cannot substitute Git authority metadata.
+tests:
+  - node --test scripts/closure-format-check.test.mjs scripts/historical-closure-validator.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve history and correct forward; never validate ambiguous metadata identity.
+independent_review: Fresh QA reviews exact R17 handoff candidate; only if accepted may it attest exact candidate.

@@ -148,7 +148,7 @@ test("R5 authorization includes every modified validator test surface", () => {
   assert.match(task, /  - scripts\/historical-closure-validator\.test\.mjs/);
 });
 
-test("TASK-0001 R16 requires clean committed HEAD authority across closure-authorizing scope", async () => {
+test("TASK-0001 R17 requires clean committed HEAD authority across closure-authorizing scope", async () => {
   const root = fixture();
   const matrix = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
   const original = fs.readFileSync(matrix, "utf8");
@@ -190,10 +190,10 @@ test("TASK-0001 R16 requires clean committed HEAD authority across closure-autho
       '  "task_status": "blocked",',
       '  "extra": true,\n  "task_status": "blocked",',
     ),
-    valid.replace('-R15"', '-R13"'),
+    valid.replace('-R16"', '-R13"'),
     valid.replace('"REJECTED"', '"ACCEPTED"'),
     valid.replace('"absent"', '"issued"'),
-    valid.replace('"R16_HANDOFF_CANDIDATE"', '"R11_HANDOFF_CANDIDATE"'),
+    valid.replace('"R17_HANDOFF_CANDIDATE"', '"R11_HANDOFF_CANDIDATE"'),
     valid.replace('"STAGE_A_REVIEW_PENDING"', '"ACTIVATION_PENDING"'),
     valid.replace(
       '"FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED"',
@@ -383,7 +383,7 @@ test("R15 ignores inherited Git redirects and uses the canonical index", async (
   );
 });
 
-test("R16 accepts legitimate linked worktrees and rejects an index hardlink alias", async () => {
+test("R17 accepts legitimate linked worktrees and rejects an index hardlink alias", async () => {
   const { source, linked } = linkedFixture();
   try {
     assert.deepEqual((await validateClosureFormatting(linked)).errors, []);
@@ -406,7 +406,7 @@ test("R16 accepts legitimate linked worktrees and rejects an index hardlink alia
   }
 });
 
-test("R16 rejects forged linked-worktree .git and commondir metadata", async () => {
+test("R17 rejects forged linked-worktree .git and commondir metadata", async () => {
   const { source, linked } = linkedFixture();
   const dotGit = path.join(linked, ".git");
   const savedDotGit = path.join(linked, ".git.saved");
@@ -417,15 +417,45 @@ test("R16 rejects forged linked-worktree .git and commondir metadata", async () 
   );
   const commonFile = path.join(gitDir, "commondir");
   const originalCommon = fs.readFileSync(commonFile);
+  const registration = path.join(gitDir, "gitdir");
+  const originalRegistration = fs.readFileSync(registration);
   try {
     fs.renameSync(dotGit, savedDotGit);
     fs.writeFileSync(dotGit, `gitdir: ${path.join(source, ".git")}\n`);
     assert.notDeepEqual((await validateClosureFormatting(linked)).errors, []);
     fs.rmSync(dotGit);
     fs.renameSync(savedDotGit, dotGit);
-    writeMetadata(commonFile, `${path.join(source, "missing-common")}\n`);
-    assert.notDeepEqual((await validateClosureFormatting(linked)).errors, []);
+    for (const malformed of [
+      `${path.join(source, "missing-common")}\n`,
+      `\n${originalCommon}`,
+      `${originalCommon}\n`,
+      ` ${originalCommon.toString("utf8").trim()}\n`,
+      `${originalCommon.toString("utf8").trim()} \n`,
+      `${originalCommon.toString("utf8").trim()}\r\n`,
+      `${originalCommon.toString("utf8").trim()}\0\n`,
+      `${originalCommon.toString("utf8").trim()}\nextra\n`,
+    ]) {
+      writeMetadata(commonFile, malformed);
+      assert.notDeepEqual((await validateClosureFormatting(linked)).errors, []);
+    }
     writeMetadata(commonFile, originalCommon);
+    const impostor = path.join(linked, ".git-impostor");
+    fs.copyFileSync(dotGit, impostor);
+    writeMetadata(registration, `${impostor}\n`);
+    assert.notDeepEqual((await validateClosureFormatting(linked)).errors, []);
+    writeMetadata(registration, originalRegistration);
+    fs.rmSync(impostor);
+    if (process.platform === "win32") {
+      writeMetadata(registration, `${dotGit.toUpperCase()}\n`);
+      assert.deepEqual((await validateClosureFormatting(linked)).errors, []);
+      writeMetadata(registration, originalRegistration);
+    } else {
+      const caseDistinct = path.join(linked, ".GIT");
+      fs.copyFileSync(dotGit, caseDistinct);
+      writeMetadata(registration, `${caseDistinct}\n`);
+      assert.notDeepEqual((await validateClosureFormatting(linked)).errors, []);
+      writeMetadata(registration, originalRegistration);
+    }
     if (process.platform !== "win32") {
       const index = path.join(gitDir, "index");
       const external = path.join(source, "external.index");
@@ -442,8 +472,24 @@ test("R16 rejects forged linked-worktree .git and commondir metadata", async () 
       fs.renameSync(savedDotGit, dotGit);
     }
     if (fs.existsSync(gitDir)) writeMetadata(commonFile, originalCommon);
+    if (fs.existsSync(gitDir))
+      writeMetadata(registration, originalRegistration);
     removeLinkedFixture(source, linked);
   }
+});
+
+test("R17 object plumbing is canonical despite inherited redirect", async () => {
+  const root = fixture();
+  const alternate = path.join(root, "alternate-objects");
+  fs.mkdirSync(alternate);
+  const result = await withGitEnvironment(
+    {
+      GIT_OBJECT_DIRECTORY: alternate,
+      GIT_ALTERNATE_OBJECT_DIRECTORIES: alternate,
+    },
+    () => validateClosureFormatting(root),
+  );
+  assert.deepEqual(result.errors, []);
 });
 
 test("R16 Git execution failures and malformed output fail closed", async () => {

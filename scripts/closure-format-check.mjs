@@ -29,6 +29,7 @@ const candidates = [
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R14.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R15.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R16.yaml",
+  "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R17.yaml",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R2.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R3.md",
@@ -43,6 +44,7 @@ const candidates = [
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R14.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R15.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R16.md",
+  "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R17.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R2-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R3-QA.md",
@@ -59,12 +61,12 @@ export function canonicalStageAState(body) {
   const value = {
     version: 1,
     task_id: "TASK-0001",
-    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R16",
-    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R15",
+    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R17",
+    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R16",
     predecessor_disposition: "REJECTED",
     task_status: "blocked",
     attestation_status: "absent",
-    review_target: "R16_HANDOFF_CANDIDATE",
+    review_target: "R17_HANDOFF_CANDIDATE",
     activation_phase: "STAGE_A_REVIEW_PENDING",
     next_action: "FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED",
   };
@@ -75,16 +77,29 @@ export function canonicalStageAState(body) {
 }
 
 export function canonicalTaskOneRow() {
-  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R16.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R16 canonical Git metadata identity, tests, task, and handoff only. | None for this corrective control. | Canonical row, complete ADS inventory, ASCII paths, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R16 handoff. |";
+  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R17.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R17 filesystem-aware Git identity, tests, task, and handoff only. | None for this corrective control. | Canonical row, complete ADS inventory, ASCII paths, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R17 handoff. |";
 }
 
-function samePath(left, right) {
-  const normalize = (value) =>
-    path
-      .normalize(value)
-      .replace(/[\\/]$/, "")
-      .toLowerCase();
-  return normalize(left) === normalize(right);
+function pathIdentity(value, expectedType) {
+  const absolute = path.resolve(value);
+  const real = fs.realpathSync.native(absolute);
+  const stat = fs.statSync(real, { bigint: true });
+  if (expectedType === "file" && !stat.isFile())
+    throw new Error(`${absolute} is not a file`);
+  if (expectedType === "directory" && !stat.isDirectory())
+    throw new Error(`${absolute} is not a directory`);
+  return { real, dev: stat.dev, ino: stat.ino };
+}
+
+function samePath(left, right, expectedType) {
+  const leftIdentity = pathIdentity(left, expectedType);
+  const rightIdentity = pathIdentity(right, expectedType);
+  if (leftIdentity.real === rightIdentity.real) return true;
+  return (
+    leftIdentity.ino !== 0n &&
+    leftIdentity.dev === rightIdentity.dev &&
+    leftIdentity.ino === rightIdentity.ino
+  );
 }
 
 function containedBy(parent, child) {
@@ -101,7 +116,7 @@ function directRegularFile(file, label) {
   const stat = fs.lstatSync(file);
   if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1)
     throw new Error(`${label} must be one direct regular file`);
-  if (!samePath(fs.realpathSync.native(file), path.resolve(file)))
+  if (!samePath(fs.realpathSync.native(file), path.resolve(file), "file"))
     throw new Error(`${label} must not use filesystem indirection`);
   return stat;
 }
@@ -110,7 +125,13 @@ function directDirectory(directory, label) {
   const stat = fs.lstatSync(directory);
   if (!stat.isDirectory() || stat.isSymbolicLink())
     throw new Error(`${label} must be one direct directory`);
-  if (!samePath(fs.realpathSync.native(directory), path.resolve(directory)))
+  if (
+    !samePath(
+      fs.realpathSync.native(directory),
+      path.resolve(directory),
+      "directory",
+    )
+  )
     throw new Error(`${label} must not use filesystem indirection`);
   return stat;
 }
@@ -118,13 +139,10 @@ function directDirectory(directory, label) {
 function oneMetadataLine(file, label) {
   directRegularFile(file, label);
   const body = fs.readFileSync(file, "utf8");
-  if (
-    !body ||
-    body.includes("\0") ||
-    body.split(/\r?\n/).filter(Boolean).length !== 1
-  )
+  const match = /^([^\s\0](?:[^\r\n\0]*[^\s\0])?)\n?$/.exec(body);
+  if (!match)
     throw new Error(`${label} must contain exactly one metadata line`);
-  return body.trim();
+  return match[1];
 }
 
 function canonicalGitContext(root) {
@@ -140,8 +158,8 @@ function canonicalGitContext(root) {
   } else if (stat.isFile()) {
     linked = true;
     directRegularFile(dotGit, "canonical .git file");
-    const match = /^gitdir: ([^\r\n]+)\r?\n?$/.exec(
-      fs.readFileSync(dotGit, "utf8"),
+    const match = /^gitdir: (.+)$/.exec(
+      oneMetadataLine(dotGit, "canonical .git file"),
     );
     if (!match) throw new Error("canonical .git file is malformed");
     const declared = path.resolve(worktree, match[1]);
@@ -158,14 +176,14 @@ function canonicalGitContext(root) {
     const registrationRoot = path.join(commonDir, "worktrees");
     if (
       !containedBy(registrationRoot, gitDir) ||
-      !samePath(path.dirname(gitDir), registrationRoot)
+      !samePath(path.dirname(gitDir), registrationRoot, "directory")
     )
       throw new Error("per-worktree Git directory is not directly registered");
     const registeredDotGit = path.resolve(
       gitDir,
       oneMetadataLine(path.join(gitDir, "gitdir"), "worktree registration"),
     );
-    if (!samePath(registeredDotGit, dotGit))
+    if (!samePath(registeredDotGit, dotGit, "file"))
       throw new Error(
         "worktree registration disagrees with canonical .git file",
       );
@@ -177,7 +195,9 @@ function canonicalGitContext(root) {
   const index = path.join(gitDir, "index");
   const gitDirStat = directDirectory(gitDir, "per-worktree Git directory");
   const indexStat = directRegularFile(index, "canonical index");
-  if (!samePath(path.dirname(fs.realpathSync.native(index)), gitDir))
+  if (
+    !samePath(path.dirname(fs.realpathSync.native(index)), gitDir, "directory")
+  )
     throw new Error(
       "canonical index is not contained in per-worktree Git directory",
     );
@@ -189,22 +209,19 @@ function canonicalGitContext(root) {
   }
   const objects = path.join(commonDir, "objects");
   directDirectory(objects, "canonical object directory");
-  return { worktree, gitDir, commonDir, index };
+  return { worktree, gitDir, commonDir, index, objects };
 }
 
 function oneGitPath(context, args, errors, options, label) {
   const result = checkedGit(context, args, errors, options);
   if (!result.ok) return "";
   const body = result.stdout.toString("utf8");
-  if (
-    !body ||
-    body.includes("\0") ||
-    body.split(/\r?\n/).filter(Boolean).length !== 1
-  ) {
+  const match = /^([^\s\0](?:[^\r\n\0]*[^\s\0])?)\n?$/.exec(body);
+  if (!match) {
     errors.push(`Canonical Git ${label} output was malformed.`);
     return "";
   }
-  return path.resolve(context.worktree, body.trim());
+  return path.resolve(context.worktree, match[1]);
 }
 
 function verifyCanonicalGitIdentity(context, errors, options) {
@@ -228,11 +245,27 @@ function verifyCanonicalGitIdentity(context, errors, options) {
       ["rev-parse", "--path-format=absolute", "--git-path", "index"],
       context.index,
       "index",
+      "file",
+    ],
+    [
+      ["rev-parse", "--path-format=absolute", "--git-path", "objects"],
+      context.objects,
+      "object directory",
+      "directory",
     ],
   ];
-  for (const [args, expected, label] of checks) {
+  for (const [args, expected, label, explicitType] of checks) {
     const actual = oneGitPath(context, args, errors, options, label);
-    if (!actual || !samePath(actual, expected))
+    const expectedType =
+      explicitType ||
+      (label === "worktree" || label.includes("directory")
+        ? "directory"
+        : "file");
+    let agrees = false;
+    try {
+      agrees = Boolean(actual) && samePath(actual, expected, expectedType);
+    } catch {}
+    if (!agrees)
       errors.push(
         `Canonical Git ${label} disagrees with direct metadata resolution.`,
       );
@@ -602,7 +635,7 @@ export async function validateClosureFormatting(root, options = {}) {
     );
   if (!canonicalStageAState(indexed.toString("utf8")))
     errors.push(
-      `${stateRel} must be the one exact canonical R16 Stage A state record.`,
+      `${stateRel} must be the one exact canonical R17 Stage A state record.`,
     );
   try {
     validateAdsScope(

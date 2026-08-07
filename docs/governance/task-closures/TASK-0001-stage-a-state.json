@@ -1,12 +1,12 @@
 {
   "version": 1,
   "task_id": "TASK-0001",
-  "active_recovery_task": "RECOVERY-TASK-0001-CLOSURE-002-R16",
-  "predecessor_task": "RECOVERY-TASK-0001-CLOSURE-002-R15",
+  "active_recovery_task": "RECOVERY-TASK-0001-CLOSURE-002-R17",
+  "predecessor_task": "RECOVERY-TASK-0001-CLOSURE-002-R16",
   "predecessor_disposition": "REJECTED",
   "task_status": "blocked",
   "attestation_status": "absent",
-  "review_target": "R16_HANDOFF_CANDIDATE",
+  "review_target": "R17_HANDOFF_CANDIDATE",
   "activation_phase": "STAGE_A_REVIEW_PENDING",
   "next_action": "FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED"
 }
