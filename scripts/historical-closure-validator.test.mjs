@@ -199,6 +199,148 @@ test("audited disposition source is digest-bound, complete, and unique", () => {
   }
 });
 
+test("TASK-0002 protected-review activation is exact and fails closed", (t) => {
+  const source = process.cwd();
+  const root = fs.mkdtempSync(
+    path.join(os.tmpdir(), "upfs-task-0002-activation-"),
+  );
+  execFileSync("git", ["clone", "--shared", source, root], { stdio: "ignore" });
+  execFileSync("git", ["checkout", "--detach", "HEAD"], {
+    cwd: root,
+    stdio: "ignore",
+  });
+  for (const relative of [
+    "tasks/queue.yaml",
+    "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md",
+    "docs/governance/task-closures/TASK-0002.json",
+  ]) {
+    fs.mkdirSync(path.dirname(path.join(root, relative)), { recursive: true });
+    fs.copyFileSync(path.join(source, relative), path.join(root, relative));
+  }
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  const queuePath = path.join(root, "tasks/queue.yaml");
+  const matrixPath = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
+  const closurePath = path.join(
+    root,
+    "docs/governance/task-closures/TASK-0002.json",
+  );
+  const queue = fs.readFileSync(queuePath, "utf8");
+  const matrix = fs.readFileSync(matrixPath, "utf8");
+  const closure = JSON.parse(fs.readFileSync(closurePath, "utf8"));
+  assert.doesNotThrow(() => validateQueueDocument(queue, root));
+
+  const mutate = (change, pattern) => {
+    const candidate = structuredClone(closure);
+    change(candidate);
+    fs.writeFileSync(closurePath, `${JSON.stringify(candidate, null, 2)}\n`);
+    expectInvalid(root, queue, pattern);
+    fs.writeFileSync(closurePath, `${JSON.stringify(closure, null, 2)}\n`);
+  };
+
+  for (const [change, pattern] of [
+    [
+      (record) => (record.remediation.implementation_commit = "a".repeat(40)),
+      /exact TASK-0002 protected evidence/,
+    ],
+    [
+      (record) => (record.remediation.candidate_commit = "a".repeat(40)),
+      /exact TASK-0002 protected evidence/,
+    ],
+    [
+      (record) =>
+        (record.independent_qa.review_commit = record.protected_review.pr_head),
+      /exact TASK-0002 protected evidence/,
+    ],
+    [
+      (record) => (record.independent_qa.review_sha256 = "a".repeat(64)),
+      /exact TASK-0002 protected evidence/,
+    ],
+    [
+      (record) => (record.protected_review.tree = "a".repeat(40)),
+      /exact TASK-0002 protected evidence/,
+    ],
+    [
+      (record) =>
+        (record.protected_review.pr_head =
+          record.protected_review.review_commit),
+      /exact TASK-0002 protected evidence/,
+    ],
+    [
+      (record) => (record.hosted.checks[0].run_id = 1),
+      /exact TASK-0002 protected evidence/,
+    ],
+    [
+      (record) =>
+        (record.hosted.checks[0].head_sha = record.protected_merge.commit),
+      /exact TASK-0002 protected evidence/,
+    ],
+    [
+      (record) =>
+        (record.hosted.post_merge_checks[0].run_id =
+          record.hosted.post_merge_checks[1].run_id),
+      /exact TASK-0002 protected evidence/,
+    ],
+    [
+      (record) =>
+        (record.hosted.post_merge_checks[0].head_sha = record.hosted.head_sha),
+      /exact TASK-0002 protected evidence/,
+    ],
+    [
+      (record) => (record.hosted.validation_artifact.artifact_id = 0),
+      /exact TASK-0002 protected evidence/,
+    ],
+    [
+      (record) =>
+        (record.hosted.validation_artifact.archive_digest = "sha256:forged"),
+      /exact TASK-0002 protected evidence/,
+    ],
+    [
+      (record) => (record.hosted.validation_artifact.content_sha256 = "forged"),
+      /exact TASK-0002 protected evidence/,
+    ],
+    [
+      (record) =>
+        (record.protected_merge.commit = record.remediation.candidate_commit),
+      /exact TASK-0002 protected evidence/,
+    ],
+    [
+      (record) => record.limitations.splice(0),
+      /limitations must disclose|unimplemented durable/,
+    ],
+  ])
+    mutate(change, pattern);
+
+  fs.writeFileSync(
+    matrixPath,
+    matrix.replace(
+      "| Proven reference implementation | ACCEPTED |",
+      "| Proven production implementation | ACCEPTED |",
+    ),
+  );
+  expectInvalid(
+    root,
+    queue,
+    /classification must remain Proven reference implementation/,
+  );
+  fs.writeFileSync(matrixPath, matrix);
+
+  const blocked = queue.replace(
+    /(id: TASK-0002[\s\S]*?status:) complete/,
+    "$1 blocked",
+  );
+  expectInvalid(
+    root,
+    blocked,
+    /TASK-0002 has a closure record but is not complete/,
+  );
+  const later = queue.replace(
+    /(id: TASK-0003[\s\S]*?status:) blocked/,
+    "$1 complete",
+  );
+  expectInvalid(root, later, /TASK-0003\.json cannot be resolved/);
+});
+
 test("TASK-0001 accepted closure passes and all evidence substitutions fail closed", (t) => {
   const source = process.cwd();
   const root = fs.mkdtempSync(
@@ -269,9 +411,25 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
     ),
     path.join(root, closureRel),
   );
-  fs.copyFileSync(
-    path.join(source, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md"),
+  const task1FixtureMatrix = fs
+    .readFileSync(
+      path.join(source, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md"),
+      "utf8",
+    )
+    .split(/\r?\n/)
+    .map((line) => {
+      if (!line.startsWith("| TASK-0002 |")) return line;
+      const fields = line
+        .slice(1, -1)
+        .split("|")
+        .map((value) => value.trim());
+      fields[9] = "REMEDIATION_REQUIRED";
+      return `| ${fields.join(" | ")} |`;
+    })
+    .join("\n");
+  fs.writeFileSync(
     path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md"),
+    task1FixtureMatrix,
   );
 
   const attestationRel =

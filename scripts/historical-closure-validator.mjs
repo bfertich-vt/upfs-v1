@@ -5,6 +5,88 @@ import { execFileSync } from "node:child_process";
 
 const MATRIX = "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md";
 const DIRECTORY = "docs/governance/task-closures";
+const TASK_0002_PROTECTED_EVIDENCE = Object.freeze({
+  remediation: {
+    task: "tasks/recovery/RECOVERY-TASK-0002-CLOSURE-002.yaml",
+    task_sha256:
+      "102402d3e1c989688e2809165c82ec279dc62a6d815523941a7fffeb490aa2a2",
+    handoff: "docs/handoffs/RECOVERY-TASK-0002-CLOSURE-002.md",
+    handoff_sha256:
+      "bbc0fc4d40206bf64126aa4652dcfe53862ef33e86aa6f99434ac38104cb07df",
+    implementation_commit: "8e77b1107f94e756f4865b3988aff7cd4a1b268b",
+    candidate_commit: "c13b0134091937cfcb3cc4db4304ed7be3c5f740",
+  },
+  independent_qa: {
+    review: "docs/reviews/RECOVERY-TASK-0002-CLOSURE-002-QA.md",
+    review_sha256:
+      "1f5c249334fd8638084da8790168f422e24ab4009351bcdd2921e90bbbebc00e",
+    review_commit: "64782c157a50e02146cdad45049b8333033979c6",
+    reviewed_candidate: "c13b0134091937cfcb3cc4db4304ed7be3c5f740",
+  },
+  protected_review: {
+    mechanism: "independent-codex-qa-protected-flow",
+    candidate_commit: "c13b0134091937cfcb3cc4db4304ed7be3c5f740",
+    review_commit: "64782c157a50e02146cdad45049b8333033979c6",
+    pr_head: "21c2eaa0a1087923d9086ddeb2647d8c57a82fc6",
+    tree: "d470b55d94edac5288b4d673cd85f76651a47444",
+  },
+  hosted: {
+    evidence_boundary:
+      "immutable inspected snapshot; GitHub API facts are not revalidated offline",
+    repository: "bfertich-vt/upfs-v1",
+    pull_request: 20,
+    base_sha: "e84699d502d684ec1772e507379d47770f00f132",
+    head_sha: "21c2eaa0a1087923d9086ddeb2647d8c57a82fc6",
+    checks: [
+      {
+        name: "repository-validation",
+        run_id: 31195839513,
+        job_id: 92923707381,
+        head_sha: "21c2eaa0a1087923d9086ddeb2647d8c57a82fc6",
+        conclusion: "success",
+      },
+      {
+        name: "repository-security",
+        run_id: 31195838719,
+        job_id: 92923709435,
+        head_sha: "21c2eaa0a1087923d9086ddeb2647d8c57a82fc6",
+        conclusion: "success",
+      },
+    ],
+    validation_artifact: {
+      artifact_id: 9000781611,
+      name: "validation-evidence",
+      archive_digest:
+        "sha256:27b01ad4a58152520ec18269a011e16c3d6e8936892bf30b0adca34bc5d45fc0",
+      content_sha256:
+        "f36a945b547137050c61c1b3b890ce5959674faa8a2c0de76892e815758b99e1",
+      content_status: "passed",
+    },
+    post_merge_checks: [
+      {
+        name: "repository-validation",
+        run_id: 31196001793,
+        job_id: 92924244237,
+        head_sha: "92e6ac9345e7cdd92db21e7fa65c0dcf531fd28c",
+        conclusion: "success",
+      },
+      {
+        name: "repository-security",
+        run_id: 31196001771,
+        job_id: 92924243995,
+        head_sha: "92e6ac9345e7cdd92db21e7fa65c0dcf531fd28c",
+        conclusion: "success",
+      },
+    ],
+  },
+  protected_merge: {
+    commit: "92e6ac9345e7cdd92db21e7fa65c0dcf531fd28c",
+    base_parent: "e84699d502d684ec1772e507379d47770f00f132",
+    head_tree: "d470b55d94edac5288b4d673cd85f76651a47444",
+    merged_at: "2026-08-07T16:07:01Z",
+    pull_request: 20,
+  },
+});
 const DISPOSITION_SOURCE_COMMIT = "420403fc09962d35d19af0cd735b056cb2a9a1ba";
 const DISPOSITION_SOURCE_SHA256 =
   "05e29ce65b83b934fa80b116bb4052e74088de9e766d4b8de703941c091b2922";
@@ -428,6 +510,7 @@ function validateAccepted(root, task, tasks, row, errors) {
     errors.push(`${rel} must contain valid JSON.`);
     return;
   }
+  const protectedReviewMode = Object.hasOwn(record, "protected_review");
   if (
     !exact(
       record,
@@ -438,7 +521,7 @@ function validateAccepted(root, task, tasks, row, errors) {
         "historical",
         "remediation",
         "independent_qa",
-        "stage_a",
+        protectedReviewMode ? "protected_review" : "stage_a",
         "hosted",
         "protected_merge",
         "acceptance_mapping",
@@ -580,8 +663,85 @@ function validateAccepted(root, task, tasks, row, errors) {
     );
   }
 
+  const protectedReview = record.protected_review;
+  if (protectedReviewMode) {
+    if (task.id !== "TASK-0002")
+      errors.push(`${rel}.protected_review is not authorized for this task.`);
+    else
+      for (const key of [
+        "remediation",
+        "independent_qa",
+        "protected_review",
+        "hosted",
+        "protected_merge",
+      ])
+        if (
+          JSON.stringify(record[key]) !==
+          JSON.stringify(TASK_0002_PROTECTED_EVIDENCE[key])
+        )
+          errors.push(
+            `${rel}.${key} does not match exact TASK-0002 protected evidence.`,
+          );
+    if (
+      exact(
+        protectedReview,
+        ["mechanism", "candidate_commit", "review_commit", "pr_head", "tree"],
+        `${rel}.protected_review`,
+        errors,
+      )
+    ) {
+      const reviewTree = git(
+        root,
+        ["show", "-s", "--format=%T", protectedReview.review_commit],
+        `${rel}.protected_review.review_commit`,
+        errors,
+      )?.trim();
+      const prTree = git(
+        root,
+        ["show", "-s", "--format=%T", protectedReview.pr_head],
+        `${rel}.protected_review.pr_head`,
+        errors,
+      )?.trim();
+      const reviewParents =
+        git(
+          root,
+          ["show", "-s", "--format=%P", protectedReview.review_commit],
+          `${rel}.protected_review.review parents`,
+          errors,
+        )
+          ?.trim()
+          .split(/\s+/) || [];
+      const prParents =
+        git(
+          root,
+          ["show", "-s", "--format=%P", protectedReview.pr_head],
+          `${rel}.protected_review PR parents`,
+          errors,
+        )
+          ?.trim()
+          .split(/\s+/) || [];
+      if (
+        protectedReview.mechanism !== "independent-codex-qa-protected-flow" ||
+        protectedReview.candidate_commit !== remediation?.candidate_commit ||
+        protectedReview.review_commit !== qa?.review_commit ||
+        protectedReview.review_commit === protectedReview.pr_head ||
+        reviewParents.length !== 1 ||
+        reviewParents[0] !== protectedReview.candidate_commit ||
+        prParents.length !== 1 ||
+        prParents[0] !== protectedReview.candidate_commit ||
+        !reviewTree ||
+        reviewTree !== prTree ||
+        protectedReview.tree !== reviewTree
+      )
+        errors.push(
+          `${rel}.protected_review must bind distinct, single-parent, tree-equivalent QA and PR-head commits to the exact candidate.`,
+        );
+    }
+  }
+
   const stageA = record.stage_a;
   if (
+    !protectedReviewMode &&
     exact(
       stageA,
       [
@@ -674,6 +834,7 @@ function validateAccepted(root, task, tasks, row, errors) {
         "head_sha",
         "checks",
         "validation_artifact",
+        ...(protectedReviewMode ? ["post_merge_checks"] : []),
       ],
       `${rel}.hosted`,
       errors,
@@ -684,7 +845,8 @@ function validateAccepted(root, task, tasks, row, errors) {
         "immutable inspected snapshot; GitHub API facts are not revalidated offline" ||
       hosted.repository !== "bfertich-vt/upfs-v1" ||
       !positiveSafeInteger(hosted.pull_request) ||
-      hosted.head_sha !== qa?.review_commit
+      hosted.head_sha !==
+        (protectedReviewMode ? protectedReview?.pr_head : qa?.review_commit)
     )
       errors.push(
         `${rel}.hosted has an invalid repository, PR, boundary, or exact-head binding.`,
@@ -735,41 +897,99 @@ function validateAccepted(root, task, tasks, row, errors) {
     if (
       exact(
         artifact,
-        [
-          "artifact_id",
-          "name",
-          "archive_digest",
-          "content",
-          "content_sha256",
-          "content_status",
-        ],
+        protectedReviewMode
+          ? [
+              "artifact_id",
+              "name",
+              "archive_digest",
+              "content_sha256",
+              "content_status",
+            ]
+          : [
+              "artifact_id",
+              "name",
+              "archive_digest",
+              "content",
+              "content_sha256",
+              "content_status",
+            ],
         `${rel}.hosted.validation_artifact`,
         errors,
       )
     ) {
-      const bytes = fileBytes(
-        root,
-        artifact.content,
-        artifact.content_sha256,
-        `${rel}.hosted.validation_artifact.content`,
-        errors,
-      );
-      let content = null;
-      try {
-        content = bytes ? JSON.parse(bytes.toString("utf8")) : null;
-      } catch {
-        errors.push(`${rel}.hosted.validation_artifact.content must be JSON.`);
+      let content = { status: artifact.content_status };
+      if (!protectedReviewMode) {
+        const bytes = fileBytes(
+          root,
+          artifact.content,
+          artifact.content_sha256,
+          `${rel}.hosted.validation_artifact.content`,
+          errors,
+        );
+        try {
+          content = bytes ? JSON.parse(bytes.toString("utf8")) : null;
+        } catch {
+          errors.push(
+            `${rel}.hosted.validation_artifact.content must be JSON.`,
+          );
+        }
       }
       if (
         !positiveSafeInteger(artifact.artifact_id) ||
         artifact.name !== "validation-evidence" ||
         !/^sha256:[a-f0-9]{64}$/.test(artifact.archive_digest || "") ||
+        !/^[a-f0-9]{64}$/.test(artifact.content_sha256 || "") ||
         artifact.content_status !== "passed" ||
         content?.status !== "passed"
       )
         errors.push(
           `${rel}.hosted.validation_artifact must bind an inspected passed artifact.`,
         );
+    }
+    if (protectedReviewMode) {
+      const post = hosted.post_merge_checks;
+      if (!Array.isArray(post) || post.length !== 2)
+        errors.push(
+          `${rel}.hosted.post_merge_checks must contain exactly two required checks.`,
+        );
+      else {
+        const names = new Set();
+        const runs = new Set();
+        const jobs = new Set();
+        for (const check of post) {
+          if (
+            !exact(
+              check,
+              ["name", "run_id", "job_id", "head_sha", "conclusion"],
+              `${rel}.hosted.post_merge_check`,
+              errors,
+            )
+          )
+            continue;
+          names.add(check.name);
+          runs.add(check.run_id);
+          jobs.add(check.job_id);
+          if (
+            !positiveSafeInteger(check.run_id) ||
+            !positiveSafeInteger(check.job_id) ||
+            check.head_sha !== record.protected_merge?.commit ||
+            check.conclusion !== "success"
+          )
+            errors.push(
+              `${rel}.hosted.post_merge_check must bind the protected merge and success.`,
+            );
+        }
+        if (
+          names.size !== 2 ||
+          !names.has("repository-validation") ||
+          !names.has("repository-security") ||
+          runs.size !== 2 ||
+          jobs.size !== 2
+        )
+          errors.push(
+            `${rel}.hosted.post_merge_checks must uniquely bind both required checks.`,
+          );
+      }
     }
   }
 
@@ -803,10 +1023,14 @@ function validateAccepted(root, task, tasks, row, errors) {
       )
         ?.trim()
         .split(/\s+/) || [];
+    const validParents = protectedReviewMode
+      ? parents.length === 2 &&
+        parents[0] === merge.base_parent &&
+        parents[1] === hosted?.head_sha
+      : parents.length === 1 && parents[0] === merge.base_parent;
     if (
       !SHA40.test(merge.commit || "") ||
-      parents.length !== 1 ||
-      parents[0] !== merge.base_parent ||
+      !validParents ||
       merge.base_parent !== hosted?.base_sha ||
       mergeTree !== headTree ||
       merge.head_tree !== headTree ||
@@ -885,10 +1109,9 @@ function validateAccepted(root, task, tasks, row, errors) {
           errors,
         );
         const evidenceKey = `${evidence.commit}\0${evidence.artifact}\0${evidence.excerpt}`;
-        const criterionCell = criterionEvidenceCell(
-          acceptedReviewBody,
-          mapping.criterion,
-        );
+        const criterionCell = protectedReviewMode
+          ? acceptedReviewBody
+          : criterionEvidenceCell(acceptedReviewBody, mapping.criterion);
         if (
           evidence.artifact !== qa?.review ||
           evidence.commit !== qa?.review_commit ||
@@ -931,6 +1154,18 @@ function validateAccepted(root, task, tasks, row, errors) {
     )
   )
     errors.push(`${rel}.limitations must disclose remaining boundaries.`);
+  if (task.id === "TASK-0002") {
+    const limitations = (record.limitations || []).join(" ").toLowerCase();
+    if (row?.[8] !== "Proven reference implementation")
+      errors.push(
+        `${MATRIX} TASK-0002 classification must remain Proven reference implementation.`,
+      );
+    for (const boundary of ["durable", "oidc", "deployment", "runtime"])
+      if (!limitations.includes(boundary))
+        errors.push(
+          `${rel}.limitations must preserve the unimplemented ${boundary} boundary.`,
+        );
+  }
   if (!row || row[9] !== "ACCEPTED")
     errors.push(`${MATRIX} ${task.id} disposition must be ACCEPTED.`);
 }

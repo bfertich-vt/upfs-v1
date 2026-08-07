@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "task_id": "TASK-0002",
+  "disposition": "ACCEPTED",
+  "historical": {
+    "classification": "Unsupported completion claim",
+    "artifact": "docs/handoffs/TASK-0002.md",
+    "artifact_sha256": "87c46cf294e267470264b0ffe4cb941fd519a0a3ce4e73a39b9e37e09ae4818d",
+    "artifact_commit": "665ef5ccddac9f25b84e1dc0aa4502c9321c289c",
+    "evidence_excerpt": "# Handoff report"
+  },
+  "remediation": {
+    "task": "tasks/recovery/RECOVERY-TASK-0002-CLOSURE-002.yaml",
+    "task_sha256": "102402d3e1c989688e2809165c82ec279dc62a6d815523941a7fffeb490aa2a2",
+    "handoff": "docs/handoffs/RECOVERY-TASK-0002-CLOSURE-002.md",
+    "handoff_sha256": "bbc0fc4d40206bf64126aa4652dcfe53862ef33e86aa6f99434ac38104cb07df",
+    "implementation_commit": "8e77b1107f94e756f4865b3988aff7cd4a1b268b",
+    "candidate_commit": "c13b0134091937cfcb3cc4db4304ed7be3c5f740"
+  },
+  "independent_qa": {
+    "review": "docs/reviews/RECOVERY-TASK-0002-CLOSURE-002-QA.md",
+    "review_sha256": "1f5c249334fd8638084da8790168f422e24ab4009351bcdd2921e90bbbebc00e",
+    "review_commit": "64782c157a50e02146cdad45049b8333033979c6",
+    "reviewed_candidate": "c13b0134091937cfcb3cc4db4304ed7be3c5f740"
+  },
+  "protected_review": {
+    "mechanism": "independent-codex-qa-protected-flow",
+    "candidate_commit": "c13b0134091937cfcb3cc4db4304ed7be3c5f740",
+    "review_commit": "64782c157a50e02146cdad45049b8333033979c6",
+    "pr_head": "21c2eaa0a1087923d9086ddeb2647d8c57a82fc6",
+    "tree": "d470b55d94edac5288b4d673cd85f76651a47444"
+  },
+  "hosted": {
+    "evidence_boundary": "immutable inspected snapshot; GitHub API facts are not revalidated offline",
+    "repository": "bfertich-vt/upfs-v1",
+    "pull_request": 20,
+    "base_sha": "e84699d502d684ec1772e507379d47770f00f132",
+    "head_sha": "21c2eaa0a1087923d9086ddeb2647d8c57a82fc6",
+    "checks": [
+      {
+        "name": "repository-validation",
+        "run_id": 31195839513,
+        "job_id": 92923707381,
+        "head_sha": "21c2eaa0a1087923d9086ddeb2647d8c57a82fc6",
+        "conclusion": "success"
+      },
+      {
+        "name": "repository-security",
+        "run_id": 31195838719,
+        "job_id": 92923709435,
+        "head_sha": "21c2eaa0a1087923d9086ddeb2647d8c57a82fc6",
+        "conclusion": "success"
+      }
+    ],
+    "validation_artifact": {
+      "artifact_id": 9000781611,
+      "name": "validation-evidence",
+      "archive_digest": "sha256:27b01ad4a58152520ec18269a011e16c3d6e8936892bf30b0adca34bc5d45fc0",
+      "content_sha256": "f36a945b547137050c61c1b3b890ce5959674faa8a2c0de76892e815758b99e1",
+      "content_status": "passed"
+    },
+    "post_merge_checks": [
+      {
+        "name": "repository-validation",
+        "run_id": 31196001793,
+        "job_id": 92924244237,
+        "head_sha": "92e6ac9345e7cdd92db21e7fa65c0dcf531fd28c",
+        "conclusion": "success"
+      },
+      {
+        "name": "repository-security",
+        "run_id": 31196001771,
+        "job_id": 92924243995,
+        "head_sha": "92e6ac9345e7cdd92db21e7fa65c0dcf531fd28c",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "protected_merge": {
+    "commit": "92e6ac9345e7cdd92db21e7fa65c0dcf531fd28c",
+    "base_parent": "e84699d502d684ec1772e507379d47770f00f132",
+    "head_tree": "d470b55d94edac5288b4d673cd85f76651a47444",
+    "merged_at": "2026-08-07T16:07:01Z",
+    "pull_request": 20
+  },
+  "acceptance_mapping": [
+    {
+      "criterion": "Historical task requires independent revalidation before promotion",
+      "evidence": [
+        {
+          "artifact": "docs/reviews/RECOVERY-TASK-0002-CLOSURE-002-QA.md",
+          "artifact_sha256": "1f5c249334fd8638084da8790168f422e24ab4009351bcdd2921e90bbbebc00e",
+          "commit": "64782c157a50e02146cdad45049b8333033979c6",
+          "excerpt": "This acceptance covers the in-repository, in-memory reference composition only."
+        }
+      ]
+    }
+  ],
+  "dependencies": ["TASK-0001"],
+  "limitations": [
+    "The accepted capability is an in-memory reference composition; durable PostgreSQL/RLS persistence remains unimplemented.",
+    "Production OIDC or workload identity, API route wiring, managed runtime operation, and deployment remain unimplemented.",
+    "Hosted GitHub facts and the retained artifact are immutable inspected snapshots and are not re-queried by offline validation."
+  ]
+}

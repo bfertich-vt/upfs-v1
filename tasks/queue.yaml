@@ -25,7 +25,7 @@ tasks:
       - CI produces an evidence summary and fails closed
   - id: TASK-0002
     title: Implement identity, organization, tenant, and environment foundation
-    status: blocked
+    status: complete
     dependencies: [TASK-0001]
     inputs:
       - AGENTS.md
@@ -179,7 +179,19 @@ tasks:
   - id: TASK-0011
     title: Execute production hardening and v1 release rehearsal
     status: blocked
-    dependencies: [TASK-0001, TASK-0002, TASK-0003, TASK-0004, TASK-0005, TASK-0006, TASK-0007, TASK-0008, TASK-0009, TASK-0010]
+    dependencies:
+      [
+        TASK-0001,
+        TASK-0002,
+        TASK-0003,
+        TASK-0004,
+        TASK-0005,
+        TASK-0006,
+        TASK-0007,
+        TASK-0008,
+        TASK-0009,
+        TASK-0010,
+      ]
     inputs:
       - AGENTS.md
       - docs/MASTER_PLAN.md
@@ -576,7 +588,10 @@ tasks:
       artifact_commit: de73ed61163949dded62e8ba966de25022a7de9f
       evidence_excerpt: "# TASK-0031 — External-readiness integration contract"
     source: Stage 9 protected infrastructure requirements; infra/deployment-environment.json and specs/09_cicd/delivery_pipeline.md
-    acceptance: [Managed integration requirements and fail-closed readiness evidence are versioned]
+    acceptance:
+      [
+        Managed integration requirements and fail-closed readiness evidence are versioned,
+      ]
   - id: TASK-0032
     title: Implement policy-checked infrastructure and deployment manifests
     status: blocked
@@ -592,7 +607,10 @@ tasks:
       artifact_commit: 9e56273fd2cc8a7dc4aa816cd4452d5e17bd6d6f
       evidence_excerpt: "# TASK-0032 Handoff"
     source: Stage 9 infrastructure-as-code requirements; infra/README.md and specs/03_architecture/system_architecture.md
-    acceptance: [Protected environment manifests and policy/drift checks are versioned and fail closed]
+    acceptance:
+      [
+        Protected environment manifests and policy/drift checks are versioned and fail closed,
+      ]
   - id: TASK-0033
     title: Harden managed-integration adapter contracts for protected environments
     status: blocked
@@ -608,7 +626,14 @@ tasks:
       artifact_commit: 87fc61654d8680a9a1e5f2226101ffb9551f91e6
       evidence_excerpt: "# TASK-0033 Handoff"
     source: Stage 9 managed provider requirements; specs/09_cicd/delivery_pipeline.md
-    acceptance: [Provider identity, environment binding, rotation, health, and drift contracts are versioned and fail closed]
+    acceptance:
+      [
+        Provider identity,
+        environment binding,
+        rotation,
+        health,
+        and drift contracts are versioned and fail closed,
+      ]
   - id: TASK-0034
     title: Produce protected deployment promotion and rollback evidence
     status: blocked
@@ -624,7 +649,14 @@ tasks:
       artifact_commit: dccbcd590705b383fc95df3daf8a4d8ba17821d4
       evidence_excerpt: "# TASK-0034 Handoff"
     source: Stage 9 immutable promotion and rollback requirements; specs/09_cicd/delivery_pipeline.md
-    acceptance: [Canary/cell promotion, approval, verification, rollback, and corrective-forward evidence is reproducible]
+    acceptance:
+      [
+        Canary/cell promotion,
+        approval,
+        verification,
+        rollback,
+        and corrective-forward evidence is reproducible,
+      ]
   - id: TASK-0035
     title: Complete observability, alerting, and incident operations evidence
     status: blocked
@@ -640,7 +672,13 @@ tasks:
       artifact_commit: a1c6d7236ce747a0e3758bc60f591878caded33a
       evidence_excerpt: "# TASK-0035 Handoff"
     source: Stage 9 operational readiness and incident requirements; specs/12_testing/test_strategy.md
-    acceptance: [Tenant-safe telemetry, SLO alerts, incident detection/pause/abort/recovery, and audit evidence are verified]
+    acceptance:
+      [
+        Tenant-safe telemetry,
+        SLO alerts,
+        incident detection/pause/abort/recovery,
+        and audit evidence are verified,
+      ]
   - id: TASK-0036
     title: Complete native backup/restore and disaster-recovery evidence binding
     status: blocked
@@ -656,7 +694,14 @@ tasks:
       artifact_commit: da795b0c632200e6717423e63d694823552c8f74
       evidence_excerpt: "# TASK-0036 Handoff"
     source: Stage 9 DR and recovery requirements; specs/03_architecture/system_architecture.md
-    acceptance: [Backup integrity, restore references, RPO/RTO, failover, and corrective-forward evidence are bound and fail closed]
+    acceptance:
+      [
+        Backup integrity,
+        restore references,
+        RPO/RTO,
+        failover,
+        and corrective-forward evidence are bound and fail closed,
+      ]
   - id: TASK-0037
     title: Execute bounded environment-sized resilience rehearsal
     status: blocked
@@ -672,7 +717,15 @@ tasks:
       artifact_commit: 7fe98161a88443125604d8a8cbc7790626553e98
       evidence_excerpt: "# TASK-0037 Handoff"
     source: Stage 9 load/soak/chaos requirements; specs/12_testing/test_strategy.md
-    acceptance: [Synthetic load, soak, dependency failure, projection lag, isolation, and recovery scenarios produce immutable evidence]
+    acceptance:
+      [
+        Synthetic load,
+        soak,
+        dependency failure,
+        projection lag,
+        isolation,
+        and recovery scenarios produce immutable evidence,
+      ]
   - id: TASK-0038
     title: Synchronize public release, documentation, SDK, and migration evidence
     status: blocked
@@ -688,7 +741,15 @@ tasks:
       artifact_commit: 32adb0714b6365fac8b28bb56f917e0cd607cd7e
       evidence_excerpt: "# TASK-0038 Handoff"
     source: Stage 8/9 public documentation and release synchronization; specs/13_docs/documentation_platform.md
-    acceptance: [Contracts, generated docs/SDK, release notes, examples, migration guidance, and versions pass drift checks]
+    acceptance:
+      [
+        Contracts,
+        generated docs/SDK,
+        release notes,
+        examples,
+        migration guidance,
+        and versions pass drift checks,
+      ]
   - id: TASK-0039
     title: Complete final security, compliance, and readiness assessment
     status: blocked
@@ -704,7 +765,14 @@ tasks:
       artifact_commit: d8a5c736ed8e2ce7e10ed5e1a34165c733e1e474
       evidence_excerpt: "# TASK-0039 Handoff"
     source: v1 acceptance themes; specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
-    acceptance: [Security, tenant isolation, control evidence, vulnerabilities, and unsupported-claim checks are complete]
+    acceptance:
+      [
+        Security,
+        tenant isolation,
+        control evidence,
+        vulnerabilities,
+        and unsupported-claim checks are complete,
+      ]
   - id: TASK-0040
     title: Assemble formal controlled-pilot go/no-go handoff
     status: blocked
@@ -720,7 +788,12 @@ tasks:
       artifact_commit: 2b4aab6c2a3403f9abf73ae1d3a6690b4fb89066
       evidence_excerpt: "# TASK-0040 Final Go/No-Go Handoff"
     source: docs/MASTER_PLAN.md; Stage 9 pilot and measured-rollout requirements; docs/compliance/pilot-go-no-go.md
-    acceptance: [All evidence is indexed, external prerequisites are explicit, and final decision is truthful with no deployment or certification claim]
+    acceptance:
+      [
+        All evidence is indexed,
+        external prerequisites are explicit,
+        and final decision is truthful with no deployment or certification claim,
+      ]
   - id: TASK-0041
     title: Close controlled-pilot external prerequisite inventory and ownership
     status: blocked
@@ -736,7 +809,15 @@ tasks:
       artifact_commit: d14e6ca04bb0122ce935d6caa4418300d2491137
       evidence_excerpt: "# TASK-0041 Handoff"
     source: docs/compliance/pilot-go-no-go.md; specs/09_cicd/delivery_pipeline.md
-    acceptance: [Every missing managed resource, credential, approval, owner, expiry, and evidence reference is enumerated and fail-closed]
+    acceptance:
+      [
+        Every missing managed resource,
+        credential,
+        approval,
+        owner,
+        expiry,
+        and evidence reference is enumerated and fail-closed,
+      ]
   - id: TASK-0042
     title: Implement managed provider onboarding and reference verification workflow
     status: blocked
@@ -752,7 +833,14 @@ tasks:
       artifact_commit: 3d01b8cd5d06c2cd45998d994820f032736fd607
       evidence_excerpt: "# TASK-0042 Handoff"
     source: specs/09_cicd/delivery_pipeline.md; infra/deployment-environment.json
-    acceptance: [Provider onboarding validates identity, environment binding, rotation, health, and immutable references without exposing secrets]
+    acceptance:
+      [
+        Provider onboarding validates identity,
+        environment binding,
+        rotation,
+        health,
+        and immutable references without exposing secrets,
+      ]
   - id: TASK-0043
     title: Implement protected signing-key and secret rotation rehearsal
     status: blocked
@@ -768,7 +856,14 @@ tasks:
       artifact_commit: 1b59908fd3d0b5745f359f834523ae9a5ca9b21e
       evidence_excerpt: "# TASK-0043 Handoff"
     source: specs/09_cicd/delivery_pipeline.md; specs/10_security/security_baseline.md
-    acceptance: [Rotation, overlap, expiry, revocation, and rollback evidence is synthetic and fail-closed]
+    acceptance:
+      [
+        Rotation,
+        overlap,
+        expiry,
+        revocation,
+        and rollback evidence is synthetic and fail-closed,
+      ]
   - id: TASK-0044
     title: Implement managed database target readiness and native rehearsal gate
     status: blocked
@@ -784,7 +879,15 @@ tasks:
       artifact_commit: 38b4712000d556244a9e4c7d12aff4135ce0b7b1
       evidence_excerpt: "# TASK-0044 Handoff"
     source: specs/03_architecture/system_architecture.md; specs/12_testing/test_strategy.md
-    acceptance: [Managed PostgreSQL target, migrations, RLS, backup, restore, and replay prerequisites are verified without production access]
+    acceptance:
+      [
+        Managed PostgreSQL target,
+        migrations,
+        RLS,
+        backup,
+        restore,
+        and replay prerequisites are verified without production access,
+      ]
   - id: TASK-0045
     title: Implement managed observability destination and alert-route readiness
     status: blocked
@@ -800,7 +903,15 @@ tasks:
       artifact_commit: 85a6cd1dbb2c882d3f4d36aec40353f8a3428a2a
       evidence_excerpt: "# TASK-0045 Handoff"
     source: specs/09_cicd/delivery_pipeline.md; specs/12_testing/test_strategy.md
-    acceptance: [Tenant-safe metrics, logs, traces, SLO alerts, paging ownership, and retention references are verified]
+    acceptance:
+      [
+        Tenant-safe metrics,
+        logs,
+        traces,
+        SLO alerts,
+        paging ownership,
+        and retention references are verified,
+      ]
   - id: TASK-0046
     title: Execute external-readiness contract integration rehearsal
     status: blocked
@@ -816,7 +927,10 @@ tasks:
       artifact_commit: 2edc03c1361d5f1b5f227b0d9e2b37135a856d4e
       evidence_excerpt: "# TASK-0046 Handoff"
     source: specs/09_cicd/delivery_pipeline.md; docs/compliance/pilot-go-no-go.md
-    acceptance: [All managed adapter contracts compose into a truthful readiness report and fail closed on any mismatch]
+    acceptance:
+      [
+        All managed adapter contracts compose into a truthful readiness report and fail closed on any mismatch,
+      ]
   - id: TASK-0047
     title: Implement pilot tenant and environment enrollment controls
     status: blocked
@@ -832,7 +946,14 @@ tasks:
       artifact_commit: 102674ffb6b7e6906d5c617437cb85a8301ac65a
       evidence_excerpt: "# TASK-0047 Handoff"
     source: specs/04_schema/identity_tenant_model.md; specs/14_admin_control_plane/admin_control_plane.md
-    acceptance: [Pilot enrollment is approval-gated, tenant-scoped, reversible, auditable, and synthetic until authorization]
+    acceptance:
+      [
+        Pilot enrollment is approval-gated,
+        tenant-scoped,
+        reversible,
+        auditable,
+        and synthetic until authorization,
+      ]
   - id: TASK-0048
     title: Implement pilot scope, cohort, and data-boundary manifest
     status: blocked
@@ -848,7 +969,15 @@ tasks:
       artifact_commit: e4980e0728db5c02931978c7cd5de4ca1d4d080f
       evidence_excerpt: "# TASK-0048 Handoff"
     source: docs/compliance/pilot-go-no-go.md; specs/10_security/security_baseline.md
-    acceptance: [Cohort, regions, environments, prohibited data, retention, and pause boundaries are versioned and checked]
+    acceptance:
+      [
+        Cohort,
+        regions,
+        environments,
+        prohibited data,
+        retention,
+        and pause boundaries are versioned and checked,
+      ]
   - id: TASK-0049
     title: Implement pilot consent and communication evidence workflow
     status: blocked
@@ -864,7 +993,13 @@ tasks:
       artifact_commit: add1c41c07c333df6e0b6f7f83539aa8d9ba302a
       evidence_excerpt: "# TASK-0049 Handoff"
     source: specs/11_soc2/soc2_readiness.md; docs/compliance/pilot-go-no-go.md
-    acceptance: [Required stakeholder notices, approvals, acknowledgements, and expiry are tracked without contacting external parties]
+    acceptance:
+      [
+        Required stakeholder notices,
+        approvals,
+        acknowledgements,
+        and expiry are tracked without contacting external parties,
+      ]
   - id: TASK-0050
     title: Implement pilot launch checklist and dry-run coordinator
     status: blocked
@@ -880,7 +1015,14 @@ tasks:
       artifact_commit: 857b889d868196a6042677bf76205f0e745c5f88
       evidence_excerpt: "# TASK-0050 Handoff"
     source: docs/runbooks/controlled-pilot-runbook.md; specs/09_cicd/delivery_pipeline.md
-    acceptance: [Checklist gates are ordered, idempotent, auditable, reversible, and never imply deployment]
+    acceptance:
+      [
+        Checklist gates are ordered,
+        idempotent,
+        auditable,
+        reversible,
+        and never imply deployment,
+      ]
   - id: TASK-0051
     title: Implement pilot health and error-budget review evidence
     status: blocked
@@ -896,7 +1038,16 @@ tasks:
       artifact_commit: 85b7322a4c0cb365006422c7bb967f6bbcdae346
       evidence_excerpt: "# TASK-0051 Handoff"
     source: docs/runbooks/controlled-pilot-runbook.md; specs/12_testing/test_strategy.md
-    acceptance: [Availability, latency, freshness, lag, error budget, pause, and escalation calculations are reproducible]
+    acceptance:
+      [
+        Availability,
+        latency,
+        freshness,
+        lag,
+        error budget,
+        pause,
+        and escalation calculations are reproducible,
+      ]
   - id: TASK-0052
     title: Implement pilot ingestion freshness and reconciliation review
     status: blocked
@@ -912,7 +1063,14 @@ tasks:
       artifact_commit: 50a3e55d4f9f6dee8a061423b63cd027ed53fea7
       evidence_excerpt: "# TASK-0052 Handoff"
     source: specs/03_architecture/system_architecture.md; specs/12_testing/test_strategy.md
-    acceptance: [Ingestion, quarantine, canonical parity, projection lag, and reconciliation evidence is tenant-safe and immutable]
+    acceptance:
+      [
+        Ingestion,
+        quarantine,
+        canonical parity,
+        projection lag,
+        and reconciliation evidence is tenant-safe and immutable,
+      ]
   - id: TASK-0053
     title: Implement pilot support-access review and expiry enforcement
     status: blocked
@@ -928,7 +1086,17 @@ tasks:
       artifact_commit: 01f47272d38b41a621c13af191a8c4c23da0d3b6
       evidence_excerpt: "# TASK-0053 Handoff"
     source: specs/04_schema/identity_tenant_model.md; specs/14_admin_control_plane/admin_control_plane.md
-    acceptance: [Support access requires case, reason, approval, step-up, scope, expiry, redaction, and complete audit]
+    acceptance:
+      [
+        Support access requires case,
+        reason,
+        approval,
+        step-up,
+        scope,
+        expiry,
+        redaction,
+        and complete audit,
+      ]
   - id: TASK-0054
     title: Implement pilot access-review and joiner-mover-leaver evidence
     status: blocked
@@ -944,7 +1112,14 @@ tasks:
       artifact_commit: 22f9f3c071af4b519281fe69f5b682dd7a7e7456
       evidence_excerpt: "# TASK-0054 Handoff"
     source: specs/11_soc2/soc2_readiness.md; specs/10_security/security_baseline.md
-    acceptance: [Periodic access review, least privilege, offboarding, exceptions, and remediation evidence are complete]
+    acceptance:
+      [
+        Periodic access review,
+        least privilege,
+        offboarding,
+        exceptions,
+        and remediation evidence are complete,
+      ]
   - id: TASK-0055
     title: Implement pilot vulnerability and dependency remediation workflow
     status: blocked
@@ -960,7 +1135,15 @@ tasks:
       artifact_commit: b2a9fb7dd97545699ee130740dd620a8dd849e44
       evidence_excerpt: "# TASK-0055 Handoff"
     source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
-    acceptance: [Pinned scans, severity thresholds, ownership, remediation deadlines, exceptions, and retest evidence fail closed]
+    acceptance:
+      [
+        Pinned scans,
+        severity thresholds,
+        ownership,
+        remediation deadlines,
+        exceptions,
+        and retest evidence fail closed,
+      ]
   - id: TASK-0056
     title: Implement pilot vendor and managed-provider review evidence
     status: blocked
@@ -976,7 +1159,15 @@ tasks:
       artifact_commit: 347e5a0cd79fe4e8710dcfbb0ca4a598a21f47f2
       evidence_excerpt: "# TASK-0056 Handoff"
     source: specs/11_soc2/soc2_readiness.md; specs/09_cicd/delivery_pipeline.md
-    acceptance: [Provider scope, risk, review cadence, contract references, incidents, and exceptions are versioned]
+    acceptance:
+      [
+        Provider scope,
+        risk,
+        review cadence,
+        contract references,
+        incidents,
+        and exceptions are versioned,
+      ]
   - id: TASK-0057
     title: Implement pilot change-management and emergency-change evidence
     status: blocked
@@ -992,7 +1183,15 @@ tasks:
       artifact_commit: 4b00de13d51311a2b14c69b7b5f280db5986da28
       evidence_excerpt: "# TASK-0057 Handoff"
     source: specs/11_soc2/soc2_readiness.md; specs/09_cicd/delivery_pipeline.md
-    acceptance: [Review, approval, immutable artifact, rollback, corrective-forward, and retrospective evidence are enforced]
+    acceptance:
+      [
+        Review,
+        approval,
+        immutable artifact,
+        rollback,
+        corrective-forward,
+        and retrospective evidence are enforced,
+      ]
   - id: TASK-0058
     title: Implement pilot incident communications and postmortem workflow
     status: blocked
@@ -1008,7 +1207,16 @@ tasks:
       artifact_commit: e9ac239b2e3e02e3b4762efb7b15c332ea44629d
       evidence_excerpt: "# TASK-0058 Handoff"
     source: docs/runbooks/controlled-pilot-runbook.md; specs/11_soc2/soc2_readiness.md
-    acceptance: [Incident severity, timeline, notices, decisions, postmortem, corrective actions, and retention are auditable]
+    acceptance:
+      [
+        Incident severity,
+        timeline,
+        notices,
+        decisions,
+        postmortem,
+        corrective actions,
+        and retention are auditable,
+      ]
   - id: TASK-0059
     title: Implement pilot backup and restore review cadence
     status: blocked
@@ -1024,7 +1232,15 @@ tasks:
       artifact_commit: 02bd96362b0ddd27bb58c7f585ac50e1d9abfe6a
       evidence_excerpt: "# TASK-0059 Handoff"
     source: specs/03_architecture/system_architecture.md; specs/11_soc2/soc2_readiness.md
-    acceptance: [Backup integrity, restore sampling, RPO/RTO, retention, encryption, and corrective-forward reviews are bound]
+    acceptance:
+      [
+        Backup integrity,
+        restore sampling,
+        RPO/RTO,
+        retention,
+        encryption,
+        and corrective-forward reviews are bound,
+      ]
   - id: TASK-0060
     title: Implement pilot disaster-recovery exercise scheduler and evidence ledger
     status: blocked
@@ -1040,7 +1256,16 @@ tasks:
       artifact_commit: 7e3ab8d8201a18f2e2b1bbca12df7fe07792a845
       evidence_excerpt: "# TASK-0060 Handoff"
     source: specs/03_architecture/system_architecture.md; specs/12_testing/test_strategy.md
-    acceptance: [DR exercise schedule, owners, scenarios, results, failures, remediation, and immutable references are tracked]
+    acceptance:
+      [
+        DR exercise schedule,
+        owners,
+        scenarios,
+        results,
+        failures,
+        remediation,
+        and immutable references are tracked,
+      ]
   - id: TASK-0061
     title: Implement pilot capacity and environment-sizing review
     status: blocked
@@ -1056,7 +1281,15 @@ tasks:
       artifact_commit: a9f9361535a9043f122192f107d528ef74320c30
       evidence_excerpt: "# TASK-0061 Handoff"
     source: specs/12_testing/test_strategy.md; docs/runbooks/controlled-pilot-runbook.md
-    acceptance: [Capacity assumptions, tenant dimensions, thresholds, saturation, scaling actions, and review evidence are reproducible]
+    acceptance:
+      [
+        Capacity assumptions,
+        tenant dimensions,
+        thresholds,
+        saturation,
+        scaling actions,
+        and review evidence are reproducible,
+      ]
   - id: TASK-0062
     title: Implement pilot cost and resource-bound review
     status: blocked
@@ -1072,7 +1305,13 @@ tasks:
       artifact_commit: 7ab0407cd3491d149f856b00c609719878aad906
       evidence_excerpt: "# TASK-0062 Handoff"
     source: specs/12_testing/test_strategy.md; specs/11_soc2/soc2_readiness.md
-    acceptance: [Synthetic cost/resource bounds, anomaly thresholds, owners, and pause actions are checked without real billing access]
+    acceptance:
+      [
+        Synthetic cost/resource bounds,
+        anomaly thresholds,
+        owners,
+        and pause actions are checked without real billing access,
+      ]
   - id: TASK-0063
     title: Implement pilot data-retention and deletion evidence workflow
     status: blocked
@@ -1088,7 +1327,15 @@ tasks:
       artifact_commit: bb6b0dcdcb43eda077e86493bb47b9914710bf9a
       evidence_excerpt: "# TASK-0063 Handoff"
     source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
-    acceptance: [Retention, legal hold, deletion, quarantine, audit, and restore interactions are explicit and fail closed]
+    acceptance:
+      [
+        Retention,
+        legal hold,
+        deletion,
+        quarantine,
+        audit,
+        and restore interactions are explicit and fail closed,
+      ]
   - id: TASK-0064
     title: Implement privacy and sensitive-data handling review
     status: blocked
@@ -1104,7 +1351,14 @@ tasks:
       artifact_commit: 453356e6a06b74d9871e0534281b3a5d59eae193
       evidence_excerpt: "# TASK-0064 Handoff"
     source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
-    acceptance: [Sensitive payload redaction, minimization, access, export, and incident review evidence is verified]
+    acceptance:
+      [
+        Sensitive payload redaction,
+        minimization,
+        access,
+        export,
+        and incident review evidence is verified,
+      ]
   - id: TASK-0065
     title: Implement pilot API contract and SDK compatibility gate
     status: blocked
@@ -1120,7 +1374,16 @@ tasks:
       artifact_commit: cc5f1025116827c97414e61e623ffe629e65399f
       evidence_excerpt: "# TASK-0065 Handoff"
     source: specs/05_apis/api_standards.md; specs/13_docs/documentation_platform.md
-    acceptance: [API, events, permissions, errors, generated SDK, examples, and version compatibility remain synchronized]
+    acceptance:
+      [
+        API,
+        events,
+        permissions,
+        errors,
+        generated SDK,
+        examples,
+        and version compatibility remain synchronized,
+      ]
   - id: TASK-0066
     title: Implement pilot customer-console release acceptance gate
     status: blocked
@@ -1136,7 +1399,15 @@ tasks:
       artifact_commit: b2f5fffa121f0ef0f88f239caa8d54522e1568dd
       evidence_excerpt: "# TASK-0066 Handoff"
     source: specs/02_ui/console_experience.md; docs/MASTER_PLAN.md
-    acceptance: [Documented customer pages, accessibility, authorization, API mapping, redaction, and unavailable states are verified]
+    acceptance:
+      [
+        Documented customer pages,
+        accessibility,
+        authorization,
+        API mapping,
+        redaction,
+        and unavailable states are verified,
+      ]
   - id: TASK-0067
     title: Implement pilot admin-console operational acceptance gate
     status: blocked
@@ -1152,7 +1423,13 @@ tasks:
       artifact_commit: e114997b2baa63b805f4ffb0c6f1a8f8b9be8fc8
       evidence_excerpt: "# TASK-0067 Handoff"
     source: specs/14_admin_control_plane/admin_control_plane.md; docs/MASTER_PLAN.md
-    acceptance: [Admin modules expose only API-backed, scoped, redacted, approval-gated operations with audit evidence]
+    acceptance:
+      [
+        Admin modules expose only API-backed,
+        scoped,
+        redacted,
+        approval-gated operations with audit evidence,
+      ]
   - id: TASK-0068
     title: Execute integrated controlled-pilot observation rehearsal
     status: blocked
@@ -1168,7 +1445,15 @@ tasks:
       artifact_commit: 217696bceb913926819228ce67f9a99eee4e2a57
       evidence_excerpt: "# TASK-0068 Handoff"
     source: docs/MASTER_PLAN.md; docs/compliance/pilot-go-no-go.md; docs/runbooks/controlled-pilot-runbook.md
-    acceptance: [A bounded synthetic observation window exercises health, support, incidents, recovery, releases, and reviews]
+    acceptance:
+      [
+        A bounded synthetic observation window exercises health,
+        support,
+        incidents,
+        recovery,
+        releases,
+        and reviews,
+      ]
   - id: TASK-0069
     title: Assemble v1.1 observation-period readiness assessment
     status: blocked
@@ -1184,7 +1469,15 @@ tasks:
       artifact_commit: 9a71cd24de7cd77cc816ee0b625c34a5d0c4c3b2
       evidence_excerpt: "# TASK-0069 Handoff"
     source: specs/11_soc2/soc2_readiness.md; docs/compliance/pilot-go-no-go.md
-    acceptance: [Observation evidence, exceptions, residual risk, remediation, owner sign-off fields, and external prerequisites are indexed]
+    acceptance:
+      [
+        Observation evidence,
+        exceptions,
+        residual risk,
+        remediation,
+        owner sign-off fields,
+        and external prerequisites are indexed,
+      ]
   - id: TASK-0070
     title: Assemble v1.1 controlled-pilot continuation or stop decision
     status: blocked
@@ -1200,7 +1493,15 @@ tasks:
       artifact_commit: 0c7c8d7cf0338fc3f13363290e9a9ffd82196159
       evidence_excerpt: "# TASK-0070 Handoff"
     source: docs/compliance/pilot-go-no-go.md; specs/11_soc2/soc2_readiness.md
-    acceptance: [Continuation, pause, or stop decision is reproducible, approval-gated, truthful, and makes no certification or production claim]
+    acceptance:
+      [
+        Continuation,
+        pause,
+        or stop decision is reproducible,
+        approval-gated,
+        truthful,
+        and makes no certification or production claim,
+      ]
   - id: TASK-0071
     title: Establish v1.1 post-observation corrective-action register
     status: blocked
@@ -1216,7 +1517,16 @@ tasks:
       artifact_commit: 3355df3d6e6dd2eba0650b045be5dbd770d7a618
       evidence_excerpt: "# TASK-0071 Handoff"
     source: specs/11_soc2/soc2_readiness.md; docs/compliance/pilot-go-no-go.md
-    acceptance: [Residual risks, owners, due dates, evidence refs, priority, status, and closure verification are versioned]
+    acceptance:
+      [
+        Residual risks,
+        owners,
+        due dates,
+        evidence refs,
+        priority,
+        status,
+        and closure verification are versioned,
+      ]
   - id: TASK-0072
     title: Implement risk-acceptance expiry and escalation controls
     status: blocked
@@ -1232,7 +1542,15 @@ tasks:
       artifact_commit: 5ac94ea9cd56758f9f109f369f48e977d74f57de
       evidence_excerpt: "# TASK-0072 Handoff"
     source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
-    acceptance: [Risk acceptance requires named owner, scope, compensating controls, expiry, approval, and escalation]
+    acceptance:
+      [
+        Risk acceptance requires named owner,
+        scope,
+        compensating controls,
+        expiry,
+        approval,
+        and escalation,
+      ]
   - id: TASK-0073
     title: Implement pilot control exception lifecycle
     status: blocked
@@ -1248,7 +1566,15 @@ tasks:
       artifact_commit: b1f5e0ec8531b40bbd5000ae1337dc555d9f6b83
       evidence_excerpt: "# TASK-0073 Handoff"
     source: specs/11_soc2/soc2_readiness.md; docs/compliance/control-library.json
-    acceptance: [Exceptions are created, approved, monitored, remediated, expired, and audited without weakening gates]
+    acceptance:
+      [
+        Exceptions are created,
+        approved,
+        monitored,
+        remediated,
+        expired,
+        and audited without weakening gates,
+      ]
   - id: TASK-0074
     title: Implement evidence retention and chain-of-custody index
     status: blocked
@@ -1264,7 +1590,16 @@ tasks:
       artifact_commit: db6c113c30fbdc012d139adf00bd8995c4ea67d3
       evidence_excerpt: "# TASK-0074 Handoff"
     source: specs/11_soc2/soc2_readiness.md; specs/10_security/security_baseline.md
-    acceptance: [Evidence owners, hashes, timestamps, retention, access, lineage, and disposal controls are bound]
+    acceptance:
+      [
+        Evidence owners,
+        hashes,
+        timestamps,
+        retention,
+        access,
+        lineage,
+        and disposal controls are bound,
+      ]
   - id: TASK-0075
     title: Implement audit-evidence completeness and tamper review
     status: blocked
@@ -1280,7 +1615,10 @@ tasks:
       artifact_commit: f19b6376fd7b9ad56d3dafd7b4dde6a4f70f2a37
       evidence_excerpt: "# TASK-0075 Handoff"
     source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
-    acceptance: [Sensitive actions have tenant-safe immutable audit records and tamper mutations fail closed]
+    acceptance:
+      [
+        Sensitive actions have tenant-safe immutable audit records and tamper mutations fail closed,
+      ]
   - id: TASK-0076
     title: Implement pilot authorization renewal workflow
     status: blocked
@@ -1296,7 +1634,15 @@ tasks:
       artifact_commit: 193028e4987a9aaced46f016189c38ab71196a75
       evidence_excerpt: "# TASK-0076 Handoff"
     source: docs/compliance/pilot-go-no-go.md; specs/09_cicd/delivery_pipeline.md
-    acceptance: [Renewal requires current evidence, approvals, expiry, scope, risks, and external prerequisites]
+    acceptance:
+      [
+        Renewal requires current evidence,
+        approvals,
+        expiry,
+        scope,
+        risks,
+        and external prerequisites,
+      ]
   - id: TASK-0077
     title: Implement pilot pause and resume workflow
     status: blocked
@@ -1312,7 +1658,14 @@ tasks:
       artifact_commit: 5398bdebb09664d539583d0507979e18f5237fad
       evidence_excerpt: "# TASK-0077 Handoff"
     source: docs/runbooks/controlled-pilot-runbook.md; specs/09_cicd/delivery_pipeline.md
-    acceptance: [Pause/resume is idempotent, approval-gated, tenant/environment scoped, audited, and reversible]
+    acceptance:
+      [
+        Pause/resume is idempotent,
+        approval-gated,
+        tenant/environment scoped,
+        audited,
+        and reversible,
+      ]
   - id: TASK-0078
     title: Implement pilot stop and orderly wind-down workflow
     status: blocked
@@ -1328,7 +1681,16 @@ tasks:
       artifact_commit: 34067f8db653d3811d20c27c9d7e5493a3608e3e
       evidence_excerpt: "# TASK-0078 Handoff"
     source: docs/compliance/pilot-go-no-go.md; specs/10_security/security_baseline.md
-    acceptance: [Stop protects data, access, retention, audit, backups, communications evidence, and rollback boundaries]
+    acceptance:
+      [
+        Stop protects data,
+        access,
+        retention,
+        audit,
+        backups,
+        communications evidence,
+        and rollback boundaries,
+      ]
   - id: TASK-0079
     title: Implement synthetic tenant offboarding rehearsal
     status: blocked
@@ -1344,7 +1706,13 @@ tasks:
       artifact_commit: 70b62963756bbddcff29e2ecf583aa184ab2aded
       evidence_excerpt: "# TASK-0079 Handoff"
     source: specs/04_schema/identity_tenant_model.md; specs/10_security/security_baseline.md
-    acceptance: [Offboarding revokes access, preserves required evidence, applies retention, and prevents cross-tenant leakage]
+    acceptance:
+      [
+        Offboarding revokes access,
+        preserves required evidence,
+        applies retention,
+        and prevents cross-tenant leakage,
+      ]
   - id: TASK-0080
     title: Implement managed-provider deprovisioning readiness gate
     status: blocked
@@ -1360,7 +1728,14 @@ tasks:
       artifact_commit: 48d381a87bc2d7346836322bc9440e9056391aad
       evidence_excerpt: "# TASK-0080 Handoff"
     source: specs/09_cicd/delivery_pipeline.md; specs/10_security/security_baseline.md
-    acceptance: [Deprovisioning checks bindings, rotation, revocation, evidence retention, and approval without changing production]
+    acceptance:
+      [
+        Deprovisioning checks bindings,
+        rotation,
+        revocation,
+        evidence retention,
+        and approval without changing production,
+      ]
   - id: TASK-0081
     title: Implement pilot release train readiness board
     status: blocked
@@ -1376,7 +1751,16 @@ tasks:
       artifact_commit: c27172bd338116e9e9ef104cb63d3a3fc47b9e51
       evidence_excerpt: "# TASK-0081 Handoff"
     source: specs/09_cicd/delivery_pipeline.md; docs/runbooks/controlled-pilot-runbook.md
-    acceptance: [Release candidates, gates, owners, approvals, artifacts, rollback, and blockers are source-bound]
+    acceptance:
+      [
+        Release candidates,
+        gates,
+        owners,
+        approvals,
+        artifacts,
+        rollback,
+        and blockers are source-bound,
+      ]
   - id: TASK-0082
     title: Implement release artifact provenance refresh gate
     status: blocked
@@ -1392,7 +1776,15 @@ tasks:
       artifact_commit: 45d49272cf9cd30faf9f8510b1921ca18bc9d8c1
       evidence_excerpt: "# TASK-0082 Handoff"
     source: specs/09_cicd/delivery_pipeline.md; specs/10_security/security_baseline.md
-    acceptance: [SBOM, provenance, signatures, dependency pins, digests, and source commits are mutually bound]
+    acceptance:
+      [
+        SBOM,
+        provenance,
+        signatures,
+        dependency pins,
+        digests,
+        and source commits are mutually bound,
+      ]
   - id: TASK-0083
     title: Implement migration compatibility and rollback rehearsal v1.1
     status: blocked
@@ -1408,7 +1800,15 @@ tasks:
       artifact_commit: 27a1d93f51b4efe7f8e06faae97f17d8d2afaaf4
       evidence_excerpt: "# TASK-0083 Handoff"
     source: specs/03_architecture/system_architecture.md; specs/12_testing/test_strategy.md
-    acceptance: [Expand/contract migration, rollback, corrective-forward, RLS, outbox, and projection evidence are reproducible]
+    acceptance:
+      [
+        Expand/contract migration,
+        rollback,
+        corrective-forward,
+        RLS,
+        outbox,
+        and projection evidence are reproducible,
+      ]
   - id: TASK-0084
     title: Implement schema and contract backward-compatibility gate
     status: blocked
@@ -1424,7 +1824,10 @@ tasks:
       artifact_commit: 2542f4e6a59124c0527429814efe14327a3a19a0
       evidence_excerpt: "# TASK-0084 Handoff"
     source: specs/04_schema/identity_tenant_model.md; specs/05_apis/api_standards.md
-    acceptance: [Breaking schema/API/event changes fail closed without versioned migration and compatibility evidence]
+    acceptance:
+      [
+        Breaking schema/API/event changes fail closed without versioned migration and compatibility evidence,
+      ]
   - id: TASK-0085
     title: Implement SDK consumer compatibility rehearsal
     status: blocked
@@ -1440,7 +1843,16 @@ tasks:
       artifact_commit: 3f089b8e77bd4394d62ac8bcc551086ba346449f
       evidence_excerpt: "# TASK-0085 Handoff"
     source: specs/13_docs/documentation_platform.md; specs/05_apis/api_standards.md
-    acceptance: [Generated SDK, examples, pagination, errors, auth, permissions, and versioned consumers remain compatible]
+    acceptance:
+      [
+        Generated SDK,
+        examples,
+        pagination,
+        errors,
+        auth,
+        permissions,
+        and versioned consumers remain compatible,
+      ]
   - id: TASK-0086
     title: Implement accessibility regression evidence gate
     status: blocked
@@ -1456,7 +1868,16 @@ tasks:
       artifact_commit: ccce8d81a8dda7f739e68974330a52fcf77f30aa
       evidence_excerpt: "# TASK-0086 Handoff"
     source: specs/02_ui/console_experience.md; docs/MASTER_PLAN.md
-    acceptance: [Keyboard, focus, labels, contrast, semantics, responsive states, and unavailable states are tested]
+    acceptance:
+      [
+        Keyboard,
+        focus,
+        labels,
+        contrast,
+        semantics,
+        responsive states,
+        and unavailable states are tested,
+      ]
   - id: TASK-0087
     title: Implement customer-console authorization regression gate
     status: blocked
@@ -1472,7 +1893,13 @@ tasks:
       artifact_commit: c4917377d71e5c7f823a514d448d3afed756a341
       evidence_excerpt: "# TASK-0087 Handoff"
     source: specs/02_ui/console_experience.md; specs/04_schema/identity_tenant_model.md
-    acceptance: [Tenant/environment scope, non-disclosure, redaction, and auth-derived API requests are mutation-tested]
+    acceptance:
+      [
+        Tenant/environment scope,
+        non-disclosure,
+        redaction,
+        and auth-derived API requests are mutation-tested,
+      ]
   - id: TASK-0088
     title: Implement admin-console privileged-action regression gate
     status: blocked
@@ -1488,7 +1915,16 @@ tasks:
       artifact_commit: 9ffbfcbb81a568c37ee292dbb182dc13be56efea
       evidence_excerpt: "# TASK-0088 Handoff"
     source: specs/14_admin_control_plane/admin_control_plane.md
-    acceptance: [Approval, dual control, idempotency, audit, rollback, unavailable state, and direct-infra denial remain enforced]
+    acceptance:
+      [
+        Approval,
+        dual control,
+        idempotency,
+        audit,
+        rollback,
+        unavailable state,
+        and direct-infra denial remain enforced,
+      ]
   - id: TASK-0089
     title: Implement observability redaction and cardinality review
     status: blocked
@@ -1504,7 +1940,10 @@ tasks:
       artifact_commit: 1477939c90863f9f7b6000935c20d9baa4196f0c
       evidence_excerpt: "# TASK-0089 Handoff"
     source: specs/10_security/security_baseline.md; specs/12_testing/test_strategy.md
-    acceptance: [Sensitive fields are redacted and metric/log/trace cardinality remains bounded and tenant-safe]
+    acceptance:
+      [
+        Sensitive fields are redacted and metric/log/trace cardinality remains bounded and tenant-safe,
+      ]
   - id: TASK-0090
     title: Implement SLO threshold and alert-route change review
     status: blocked
@@ -1520,7 +1959,14 @@ tasks:
       artifact_commit: d9c1cbf81804e2b86348831682c67a27bc622c62
       evidence_excerpt: "# TASK-0090 Handoff"
     source: docs/runbooks/controlled-pilot-runbook.md; specs/09_cicd/delivery_pipeline.md
-    acceptance: [SLO changes require impact analysis, approval, route ownership, rollback, and immutable evidence]
+    acceptance:
+      [
+        SLO changes require impact analysis,
+        approval,
+        route ownership,
+        rollback,
+        and immutable evidence,
+      ]
   - id: TASK-0091
     title: Implement incident drill diversity and coverage review
     status: blocked
@@ -1536,7 +1982,16 @@ tasks:
       artifact_commit: 46f4045bf442ecbd6fcce7fed1ea51a5eaf0d15e
       evidence_excerpt: "# TASK-0091 Handoff"
     source: docs/runbooks/controlled-pilot-runbook.md; specs/12_testing/test_strategy.md
-    acceptance: [Health, security, dependency, tenant-isolation, data-quality, recovery, and release drills are covered]
+    acceptance:
+      [
+        Health,
+        security,
+        dependency,
+        tenant-isolation,
+        data-quality,
+        recovery,
+        and release drills are covered,
+      ]
   - id: TASK-0092
     title: Implement backup encryption and key lifecycle review
     status: blocked
@@ -1552,7 +2007,15 @@ tasks:
       artifact_commit: d3c438e5dc88a65ca1ba3545e9f40a9c9336b3de
       evidence_excerpt: "# TASK-0092 Handoff"
     source: specs/03_architecture/system_architecture.md; specs/10_security/security_baseline.md
-    acceptance: [Backup encryption, key references, rotation, expiry, restore usability, and revocation are evidenced]
+    acceptance:
+      [
+        Backup encryption,
+        key references,
+        rotation,
+        expiry,
+        restore usability,
+        and revocation are evidenced,
+      ]
   - id: TASK-0093
     title: Implement restore-point retention and deletion reconciliation
     status: blocked
@@ -1568,7 +2031,10 @@ tasks:
       artifact_commit: bb6000b83b049457abf78294702ef45e5fc10e16
       evidence_excerpt: "# TASK-0093 Handoff"
     source: specs/03_architecture/system_architecture.md; specs/11_soc2/soc2_readiness.md
-    acceptance: [Restore points respect retention/legal hold/deletion and produce immutable reconciliation evidence]
+    acceptance:
+      [
+        Restore points respect retention/legal hold/deletion and produce immutable reconciliation evidence,
+      ]
   - id: TASK-0094
     title: Implement tenant-isolation chaos regression suite
     status: blocked
@@ -1584,7 +2050,15 @@ tasks:
       artifact_commit: 2b2ef49b72311651f4ecf635477d3c2ba2e86383
       evidence_excerpt: "# TASK-0094 Handoff"
     source: specs/04_schema/identity_tenant_model.md; specs/12_testing/test_strategy.md
-    acceptance: [Cross-tenant reads, writes, projections, exports, support, and recovery fail closed under injected faults]
+    acceptance:
+      [
+        Cross-tenant reads,
+        writes,
+        projections,
+        exports,
+        support,
+        and recovery fail closed under injected faults,
+      ]
   - id: TASK-0095
     title: Implement dependency degradation and recovery matrix
     status: blocked
@@ -1600,7 +2074,15 @@ tasks:
       artifact_commit: 43860fb7b14490830d90d789a095ef76feb2ed56
       evidence_excerpt: "# TASK-0095 Handoff"
     source: specs/12_testing/test_strategy.md; docs/runbooks/controlled-pilot-runbook.md
-    acceptance: [Postgres, outbox, projection, Redis, provider, and model degradation have bounded recovery evidence]
+    acceptance:
+      [
+        Postgres,
+        outbox,
+        projection,
+        Redis,
+        provider,
+        and model degradation have bounded recovery evidence,
+      ]
   - id: TASK-0096
     title: Implement load-shape and saturation profile refresh
     status: blocked
@@ -1616,7 +2098,15 @@ tasks:
       artifact_commit: e1493f658b9b88f8e910b3930fb3e8f194838ae2
       evidence_excerpt: "# TASK-0096 Handoff"
     source: specs/12_testing/test_strategy.md
-    acceptance: [Bounded tenants, concurrency, payloads, duration, saturation signals, and scaling actions are immutable]
+    acceptance:
+      [
+        Bounded tenants,
+        concurrency,
+        payloads,
+        duration,
+        saturation signals,
+        and scaling actions are immutable,
+      ]
   - id: TASK-0097
     title: Implement data-quality anomaly review workflow
     status: blocked
@@ -1632,7 +2122,15 @@ tasks:
       artifact_commit: 9c4127245da03839cf5cd1bc0b1feb6bd6ede12d
       evidence_excerpt: "# TASK-0097 Handoff"
     source: specs/03_architecture/system_architecture.md; specs/14_admin_control_plane/admin_control_plane.md
-    acceptance: [Canonical anomalies, quarantine, reconciliation, owner, remediation, and corrective-forward evidence are tracked]
+    acceptance:
+      [
+        Canonical anomalies,
+        quarantine,
+        reconciliation,
+        owner,
+        remediation,
+        and corrective-forward evidence are tracked,
+      ]
   - id: TASK-0098
     title: Implement provider schema drift and mapping review
     status: blocked
@@ -1648,7 +2146,15 @@ tasks:
       artifact_commit: 6628976f6880ac0ab075ebe1acdd0f4f47755bdd
       evidence_excerpt: "# TASK-0098 Handoff"
     source: specs/03_architecture/system_architecture.md; specs/09_cicd/delivery_pipeline.md
-    acceptance: [Provider schema drift, mapping changes, quarantine, replay, versioning, and approval evidence fail closed]
+    acceptance:
+      [
+        Provider schema drift,
+        mapping changes,
+        quarantine,
+        replay,
+        versioning,
+        and approval evidence fail closed,
+      ]
   - id: TASK-0099
     title: Implement governed AI/context safety regression gate
     status: blocked
@@ -1664,7 +2170,15 @@ tasks:
       artifact_commit: 2d5222425c068ba6c622082790daa53ded7a6695
       evidence_excerpt: "# TASK-0099 Handoff"
     source: specs/10_security/security_baseline.md; specs/05_apis/api_standards.md
-    acceptance: [Citations, authorization, redaction, prompt bounds, model failure, and no-write/no-truth claims remain enforced]
+    acceptance:
+      [
+        Citations,
+        authorization,
+        redaction,
+        prompt bounds,
+        model failure,
+        and no-write/no-truth claims remain enforced,
+      ]
   - id: TASK-0100
     title: Implement workflow and policy simulation regression gate
     status: blocked
@@ -1680,7 +2194,16 @@ tasks:
       artifact_commit: 1ce35ad8a8a90c36423bd7dc5a5838efacea4878
       evidence_excerpt: "# TASK-0100 Handoff"
     source: specs/14_admin_control_plane/admin_control_plane.md; specs/05_apis/api_standards.md
-    acceptance: [Policy decisions, approval quorum, idempotency, concurrency, audit, export, and recovery remain fail closed]
+    acceptance:
+      [
+        Policy decisions,
+        approval quorum,
+        idempotency,
+        concurrency,
+        audit,
+        export,
+        and recovery remain fail closed,
+      ]
   - id: TASK-0101
     title: Implement compliance control-library evidence refresh
     status: blocked
@@ -1696,7 +2219,18 @@ tasks:
       artifact_commit: d990839b5e7df7261d725abfe5343974bae7729b
       evidence_excerpt: "# TASK-0101 Handoff"
     source: docs/compliance/control-library.json; specs/11_soc2/soc2_readiness.md
-    acceptance: [Control owners, frequency, systems, procedures, evidence, reviewers, exceptions, remediation, and retention synchronize]
+    acceptance:
+      [
+        Control owners,
+        frequency,
+        systems,
+        procedures,
+        evidence,
+        reviewers,
+        exceptions,
+        remediation,
+        and retention synchronize,
+      ]
   - id: TASK-0102
     title: Implement security threat-model delta review
     status: blocked
@@ -1712,7 +2246,15 @@ tasks:
       artifact_commit: f3506d69fa3fffc5d7dede86073fc69228ef39fd
       evidence_excerpt: "# TASK-0102 Handoff"
     source: specs/10_security/security_baseline.md
-    acceptance: [New boundaries, abuse cases, residual risks, mitigations, owners, and approvals are versioned]
+    acceptance:
+      [
+        New boundaries,
+        abuse cases,
+        residual risks,
+        mitigations,
+        owners,
+        and approvals are versioned,
+      ]
   - id: TASK-0103
     title: Implement dependency and supply-chain provenance refresh
     status: blocked
@@ -1728,7 +2270,15 @@ tasks:
       artifact_commit: da5f5462e77302077da86d30a6cbe1f4d996fd4a
       evidence_excerpt: "# TASK-0103 Handoff"
     source: specs/09_cicd/delivery_pipeline.md; specs/10_security/security_baseline.md
-    acceptance: [Dependency pins, advisories, SBOM, provenance, signatures, and remediation evidence remain bound]
+    acceptance:
+      [
+        Dependency pins,
+        advisories,
+        SBOM,
+        provenance,
+        signatures,
+        and remediation evidence remain bound,
+      ]
   - id: TASK-0104
     title: Implement privacy request and export abuse rehearsal
     status: blocked
@@ -1744,7 +2294,17 @@ tasks:
       artifact_commit: 71be1cb8425f2f0b22aecfba5debf8448543fea7
       evidence_excerpt: "# TASK-0104 Handoff"
     source: specs/10_security/security_baseline.md; specs/11_soc2/soc2_readiness.md
-    acceptance: [Scoped requests, approval, redaction, expiry, rate limits, abuse detection, audit, and deletion interactions fail closed]
+    acceptance:
+      [
+        Scoped requests,
+        approval,
+        redaction,
+        expiry,
+        rate limits,
+        abuse detection,
+        audit,
+        and deletion interactions fail closed,
+      ]
   - id: TASK-0105
     title: Implement operational runbook drift gate
     status: blocked
@@ -1760,7 +2320,16 @@ tasks:
       artifact_commit: 41d9eb8e1a68feb5e04d003f0c4eb10812bd3de5
       evidence_excerpt: "# TASK-0105 Handoff"
     source: docs/runbooks/controlled-pilot-runbook.md; specs/13_docs/documentation_platform.md
-    acceptance: [Runbooks reference current APIs, thresholds, owners, commands, evidence, rollback, and unavailable states]
+    acceptance:
+      [
+        Runbooks reference current APIs,
+        thresholds,
+        owners,
+        commands,
+        evidence,
+        rollback,
+        and unavailable states,
+      ]
   - id: TASK-0106
     title: Implement public documentation and example drift refresh
     status: blocked
@@ -1776,7 +2345,17 @@ tasks:
       artifact_commit: 75d6b5f99e0b4ad49ca4805bb049f09fc2f7e3e8
       evidence_excerpt: "# TASK-0106 Handoff"
     source: specs/13_docs/documentation_platform.md; specs/05_apis/api_standards.md
-    acceptance: [Public docs, examples, SDKs, contracts, versions, permissions, errors, and migration guidance remain synchronized]
+    acceptance:
+      [
+        Public docs,
+        examples,
+        SDKs,
+        contracts,
+        versions,
+        permissions,
+        errors,
+        and migration guidance remain synchronized,
+      ]
   - id: TASK-0107
     title: Implement integrated v1.1 release-candidate rehearsal
     status: blocked
@@ -1792,7 +2371,17 @@ tasks:
       artifact_commit: ca285f1e1dbec17b3436f12844f6f49b62e6dacd
       evidence_excerpt: "# TASK-0107 Handoff"
     source: specs/09_cicd/delivery_pipeline.md; specs/12_testing/test_strategy.md
-    acceptance: [Security, migration, recovery, resilience, API, UI, documentation, and compliance gates execute in order]
+    acceptance:
+      [
+        Security,
+        migration,
+        recovery,
+        resilience,
+        API,
+        UI,
+        documentation,
+        and compliance gates execute in order,
+      ]
   - id: TASK-0108
     title: Implement independent release-candidate evidence review
     status: blocked
@@ -1808,7 +2397,14 @@ tasks:
       artifact_commit: 362a5f6794add5ceee8dc7e34f37382d96ff998c
       evidence_excerpt: "# TASK-0108 Handoff"
     source: AGENTS.md; agents/SUPERVISOR.md; docs/compliance/pilot-go-no-go.md
-    acceptance: [Independent review verifies source binding, mutation coverage, clean gates, no unsupported claims, and open blockers]
+    acceptance:
+      [
+        Independent review verifies source binding,
+        mutation coverage,
+        clean gates,
+        no unsupported claims,
+        and open blockers,
+      ]
   - id: TASK-0109
     title: Assemble v1.1 release-candidate evidence index
     status: blocked
@@ -1824,7 +2420,15 @@ tasks:
       artifact_commit: 6c0497554ebdb3ff67e61d8509c8181392cdceef
       evidence_excerpt: "# TASK-0109 Handoff"
     source: docs/MASTER_PLAN.md; docs/compliance/pilot-go-no-go.md
-    acceptance: [All TASK-0071Ã¢ÂÂ0108 artifacts, tests, controls, risks, owners, and external prerequisites are indexed]
+    acceptance:
+      [
+        All TASK-0071Ã¢ÂÂ0108 artifacts,
+        tests,
+        controls,
+        risks,
+        owners,
+        and external prerequisites are indexed,
+      ]
   - id: TASK-0110
     title: Assemble v1.1 release-candidate go/no-go decision
     status: blocked
@@ -1840,20 +2444,59 @@ tasks:
       artifact_commit: e30760ed32187b96d11fc3621c0c26fdca24f0c1
       evidence_excerpt: "# TASK-0110 Handoff"
     source: docs/compliance/pilot-go-no-go.md; specs/11_soc2/soc2_readiness.md
-    acceptance: [Final continuation/pause/stop decision is reproducible, approval-gated, source-bound, truthful, and makes no certification or production claim]
+    acceptance:
+      [
+        Final continuation/pause/stop decision is reproducible,
+        approval-gated,
+        source-bound,
+        truthful,
+        and makes no certification or production claim,
+      ]
   - id: TASK-0111
     title: Decide FDX-first architecture and legacy UPFS/Vetralysis reuse
     status: complete
     dependencies: []
-    inputs: [AGENTS.md, docs/MASTER_PLAN.md, docs/MASTER_PLAN_TRACEABILITY.md, docs/PRODUCTION_BACKLOG.md, specs/00_constitution/engineering_constitution.md, specs/03_architecture/system_architecture.md, specs/10_security/security_baseline.md, specs/12_testing/test_strategy.md]
-    normative_sources: [docs/MASTER_PLAN.md#Delivery-stages, specs/00_constitution/engineering_constitution.md#Product-invariants, specs/10_security/security_baseline.md#Security-baseline]
+    inputs:
+      [
+        AGENTS.md,
+        docs/MASTER_PLAN.md,
+        docs/MASTER_PLAN_TRACEABILITY.md,
+        docs/PRODUCTION_BACKLOG.md,
+        specs/00_constitution/engineering_constitution.md,
+        specs/03_architecture/system_architecture.md,
+        specs/10_security/security_baseline.md,
+        specs/12_testing/test_strategy.md,
+      ]
+    normative_sources:
+      [
+        docs/MASTER_PLAN.md#Delivery-stages,
+        specs/00_constitution/engineering_constitution.md#Product-invariants,
+        specs/10_security/security_baseline.md#Security-baseline,
+      ]
     source: docs/MASTER_PLAN.md#Delivery-stages
     role: Schema/Search/AI
-    authorized_files: [docs/decisions/, docs/PRODUCTION_BACKLOG.md, tasks/queue.yaml, docs/handoffs/]
+    authorized_files:
+      [
+        docs/decisions/,
+        docs/PRODUCTION_BACKLOG.md,
+        tasks/queue.yaml,
+        docs/handoffs/,
+      ]
     prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md]
-    acceptance: [Record FDX-first decision and each legacy asset accept-adapt-reject outcome, Require security license provenance compatibility and regression-test review before reuse, Record owner versions residual risk rollback and no production-capability claim]
-    contracts: [Decision references FDX/provider contract version and compatibility boundary; no runtime contract is changed]
-    required_tests: [Decision review checklist including security license compatibility and negative-test coverage]
+    acceptance:
+      [
+        Record FDX-first decision and each legacy asset accept-adapt-reject outcome,
+        Require security license provenance compatibility and regression-test review before reuse,
+        Record owner versions residual risk rollback and no production-capability claim,
+      ]
+    contracts:
+      [
+        Decision references FDX/provider contract version and compatibility boundary; no runtime contract is changed,
+      ]
+    required_tests:
+      [
+        Decision review checklist including security license compatibility and negative-test coverage,
+      ]
     tenant_security: Verified scope only; no credentials customer data or secrets are inspected or recorded.
     documentation: Decision record backlog update and candidate handoff.
     rollback: Revert only the accepted decision record; do not alter historic reclassifications.
@@ -1865,15 +2508,36 @@ tasks:
     title: Provision approved FDX provider sandbox credential boundary
     status: blocked
     dependencies: [TASK-0111]
-    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/03_architecture/system_architecture.md, specs/10_security/security_baseline.md, specs/12_testing/test_strategy.md]
-    normative_sources: [specs/03_architecture/system_architecture.md#Data-path, specs/10_security/security_baseline.md#Security-baseline]
+    inputs:
+      [
+        AGENTS.md,
+        docs/PRODUCTION_BACKLOG.md,
+        specs/03_architecture/system_architecture.md,
+        specs/10_security/security_baseline.md,
+        specs/12_testing/test_strategy.md,
+      ]
+    normative_sources:
+      [
+        specs/03_architecture/system_architecture.md#Data-path,
+        specs/10_security/security_baseline.md#Security-baseline,
+      ]
     source: specs/10_security/security_baseline.md#Security-baseline
     role: Backend
     authorized_files: [infra/, services/, docs/runbooks/, docs/handoffs/]
-    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
-    acceptance: [Use managed sandbox-only secret references or workload identity, Verify least privilege rotation expiry and egress boundary, Reject missing misbound expired or replayed credential material]
-    contracts: [Provider credential configuration and webhook trust boundary documented without secret values]
-    required_tests: [Credential misbinding expiry rotation and secret-redaction tests]
+    prohibited_files:
+      [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance:
+      [
+        Use managed sandbox-only secret references or workload identity,
+        Verify least privilege rotation expiry and egress boundary,
+        Reject missing misbound expired or replayed credential material,
+      ]
+    contracts:
+      [
+        Provider credential configuration and webhook trust boundary documented without secret values,
+      ]
+    required_tests:
+      [Credential misbinding expiry rotation and secret-redaction tests]
     tenant_security: No client-supplied tenant scope; credentials are environment-scoped and never logged.
     documentation: Provider onboarding and incident/rotation runbook.
     rollback: Disable provider binding and revoke sandbox credential; preserve audit evidence.
@@ -1883,15 +2547,38 @@ tasks:
     title: Implement immutable raw provider evidence and quarantine
     status: blocked
     dependencies: [TASK-0111, TASK-0112]
-    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/00_constitution/engineering_constitution.md, specs/03_architecture/system_architecture.md, specs/10_security/security_baseline.md]
-    normative_sources: [specs/00_constitution/engineering_constitution.md#Product-invariants, specs/03_architecture/system_architecture.md#Data-path]
+    inputs:
+      [
+        AGENTS.md,
+        docs/PRODUCTION_BACKLOG.md,
+        specs/00_constitution/engineering_constitution.md,
+        specs/03_architecture/system_architecture.md,
+        specs/10_security/security_baseline.md,
+      ]
+    normative_sources:
+      [
+        specs/00_constitution/engineering_constitution.md#Product-invariants,
+        specs/03_architecture/system_architecture.md#Data-path,
+      ]
     source: specs/03_architecture/system_architecture.md#Data-path
     role: Schema/Search/AI
     authorized_files: [services/, contracts/, docs/runbooks/, docs/handoffs/]
-    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
-    acceptance: [Persist immutable content-addressed raw artifacts with provenance, Scan validate and quarantine malformed or unsafe observations before canonicalization, Append corrections without altering original artifact]
-    contracts: [Versioned raw observation quarantine reason provenance and lineage schemas]
-    required_tests: [Tamper quarantine scanner failure cross-tenant authorization replay and raw-payload log-redaction tests]
+    prohibited_files:
+      [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance:
+      [
+        Persist immutable content-addressed raw artifacts with provenance,
+        Scan validate and quarantine malformed or unsafe observations before canonicalization,
+        Append corrections without altering original artifact,
+      ]
+    contracts:
+      [
+        Versioned raw observation quarantine reason provenance and lineage schemas,
+      ]
+    required_tests:
+      [
+        Tamper quarantine scanner failure cross-tenant authorization replay and raw-payload log-redaction tests,
+      ]
     tenant_security: Tenant-scoped access encryption audit retention and no raw evidence leakage to logs or prompts.
     documentation: Evidence/quarantine API and operator runbook.
     rollback: Stop intake and route new artifacts to quarantine; never delete immutable evidence.
@@ -1901,15 +2588,38 @@ tasks:
     title: Normalize canonical transactions with governed taxonomy
     status: blocked
     dependencies: [TASK-0113]
-    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/00_constitution/engineering_constitution.md, specs/03_architecture/system_architecture.md, specs/12_testing/test_strategy.md]
-    normative_sources: [specs/00_constitution/engineering_constitution.md#Correctness, specs/03_architecture/system_architecture.md#Data-path]
+    inputs:
+      [
+        AGENTS.md,
+        docs/PRODUCTION_BACKLOG.md,
+        specs/00_constitution/engineering_constitution.md,
+        specs/03_architecture/system_architecture.md,
+        specs/12_testing/test_strategy.md,
+      ]
+    normative_sources:
+      [
+        specs/00_constitution/engineering_constitution.md#Correctness,
+        specs/03_architecture/system_architecture.md#Data-path,
+      ]
     source: specs/00_constitution/engineering_constitution.md#Correctness
     role: Schema/Search/AI
     authorized_files: [contracts/, services/, packages/, docs/handoffs/]
-    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
-    acceptance: [Map validated observations to versioned canonical transactions, Preserve provider category mapping version raw evidence and transformation lineage, Use declared currency deterministic decimal and bitemporal fields while quarantining unmapped values]
-    contracts: [Canonical transaction taxonomy mapping and provider-category preservation schemas]
-    required_tests: [Golden decimal currency timezone mapping-version lineage and unmapped-category quarantine tests]
+    prohibited_files:
+      [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance:
+      [
+        Map validated observations to versioned canonical transactions,
+        Preserve provider category mapping version raw evidence and transformation lineage,
+        Use declared currency deterministic decimal and bitemporal fields while quarantining unmapped values,
+      ]
+    contracts:
+      [
+        Canonical transaction taxonomy mapping and provider-category preservation schemas,
+      ]
+    required_tests:
+      [
+        Golden decimal currency timezone mapping-version lineage and unmapped-category quarantine tests,
+      ]
     tenant_security: Canonicalization derives scope from evidence context and cannot cross tenants.
     documentation: Taxonomy governance mapping change and correction procedure.
     rollback: Pin prior mapping version and correct forward with appended assertions.
@@ -1919,15 +2629,41 @@ tasks:
     title: Implement bitemporal PostgreSQL RLS outbox and canonical read API
     status: blocked
     dependencies: [TASK-0114]
-    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/00_constitution/engineering_constitution.md, specs/03_architecture/system_architecture.md, specs/05_apis/api_standards.md, specs/10_security/security_baseline.md]
-    normative_sources: [specs/03_architecture/system_architecture.md#Multi-tenancy-and-scale, specs/03_architecture/system_architecture.md#Reliability, specs/05_apis/api_standards.md#API-standards]
+    inputs:
+      [
+        AGENTS.md,
+        docs/PRODUCTION_BACKLOG.md,
+        specs/00_constitution/engineering_constitution.md,
+        specs/03_architecture/system_architecture.md,
+        specs/05_apis/api_standards.md,
+        specs/10_security/security_baseline.md,
+      ]
+    normative_sources:
+      [
+        specs/03_architecture/system_architecture.md#Multi-tenancy-and-scale,
+        specs/03_architecture/system_architecture.md#Reliability,
+        specs/05_apis/api_standards.md#API-standards,
+      ]
     source: specs/03_architecture/system_architecture.md#Reliability
     role: Backend
-    authorized_files: [services/, contracts/, infra/, docs/runbooks/, docs/handoffs/]
-    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
-    acceptance: [Make tenant-scoped bitemporal PostgreSQL canonical authority with RLS defense in depth, Atomically write canonical changes audit and transactional outbox, Expose versioned authorized cursor-paginated canonical read API with structured errors]
-    contracts: [OpenAPI canonical read schema PostgreSQL migration outbox event schema and RLS policy]
-    required_tests: [Migration rehearsal RLS cross-tenant BOLA pagination authorization outbox atomicity idempotency and rollback tests]
+    authorized_files:
+      [services/, contracts/, infra/, docs/runbooks/, docs/handoffs/]
+    prohibited_files:
+      [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance:
+      [
+        Make tenant-scoped bitemporal PostgreSQL canonical authority with RLS defense in depth,
+        Atomically write canonical changes audit and transactional outbox,
+        Expose versioned authorized cursor-paginated canonical read API with structured errors,
+      ]
+    contracts:
+      [
+        OpenAPI canonical read schema PostgreSQL migration outbox event schema and RLS policy,
+      ]
+    required_tests:
+      [
+        Migration rehearsal RLS cross-tenant BOLA pagination authorization outbox atomicity idempotency and rollback tests,
+      ]
     tenant_security: Authorization-derived tenant/environment scope and deny-by-default RLS; audit every read/write without sensitive payloads.
     documentation: API permissions/errors migration operations and rollback runbooks.
     rollback: Rehearsed expand-contract or corrective-forward migration and outbox replay from durable checkpoint.
@@ -1937,15 +2673,41 @@ tasks:
     title: Implement provider incremental sync webhooks pagination and reconciliation
     status: blocked
     dependencies: [TASK-0112, TASK-0113, TASK-0115]
-    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/03_architecture/system_architecture.md, specs/05_apis/api_standards.md, specs/10_security/security_baseline.md, specs/12_testing/test_strategy.md]
-    normative_sources: [specs/03_architecture/system_architecture.md#Data-path, specs/03_architecture/system_architecture.md#Reliability, specs/10_security/security_baseline.md#Security-baseline]
+    inputs:
+      [
+        AGENTS.md,
+        docs/PRODUCTION_BACKLOG.md,
+        specs/03_architecture/system_architecture.md,
+        specs/05_apis/api_standards.md,
+        specs/10_security/security_baseline.md,
+        specs/12_testing/test_strategy.md,
+      ]
+    normative_sources:
+      [
+        specs/03_architecture/system_architecture.md#Data-path,
+        specs/03_architecture/system_architecture.md#Reliability,
+        specs/10_security/security_baseline.md#Security-baseline,
+      ]
     source: specs/03_architecture/system_architecture.md#Data-path
     role: Backend
-    authorized_files: [services/, contracts/, infra/, docs/runbooks/, docs/handoffs/]
-    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
-    acceptance: [Perform bounded incremental cursor/watermark sync with resumable pagination, Verify signed webhooks and deduplicate/replay-protect events, Reconcile provider source counts and watermarks to canonical/outbox state with actionable discrepancies]
-    contracts: [Provider adapter sync checkpoint webhook envelope and reconciliation result schemas]
-    required_tests: [Pagination restart webhook forgery replay duplicate rate limit provider outage bounded-backfill and reconciliation mismatch tests]
+    authorized_files:
+      [services/, contracts/, infra/, docs/runbooks/, docs/handoffs/]
+    prohibited_files:
+      [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance:
+      [
+        Perform bounded incremental cursor/watermark sync with resumable pagination,
+        Verify signed webhooks and deduplicate/replay-protect events,
+        Reconcile provider source counts and watermarks to canonical/outbox state with actionable discrepancies,
+      ]
+    contracts:
+      [
+        Provider adapter sync checkpoint webhook envelope and reconciliation result schemas,
+      ]
+    required_tests:
+      [
+        Pagination restart webhook forgery replay duplicate rate limit provider outage bounded-backfill and reconciliation mismatch tests,
+      ]
     tenant_security: Provider connection and checkpoints are tenant-bound; signature material and payloads stay secret/redacted.
     documentation: Connector onboarding webhook rotation recovery and reconciliation runbooks.
     rollback: Pause connector retain checkpoint/evidence replay safely and corrective-forward discrepancies.
@@ -1955,15 +2717,38 @@ tasks:
     title: Deploy FDX slice composition with privacy-safe observability
     status: blocked
     dependencies: [TASK-0115, TASK-0116]
-    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/00_constitution/engineering_constitution.md, specs/09_cicd/delivery_pipeline.md, specs/10_security/security_baseline.md]
-    normative_sources: [specs/00_constitution/engineering_constitution.md#Operational-quality, specs/09_cicd/delivery_pipeline.md#CI-CD-and-SDLC]
+    inputs:
+      [
+        AGENTS.md,
+        docs/PRODUCTION_BACKLOG.md,
+        specs/00_constitution/engineering_constitution.md,
+        specs/09_cicd/delivery_pipeline.md,
+        specs/10_security/security_baseline.md,
+      ]
+    normative_sources:
+      [
+        specs/00_constitution/engineering_constitution.md#Operational-quality,
+        specs/09_cicd/delivery_pipeline.md#CI-CD-and-SDLC,
+      ]
     source: specs/00_constitution/engineering_constitution.md#Operational-quality
     role: Backend
     authorized_files: [infra/, services/, docs/runbooks/, docs/handoffs/]
-    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
-    acceptance: [Compose deployed API worker database and connector paths, Emit redacted structured logs metrics traces audit and health signals, Provide alerts dashboards SLOs and failure/recovery runbook]
-    contracts: [Runtime configuration health/readiness telemetry and audit event documentation]
-    required_tests: [Composed smoke health secret-redaction failure-injection recovery and telemetry cardinality tests]
+    prohibited_files:
+      [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance:
+      [
+        Compose deployed API worker database and connector paths,
+        Emit redacted structured logs metrics traces audit and health signals,
+        Provide alerts dashboards SLOs and failure/recovery runbook,
+      ]
+    contracts:
+      [
+        Runtime configuration health/readiness telemetry and audit event documentation,
+      ]
+    required_tests:
+      [
+        Composed smoke health secret-redaction failure-injection recovery and telemetry cardinality tests,
+      ]
     tenant_security: Telemetry excludes credentials account numbers raw evidence prompts and unnecessary financial descriptions.
     documentation: Deployment incident SLO and rollback runbooks.
     rollback: Canary/cell rollback connector pause outbox replay and reconciled corrective-forward.
@@ -1973,15 +2758,39 @@ tasks:
     title: Implement governed read-only transaction skill
     status: blocked
     dependencies: [TASK-0115, TASK-0117, TASK-0122]
-    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/01_product/vision_and_scope.md, specs/06_ai/ai_runtime.md, specs/08_policies/policy_system.md, specs/12_testing/test_strategy.md]
-    normative_sources: [specs/06_ai/ai_runtime.md#Governed-AI-runtime, specs/08_policies/policy_system.md#Policy-system]
+    inputs:
+      [
+        AGENTS.md,
+        docs/PRODUCTION_BACKLOG.md,
+        specs/01_product/vision_and_scope.md,
+        specs/06_ai/ai_runtime.md,
+        specs/08_policies/policy_system.md,
+        specs/12_testing/test_strategy.md,
+      ]
+    normative_sources:
+      [
+        specs/06_ai/ai_runtime.md#Governed-AI-runtime,
+        specs/08_policies/policy_system.md#Policy-system,
+      ]
     source: specs/06_ai/ai_runtime.md#Governed-AI-runtime
     role: Schema/Search/AI
     authorized_files: [services/, contracts/, packages/, docs/handoffs/]
-    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
-    acceptance: [Register typed read-only skill with owner permissions tool/context dependencies budgets evaluations release state and rollback target, Assemble deterministic authorized bounded context with evidence citations, Enforce independent policy/schema checks and ensure model owns neither authorization nor durable truth]
-    contracts: [Skill input/output context profile tool policy citation and evaluation schemas]
-    required_tests: [Citation authorization prompt-injection adversarial DLP cross-tenant policy-deny schema and deterministic-total tests]
+    prohibited_files:
+      [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance:
+      [
+        Register typed read-only skill with owner permissions tool/context dependencies budgets evaluations release state and rollback target,
+        Assemble deterministic authorized bounded context with evidence citations,
+        Enforce independent policy/schema checks and ensure model owns neither authorization nor durable truth,
+      ]
+    contracts:
+      [
+        Skill input/output context profile tool policy citation and evaluation schemas,
+      ]
+    required_tests:
+      [
+        Citation authorization prompt-injection adversarial DLP cross-tenant policy-deny schema and deterministic-total tests,
+      ]
     tenant_security: Consent/user/purpose-scoped context untrusted-content separation no secrets/raw prompts in telemetry and deny on absent citation/policy.
     documentation: Skill permissions evaluation incident-disable and rollback documentation.
     rollback: Disable/revert to approved prior skill release without changing canonical data.
@@ -1991,15 +2800,40 @@ tasks:
     title: Deliver runnable accessible customer transaction console
     status: blocked
     dependencies: [TASK-0115, TASK-0117, TASK-0123]
-    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/01_product/vision_and_scope.md, specs/02_ui/console_experience.md, specs/05_apis/api_standards.md, specs/12_testing/test_strategy.md]
-    normative_sources: [specs/01_product/vision_and_scope.md#Initial-commercial-slice, specs/02_ui/console_experience.md#Page-contract, specs/05_apis/api_standards.md#API-standards]
+    inputs:
+      [
+        AGENTS.md,
+        docs/PRODUCTION_BACKLOG.md,
+        specs/01_product/vision_and_scope.md,
+        specs/02_ui/console_experience.md,
+        specs/05_apis/api_standards.md,
+        specs/12_testing/test_strategy.md,
+      ]
+    normative_sources:
+      [
+        specs/01_product/vision_and_scope.md#Initial-commercial-slice,
+        specs/02_ui/console_experience.md#Page-contract,
+        specs/05_apis/api_standards.md#API-standards,
+      ]
     source: specs/02_ui/console_experience.md#Page-contract
     role: Frontend
     authorized_files: [apps/, docs/, contracts/, docs/handoffs/]
-    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
-    acceptance: [Make authenticated console reachable in deployed composition using canonical APIs only, Provide evidence drilldown cursor pagination loading unavailable forbidden and error states, Meet keyboard focus semantic and assistive-technology acceptance without leaking unauthorized data]
-    contracts: [Page contract OpenAPI client mapping permission/error and accessibility behavior documentation]
-    required_tests: [E2E accessible keyboard screen-reader semantics unauthorized/cross-tenant retry pagination and API-only boundary tests]
+    prohibited_files:
+      [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance:
+      [
+        Make authenticated console reachable in deployed composition using canonical APIs only,
+        Provide evidence drilldown cursor pagination loading unavailable forbidden and error states,
+        Meet keyboard focus semantic and assistive-technology acceptance without leaking unauthorized data,
+      ]
+    contracts:
+      [
+        Page contract OpenAPI client mapping permission/error and accessibility behavior documentation,
+      ]
+    required_tests:
+      [
+        E2E accessible keyboard screen-reader semantics unauthorized/cross-tenant retry pagination and API-only boundary tests,
+      ]
     tenant_security: Session-derived scope only; no direct database/projection access and fail closed on authorization/API failure.
     documentation: User guide accessibility statement and support runbook.
     rollback: Revert immutable UI release or disable route behind approved flag; canonical data remains unchanged.
@@ -2009,15 +2843,40 @@ tasks:
     title: Execute FDX slice security compatibility and acceptance suite
     status: blocked
     dependencies: [TASK-0116, TASK-0117, TASK-0118, TASK-0119]
-    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/00_constitution/engineering_constitution.md, specs/09_cicd/delivery_pipeline.md, specs/10_security/security_baseline.md, specs/12_testing/test_strategy.md]
-    normative_sources: [specs/10_security/security_baseline.md#Security-baseline, specs/12_testing/test_strategy.md#Test-strategy, specs/09_cicd/delivery_pipeline.md#CI-CD-and-SDLC]
+    inputs:
+      [
+        AGENTS.md,
+        docs/PRODUCTION_BACKLOG.md,
+        specs/00_constitution/engineering_constitution.md,
+        specs/09_cicd/delivery_pipeline.md,
+        specs/10_security/security_baseline.md,
+        specs/12_testing/test_strategy.md,
+      ]
+    normative_sources:
+      [
+        specs/10_security/security_baseline.md#Security-baseline,
+        specs/12_testing/test_strategy.md#Test-strategy,
+        specs/09_cicd/delivery_pipeline.md#CI-CD-and-SDLC,
+      ]
     source: specs/12_testing/test_strategy.md#Test-strategy
     role: Independent QA/Security
     authorized_files: [docs/reviews/, docs/handoffs/, tests/, services/, apps/]
-    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
-    acceptance: [Verify FDX decision license security compatibility and reuse evidence, Run end-to-end sandbox evidence-to-console/skill path with reconciliation, Demonstrate no known tenant escape and document failures/remediation]
-    contracts: [Compatibility matrix and acceptance test evidence bind exact contract versions]
-    required_tests: [Unit contract integration E2E migration projection parity BOLA IDOR webhook forgery replay injection SSRF prompt-injection accessibility performance and restore tests]
+    prohibited_files:
+      [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance:
+      [
+        Verify FDX decision license security compatibility and reuse evidence,
+        Run end-to-end sandbox evidence-to-console/skill path with reconciliation,
+        Demonstrate no known tenant escape and document failures/remediation,
+      ]
+    contracts:
+      [
+        Compatibility matrix and acceptance test evidence bind exact contract versions,
+      ]
+    required_tests:
+      [
+        Unit contract integration E2E migration projection parity BOLA IDOR webhook forgery replay injection SSRF prompt-injection accessibility performance and restore tests,
+      ]
     tenant_security: Independent adversarial tenant and leakage testing; findings remain release blockers until accepted remediation.
     documentation: Acceptance report residual-risk register and release-blocker list.
     rollback: No promotion on failure; retain evidence and use task-specific corrective-forward plans.
@@ -2027,15 +2886,44 @@ tasks:
     title: Independently review FDX transaction slice for QA and security acceptance
     status: blocked
     dependencies: [TASK-0120]
-    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/00_constitution/engineering_constitution.md, specs/10_security/security_baseline.md, specs/12_testing/test_strategy.md]
-    normative_sources: [specs/00_constitution/engineering_constitution.md#Secure-by-default-delivery, specs/12_testing/test_strategy.md#Test-strategy]
+    inputs:
+      [
+        AGENTS.md,
+        docs/PRODUCTION_BACKLOG.md,
+        specs/00_constitution/engineering_constitution.md,
+        specs/10_security/security_baseline.md,
+        specs/12_testing/test_strategy.md,
+      ]
+    normative_sources:
+      [
+        specs/00_constitution/engineering_constitution.md#Secure-by-default-delivery,
+        specs/12_testing/test_strategy.md#Test-strategy,
+      ]
     source: specs/12_testing/test_strategy.md#Test-strategy
     role: Independent QA/Security
     authorized_files: [docs/reviews/, docs/handoffs/]
-    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml, apps/, services/, contracts/, infra/]
-    acceptance: [Independently verify provenance requirements tenant isolation external prerequisite status rollback and runtime evidence, Issue pass/fail with concrete blocker evidence, Make no production certification or deployment claim]
-    contracts: [Review binds exact approved contract and release-manifest versions]
-    required_tests: [Reproduce selected acceptance and negative tests from TASK-0120]
+    prohibited_files:
+      [
+        CODEOWNERS,
+        .github/,
+        README.md,
+        START_HERE.md,
+        tasks/queue.yaml,
+        apps/,
+        services/,
+        contracts/,
+        infra/,
+      ]
+    acceptance:
+      [
+        Independently verify provenance requirements tenant isolation external prerequisite status rollback and runtime evidence,
+        Issue pass/fail with concrete blocker evidence,
+        Make no production certification or deployment claim,
+      ]
+    contracts:
+      [Review binds exact approved contract and release-manifest versions]
+    required_tests:
+      [Reproduce selected acceptance and negative tests from TASK-0120]
     tenant_security: Review uses sanitized evidence and verifies no credential/customer-data leakage.
     documentation: Independent QA/Security report and accountable residual-risk decision.
     rollback: Failed review blocks promotion; corrective work is separately queued.
@@ -2045,15 +2933,35 @@ tasks:
     title: Establish governed-skills CI capability gate
     status: blocked
     dependencies: [TASK-0111]
-    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/06_ai/ai_runtime.md, specs/09_cicd/delivery_pipeline.md, specs/12_testing/test_strategy.md]
-    normative_sources: [specs/06_ai/ai_runtime.md#Governed-AI-runtime, specs/09_cicd/delivery_pipeline.md#CI-CD-and-SDLC]
+    inputs:
+      [
+        AGENTS.md,
+        docs/PRODUCTION_BACKLOG.md,
+        specs/06_ai/ai_runtime.md,
+        specs/09_cicd/delivery_pipeline.md,
+        specs/12_testing/test_strategy.md,
+      ]
+    normative_sources:
+      [
+        specs/06_ai/ai_runtime.md#Governed-AI-runtime,
+        specs/09_cicd/delivery_pipeline.md#CI-CD-and-SDLC,
+      ]
     source: specs/06_ai/ai_runtime.md#Governed-AI-runtime
     role: Schema/Search/AI
     authorized_files: [services/, scripts/, docs/, docs/handoffs/]
-    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
-    acceptance: [Validate runnable typed skill registration policy boundaries citations evaluations and rollback metadata, Fail closed for absent owner permissions or adversarial-evaluation coverage, Gate actual skill capability rather than synthetic evidence]
+    prohibited_files:
+      [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance:
+      [
+        Validate runnable typed skill registration policy boundaries citations evaluations and rollback metadata,
+        Fail closed for absent owner permissions or adversarial-evaluation coverage,
+        Gate actual skill capability rather than synthetic evidence,
+      ]
     contracts: [Skill registry/evaluation schema and CI invocation contract]
-    required_tests: [Valid skill missing permission citation failure prompt-injection and release-rollback negative tests]
+    required_tests:
+      [
+        Valid skill missing permission citation failure prompt-injection and release-rollback negative tests,
+      ]
     tenant_security: Gate uses synthetic data only and rejects cross-tenant/unauthorized context fixtures.
     documentation: CI capability criteria and skill-author guide.
     rollback: Revert the gate change separately; do not weaken a failing capability gate.
@@ -2063,15 +2971,36 @@ tasks:
     title: Establish accessibility CI capability gate for customer console
     status: blocked
     dependencies: [TASK-0111]
-    inputs: [AGENTS.md, docs/PRODUCTION_BACKLOG.md, specs/01_product/vision_and_scope.md, specs/02_ui/console_experience.md, specs/09_cicd/delivery_pipeline.md, specs/12_testing/test_strategy.md]
-    normative_sources: [specs/02_ui/console_experience.md#Page-contract, specs/12_testing/test_strategy.md#Test-strategy]
+    inputs:
+      [
+        AGENTS.md,
+        docs/PRODUCTION_BACKLOG.md,
+        specs/01_product/vision_and_scope.md,
+        specs/02_ui/console_experience.md,
+        specs/09_cicd/delivery_pipeline.md,
+        specs/12_testing/test_strategy.md,
+      ]
+    normative_sources:
+      [
+        specs/02_ui/console_experience.md#Page-contract,
+        specs/12_testing/test_strategy.md#Test-strategy,
+      ]
     source: specs/02_ui/console_experience.md#Page-contract
     role: Frontend
     authorized_files: [apps/, scripts/, docs/, docs/handoffs/]
-    prohibited_files: [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
-    acceptance: [Validate runnable console keyboard focus semantic labels and inaccessible-state failures, Fail closed for inaccessible authenticated transaction workflows, Gate product accessibility behavior rather than synthetic evidence]
+    prohibited_files:
+      [CODEOWNERS, .github/, README.md, START_HERE.md, tasks/queue.yaml]
+    acceptance:
+      [
+        Validate runnable console keyboard focus semantic labels and inaccessible-state failures,
+        Fail closed for inaccessible authenticated transaction workflows,
+        Gate product accessibility behavior rather than synthetic evidence,
+      ]
     contracts: [Console page contract and accessibility test harness criteria]
-    required_tests: [Keyboard focus heading label contrast state and forbidden-data non-leak accessibility tests]
+    required_tests:
+      [
+        Keyboard focus heading label contrast state and forbidden-data non-leak accessibility tests,
+      ]
     tenant_security: Accessibility fixtures remain synthetic and forbidden states expose no tenant or financial details.
     documentation: Accessibility test standard and console author guidance.
     rollback: Revert only an independently accepted gate change; never bypass failing accessibility checks.
