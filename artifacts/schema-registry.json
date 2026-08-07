@@ -20,10 +20,10 @@
       "sha256": "182f03a7d1436da5f2502a5eca1eb4d215f94efcd8e3fa3f85827961b54fd25d"
     },
     {
-      "schema_id": "https://schemas.example.invalid/upfs/raw-evidence/1.0.0",
-      "schema_version": "1.0.0",
+      "schema_id": "https://schemas.example.invalid/upfs/raw-evidence/1.1.0",
+      "schema_version": "1.1.0",
       "source_path": "contracts/schemas/raw-evidence.schema.json",
-      "sha256": "c135bc9c38c0c7d4b4a1256cfbd8c491f655a5a31bc5d680af54b1f5c9ced5b4"
+      "sha256": "4bbecf5f48f86434f45f138807f191e3b6e8329189fa22f44277121c0861d4e8"
     },
     {
       "schema_id": "https://upfs.example.invalid/schemas/transaction-search-response/1.0.0",
