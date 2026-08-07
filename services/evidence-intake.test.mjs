@@ -267,6 +267,148 @@ test("runtime validator rejects schema, correlation, provenance, timestamp, medi
   assert.equal(validateEvidence(valid), null);
 });
 
+test("strict UTC timestamp validation rejects normalized calendar and noncanonical values", () => {
+  const invalid = [
+    "2023-02-29T00:00:00Z",
+    "2024-02-30T00:00:00Z",
+    "2024-02-31T00:00:00Z",
+    "1900-02-29T00:00:00Z",
+    "2024-00-01T00:00:00Z",
+    "2024-13-01T00:00:00Z",
+    "2024-04-31T00:00:00Z",
+    "2024-01-00T00:00:00Z",
+    "2024-01-32T00:00:00Z",
+    "2024-01-01T24:00:00Z",
+    "2024-01-01T00:60:00Z",
+    "2024-01-01T00:00:60Z",
+    "2024-01-01t00:00:00Z",
+    "2024-01-01T00:00:00z",
+    "2024-01-01T00:00Z",
+    "2024-1-01T00:00:00Z",
+    "2024-01-1T00:00:00Z",
+    "2024-01-01T00:00:00+00:00",
+    "2024-01-01T00:00:00.1234567890Z",
+    " 2024-01-01T00:00:00Z",
+  ];
+  for (const timestamp of invalid) {
+    assert.equal(
+      validateEvidence({ ...evidence, observed_at: timestamp }),
+      "invalid_observed_at",
+      `observed_at ${timestamp}`,
+    );
+    assert.equal(
+      validateEvidence({
+        ...evidence,
+        provenance: { ...evidence.provenance, captured_at: timestamp },
+      }),
+      "invalid_provenance",
+      `captured_at ${timestamp}`,
+    );
+  }
+
+  for (const timestamp of [
+    "0001-01-01T00:00:00Z",
+    "2000-02-29T23:59:59Z",
+    "2024-02-29T00:00:00.1Z",
+    "2024-12-31T23:59:59.123456789Z",
+    "9999-12-31T23:59:59.999999999Z",
+  ]) {
+    const candidate = {
+      ...evidence,
+      observed_at: timestamp,
+      provenance: { ...evidence.provenance, captured_at: timestamp },
+    };
+    assert.equal(validateEvidence(candidate), null, timestamp);
+  }
+
+  assert.equal(
+    validateEvidence({
+      ...evidence,
+      observed_at: "2026-01-02T03:04:05.000000002Z",
+      provenance: {
+        ...evidence.provenance,
+        captured_at: "2026-01-02T03:04:05.000000001Z",
+      },
+    }),
+    "invalid_provenance",
+  );
+});
+
+test("malformed derived scope is bounded to identical denial without mutation or leakage", async () => {
+  const throwingGetter = {};
+  Object.defineProperty(throwingGetter, "organization_id", {
+    enumerable: true,
+    get() {
+      throw new Error(`getter:${content}`);
+    },
+  });
+  const throwingProxy = new Proxy(ids, {
+    ownKeys() {
+      throw new Error(`proxy:${content}`);
+    },
+  });
+  const throwingToString = {
+    toString() {
+      throw new Error(`toString:${content}`);
+    },
+  };
+  const malformed = [
+    { ...ids, organization_id: Symbol("secret") },
+    { ...ids, organization_id: 1n },
+    { ...ids, organization_id: throwingToString },
+    { ...ids, organization_id: [] },
+    { ...ids, organization_id: null },
+    { ...ids, organization_id: undefined },
+    { ...ids, extra: "not-allowed" },
+    { organization_id: ids.organization_id },
+    throwingGetter,
+    throwingProxy,
+    null,
+  ];
+  const denial = {
+    status: 403,
+    body: { code: "forbidden", retryable: false },
+  };
+  for (const scope of malformed) {
+    let scannerCalls = 0;
+    const service = make({
+      deriveScope: async () => scope,
+      scan: async () => {
+        scannerCalls += 1;
+        return clear;
+      },
+    });
+    const response = await service.intake(input());
+    assert.deepEqual(response, denial);
+    assert.equal(JSON.stringify(response).includes(content), false);
+    assert.equal(scannerCalls, 0);
+    assert.deepEqual(service.audit(), []);
+    assert.deepEqual(await service.get({ actor, id: evidence.id }), {
+      status: 404,
+      body: { code: "resource_not_found", retryable: false },
+    });
+  }
+});
+
+test("malformed scope denial permits corrected retry without retained state", async () => {
+  let scope = { ...ids, organization_id: Symbol("secret") };
+  let scannerCalls = 0;
+  const service = make({
+    deriveScope: async () => scope,
+    scan: async () => {
+      scannerCalls += 1;
+      return clear;
+    },
+  });
+  assert.equal((await service.intake(input())).body.code, "forbidden");
+  assert.equal(scannerCalls, 0);
+  assert.deepEqual(service.audit(), []);
+  scope = ids;
+  assert.equal((await service.intake(input())).status, 201);
+  assert.equal(scannerCalls, 1);
+  assert.equal(service.audit().length, 1);
+});
+
 test("malformed actor, idempotency, clock, and get identifiers fail closed without leakage", async () => {
   const service = make();
   assert.equal(

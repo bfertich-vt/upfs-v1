@@ -24,20 +24,57 @@ function clone(value) {
 function safeIdentity(actor) {
   return Boolean(
     actor &&
-      actor.verified === true &&
-      typeof actor.issuer === "string" &&
-      SAFE_TEXT.test(actor.issuer) &&
-      typeof actor.subject === "string" &&
-      SAFE_TEXT.test(actor.subject),
+    actor.verified === true &&
+    typeof actor.issuer === "string" &&
+    SAFE_TEXT.test(actor.issuer) &&
+    typeof actor.subject === "string" &&
+    SAFE_TEXT.test(actor.subject),
   );
 }
 
+const UTC_DATE_TIME =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?Z$/;
+
+function parseDateTime(value) {
+  if (typeof value !== "string") return null;
+  const match = UTC_DATE_TIME.exec(value);
+  if (!match) return null;
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText] =
+    match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+  if (month < 1 || month > 12 || hour > 23 || minute > 59 || second > 59)
+    return null;
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [
+    31,
+    leapYear ? 29 : 28,
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  ];
+  if (day < 1 || day > daysInMonth[month - 1]) return null;
+  const date = new Date(0);
+  date.setUTCFullYear(year, month - 1, day);
+  date.setUTCHours(hour, minute, second, 0);
+  const epochSecond = BigInt(Math.trunc(date.getTime() / 1_000));
+  const nanoseconds = BigInt((match[7] ?? "").padEnd(9, "0") || "0");
+  return epochSecond * 1_000_000_000n + nanoseconds;
+}
+
 function validDateTime(value) {
-  return (
-    typeof value === "string" &&
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(value) &&
-    !Number.isNaN(Date.parse(value))
-  );
+  return parseDateTime(value) !== null;
 }
 
 function validScope(scope) {
@@ -47,6 +84,35 @@ function validScope(scope) {
     UUID.test(scope.tenant_id) &&
     UUID.test(scope.environment_id)
   );
+}
+
+function normalizeScope(value) {
+  try {
+    if (!value || typeof value !== "object" || Array.isArray(value))
+      return null;
+    const descriptors = Object.getOwnPropertyDescriptors(value);
+    const keys = Object.keys(descriptors);
+    const expected = ["environment_id", "organization_id", "tenant_id"];
+    if (
+      keys.length !== expected.length ||
+      keys.sort().some((key, index) => key !== expected[index])
+    )
+      return null;
+    const normalized = {};
+    for (const key of expected) {
+      const descriptor = descriptors[key];
+      if (
+        !("value" in descriptor) ||
+        typeof descriptor.value !== "string" ||
+        !UUID.test(descriptor.value)
+      )
+        return null;
+      normalized[key] = descriptor.value;
+    }
+    return Object.freeze(normalized);
+  } catch {
+    return null;
+  }
 }
 
 function result(status, code, retryable = false) {
@@ -228,10 +294,12 @@ export class RawEvidenceIntakeService {
 
   async #scope(actor) {
     try {
-      return await this.deriveScope({
-        issuer: actor.issuer,
-        subject: actor.subject,
-      });
+      return normalizeScope(
+        await this.deriveScope({
+          issuer: actor.issuer,
+          subject: actor.subject,
+        }),
+      );
     } catch {
       return null;
     }
@@ -365,7 +433,9 @@ export function validateEvidence(evidence) {
     !validDateTime(provenance.captured_at)
   )
     return "invalid_provenance";
-  if (Date.parse(provenance.captured_at) < Date.parse(evidence.observed_at))
+  if (
+    parseDateTime(provenance.captured_at) < parseDateTime(evidence.observed_at)
+  )
     return "invalid_provenance";
   return null;
 }
