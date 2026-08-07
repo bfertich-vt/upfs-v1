@@ -1,0 +1,39 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002-R10
+title: Complete bounded full-tree Stage A state discovery
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 27efb657b54096f97443a1c47eececd6f01fa7d0
+dependencies: [RECOVERY-TASK-0001-CLOSURE-002-R9]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/QA_SECURITY.md
+  - docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R9-QA.md
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0001-stage-a-state.json
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R10.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R10.md
+acceptance:
+  - Bounded metadata-only traversal scans ignored/dependency/build directory names without reading their content and never follows links or reparse directory entries.
+  - Any exact, normalized, lookalike, or non-ASCII governance-like Stage A record outside the canonical ASCII path fails closed.
+  - Canonical regular file has link count one and retains exact index mode/blob/worktree equality.
+  - Traversal overflow and filesystem errors fail closed; R9 and R5 inherited controls remain enforced.
+  - TASK-0001 remains blocked with no attestation and later tasks frozen.
+security:
+  - ASCII-only governance record grammar; no incomplete Unicode confusable mapping. Metadata traversal limit is 100000 entries.
+tests:
+  - node --test scripts/closure-format-check.test.mjs scripts/historical-closure-validator.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve history and correct forward; never exclude ignored directories from governance-name discovery.
+independent_review: Fresh QA reviews exact R10 handoff candidate; only if accepted may it attest exact candidate before separate activation.

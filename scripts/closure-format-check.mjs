@@ -24,6 +24,7 @@ const candidates = [
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R7.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R8.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R9.yaml",
+  "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R10.yaml",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R2.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R3.md",
@@ -33,6 +34,7 @@ const candidates = [
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R7.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R8.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R9.md",
+  "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R10.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R2-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R3-QA.md",
@@ -49,12 +51,12 @@ export function canonicalStageAState(body) {
   const value = {
     version: 1,
     task_id: "TASK-0001",
-    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R9",
-    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R8",
+    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R10",
+    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R9",
     predecessor_disposition: "REJECTED",
     task_status: "blocked",
     attestation_status: "absent",
-    review_target: "R9_HANDOFF_CANDIDATE",
+    review_target: "R10_HANDOFF_CANDIDATE",
     activation_phase: "STAGE_A_REVIEW_PENDING",
     next_action: "FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED",
   };
@@ -65,7 +67,7 @@ export function canonicalStageAState(body) {
 }
 
 export function canonicalTaskOneRow() {
-  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R9.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R9 indexed-state binding, tests, task, and handoff only. | None for this corrective control. | Canonical row, repository-wide uniqueness, indexed-blob/worktree equality, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R9 handoff. |";
+  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R10.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R10 full-tree metadata discovery, tests, task, and handoff only. | None for this corrective control. | Canonical row, full-tree names, Unicode fail-closed, single-link topology, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R10 handoff. |";
 }
 
 function nulGit(root, args) {
@@ -81,25 +83,24 @@ function stateLookalike(rel) {
     .normalize("NFKC")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "");
-  return folded.includes("task0001stageastate");
+  const nonAscii = /[^\x20-\x7e]/.test(rel);
+  const governanceLike =
+    folded.includes("task0001") ||
+    (folded.includes("stage") && folded.includes("state")) ||
+    (folded.includes("closure") && folded.includes("state"));
+  return folded.includes("task0001stageastate") || (nonAscii && governanceLike);
 }
 
-function worktreePaths(root, current = root, output = []) {
-  const excluded = new Set([
-    ".git",
-    "node_modules",
-    "dist",
-    "build",
-    "coverage",
-    ".next",
-  ]);
+function worktreePaths(root, current = root, output = [], limit = 100000) {
   for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-    if (entry.isDirectory() && excluded.has(entry.name)) continue;
+    if (current === root && entry.name === ".git") continue;
+    if (output.length >= limit)
+      throw new Error(`worktree metadata traversal exceeds ${limit} entries`);
     const absolute = path.join(current, entry.name);
     const rel = path.relative(root, absolute).replaceAll("\\", "/");
     output.push(rel);
     if (entry.isDirectory() && !entry.isSymbolicLink())
-      worktreePaths(root, absolute, output);
+      worktreePaths(root, absolute, output, limit);
   }
   return output;
 }
@@ -149,8 +150,14 @@ export async function validateClosureFormatting(root) {
     .toString("utf8")
     .split("\0")
     .filter(Boolean);
+  let treePaths = [];
+  try {
+    treePaths = worktreePaths(root);
+  } catch (error) {
+    errors.push(`TASK-0001 state discovery failed closed: ${error.message}`);
+  }
   const lookalikes = new Set(
-    [...gitPaths, ...worktreePaths(root)].filter(stateLookalike),
+    [...gitPaths, ...treePaths].filter(stateLookalike),
   );
   if (lookalikes.size !== 1 || !lookalikes.has(stateRel))
     errors.push(
@@ -162,6 +169,7 @@ export async function validateClosureFormatting(root) {
     regular =
       stat.isFile() &&
       !stat.isSymbolicLink() &&
+      stat.nlink === 1 &&
       fs.realpathSync
         .native(statePath)
         .startsWith(`${fs.realpathSync.native(root)}${path.sep}`);

@@ -95,7 +95,7 @@ test("R5 authorization includes every modified validator test surface", () => {
   assert.match(task, /  - scripts\/historical-closure-validator\.test\.mjs/);
 });
 
-test("TASK-0001 whole row and R9 indexed state are repository-wide canonical", async () => {
+test("TASK-0001 R10 state discovery covers ignored, Unicode, and link topology", async () => {
   const root = fixture();
   const matrix = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
   const original = fs.readFileSync(matrix, "utf8");
@@ -111,7 +111,7 @@ test("TASK-0001 whole row and R9 indexed state are repository-wide canonical", a
     "ATTESTATION",
     "  ",
     ".",
-    "r9",
+    "r10",
   ]) {
     fs.writeFileSync(
       matrix,
@@ -137,10 +137,10 @@ test("TASK-0001 whole row and R9 indexed state are repository-wide canonical", a
       '  "task_status": "blocked",',
       '  "extra": true,\n  "task_status": "blocked",',
     ),
-    valid.replace('-R9"', '-R8"'),
+    valid.replace('-R10"', '-R9"'),
     valid.replace('"REJECTED"', '"ACCEPTED"'),
     valid.replace('"absent"', '"issued"'),
-    valid.replace('"R9_HANDOFF_CANDIDATE"', '"R8_HANDOFF_CANDIDATE"'),
+    valid.replace('"R10_HANDOFF_CANDIDATE"', '"R9_HANDOFF_CANDIDATE"'),
     valid.replace('"STAGE_A_REVIEW_PENDING"', '"ACTIVATION_PENDING"'),
     valid.replace(
       '"FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED"',
@@ -172,6 +172,35 @@ test("TASK-0001 whole row and R9 indexed state are repository-wide canonical", a
     "nested duplicate",
   );
   fs.rmSync(nested);
+  for (const rel of [
+    "node_modules/TASK-0001-stage-a-state.json",
+    "dist/TASK-0001-stage-a-state.json",
+    "build/TASK-0001-stage-a-state.json",
+    "coverage/TASK-0001-stage-a-state.json",
+    ".next/TASK-0001-stage-a-state.json",
+    "docs/alternate/TASK-0001-stage-а-state.json",
+    "docs/alternate/TASK-0001-stαge-a-state.json",
+    "docs/alternate/ＴＡＳＫ-０００１-stage-a-state.json",
+    "docs/évidence/TASK-0001-state.json",
+  ]) {
+    const target = path.join(root, rel);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, "x");
+    assert.notDeepEqual(
+      (await validateClosureFormatting(root)).errors,
+      [],
+      rel,
+    );
+    fs.rmSync(target);
+  }
+  const hardlink = path.join(root, "hardlink-alias.json");
+  fs.linkSync(state, hardlink);
+  assert.notDeepEqual(
+    (await validateClosureFormatting(root)).errors,
+    [],
+    "hardlink nlink",
+  );
+  fs.rmSync(hardlink);
   const blob = execFileSync("git", ["hash-object", state], {
     cwd: root,
     encoding: "utf8",
