@@ -5,6 +5,9 @@ import { execFileSync } from "node:child_process";
 
 const MATRIX = "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md";
 const DIRECTORY = "docs/governance/task-closures";
+const DISPOSITION_SOURCE_COMMIT = "420403fc09962d35d19af0cd735b056cb2a9a1ba";
+const DISPOSITION_SOURCE_SHA256 =
+  "05e29ce65b83b934fa80b116bb4052e74088de9e766d4b8de703941c091b2922";
 const SHA40 = /^[a-f0-9]{40}$/;
 const SHA64 = /^[a-f0-9]{64}$/;
 
@@ -369,6 +372,49 @@ function matrixRows(root, errors) {
     else rows.set(fields[0], fields);
   }
   return rows;
+}
+
+export function auditedDispositionMap(bytes, expectedDigest, errors) {
+  const dispositions = new Map();
+  if (
+    !Buffer.isBuffer(bytes) ||
+    !SHA64.test(expectedDigest || "") ||
+    digest(bytes || Buffer.alloc(0)) !== expectedDigest
+  ) {
+    errors.push(
+      "Audited historical disposition source has a stale or incorrect SHA-256.",
+    );
+    return dispositions;
+  }
+  const allowed = new Set([
+    "ACCEPTED",
+    "REMEDIATION_REQUIRED",
+    "EXTERNAL_PREREQUISITE",
+    "NOT_IMPLEMENTED",
+  ]);
+  for (const line of bytes.toString("utf8").split(/\r?\n/)) {
+    if (!/^\| TASK-\d{4} \|/.test(line)) continue;
+    const fields = line
+      .slice(1, -1)
+      .split("|")
+      .map((value) => value.trim());
+    const taskId = fields[0];
+    const disposition = fields[9];
+    if (fields.length !== 18 || !allowed.has(disposition))
+      errors.push(
+        `Audited historical disposition source has an invalid ${taskId || "row"}.`,
+      );
+    else if (dispositions.has(taskId))
+      errors.push(
+        `Audited historical disposition source duplicates ${taskId}.`,
+      );
+    else dispositions.set(taskId, disposition);
+  }
+  if (dispositions.size !== 110)
+    errors.push(
+      "Audited historical disposition source must bind exactly 110 tasks.",
+    );
+  return dispositions;
 }
 
 function validateAccepted(root, task, tasks, row, errors) {
@@ -904,6 +950,26 @@ export function validateHistoricalClosures(root, tasks, errors) {
     fs.existsSync(path.join(root, DIRECTORY));
   if (!hasClosure) return;
   const rows = matrixRows(root, errors);
+  const dispositionSource = immutableBytes(
+    root,
+    MATRIX,
+    DISPOSITION_SOURCE_COMMIT,
+    DISPOSITION_SOURCE_SHA256,
+    "audited historical disposition source",
+    errors,
+  );
+  ancestor(
+    root,
+    DISPOSITION_SOURCE_COMMIT,
+    "HEAD",
+    "audited historical disposition source ancestry",
+    errors,
+  );
+  const auditedDispositions = auditedDispositionMap(
+    dispositionSource,
+    DISPOSITION_SOURCE_SHA256,
+    errors,
+  );
   if (rows.size !== 110)
     errors.push(`${MATRIX} must contain exactly 110 historical rows.`);
   for (const task of governed) {
@@ -913,9 +979,10 @@ export function validateHistoricalClosures(root, tasks, errors) {
     else {
       if (fs.existsSync(closure))
         errors.push(`${task.id} has a closure record but is not complete.`);
-      if (rows.get(task.id)?.[9] !== "blocked")
+      const audited = auditedDispositions.get(task.id);
+      if (rows.get(task.id)?.[9] !== audited)
         errors.push(
-          `${MATRIX} ${task.id} must remain blocked without accepted closure evidence.`,
+          `${MATRIX} ${task.id} must preserve exact audited disposition ${audited || "<missing>"} without accepted closure evidence.`,
         );
     }
   }

@@ -1,0 +1,38 @@
+id: RECOVERY-HISTORICAL-DISPOSITIONS-002
+title: Correct historical disposition test and file-ownership scopes
+status: in_progress
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+author_thread: /root/schema_historical_dispositions_002
+author_worktree: C:\source\upfs-schema-historical-dispositions-002
+author_branch: codex/recovery-historical-dispositions-002
+base_commit: f62b9350bfb2b5459994be0c6e9ad4b3056ceb8b
+rejected_candidate: de71f6f44e12f47593986a43125b8cc117ccff30
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/recovery/RECOVERY-HISTORICAL-DISPOSITIONS-002.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-DISPOSITIONS-002.md
+prohibited_files:
+  - tasks/queue.yaml
+  - specs/**
+  - contracts/**
+  - scripts/**
+  - apps/**
+  - services/**
+  - .github/**
+  - docs/adr/**
+  - tasks/recovery/TASK-0111+
+acceptance_criteria:
+  - Preserve exactly 110 contiguous unique TASK-0001 through TASK-0110 rows, 18 nonempty fields, and the evidence-backed disposition counts unless exact new evidence requires a change.
+  - Every Required tests field explicitly traces surviving criteria to applicable security, replay, concurrency, audit, drift, accessibility, failure, rollback, and recovery coverage.
+  - Every Authorized/prohibited files field names task-specific concrete existing or intended bounded paths and prohibits shared control-plane files.
+  - Preserve the RECOVERY-HISTORICAL-DISPOSITIONS-001 rejection unchanged.
+required_checks:
+  - Deterministic row, field, vocabulary, count, dependency, source, and handoff validation
+  - Deterministic criteria-keyword-to-required-test coverage and repeated-ownership audit
+  - npm run format:check; npm test; npm run validate; npm run queue:check; npm run traceability:check
+  - git diff --check; git fsck --strict --no-reflogs; exact-signature sensitive-data scan
+security:
+  - Never promote reference, synthetic, contract-only, or local-only evidence to production acceptance.
+  - Require task-specific authorization, tenant-isolation, leakage, audit, replay, and rollback tests where applicable.
+rollback: Revert only the committed matrix and task records through reviewed corrective-forward flow; preserve the rejected candidate and QA report.

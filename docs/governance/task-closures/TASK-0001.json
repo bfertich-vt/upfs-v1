@@ -24,14 +24,14 @@
     "reviewed_candidate": "a408443dc7fc866777f83de681ec7688ac35e1ff"
   },
   "stage_a": {
-    "candidate_commit": "aaafb17804586738976fd31e1a0a84dda00c2b25",
-    "review": "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R18-QA.md",
-    "review_sha256": "3f46e460df6f864f89f9cfef4729b0280e79ad1029715f59dc485ba766bd9bad",
-    "review_commit": "0f0e6f360ec2f30d2eb94181e077801134d6c8c9",
+    "candidate_commit": "c35de5a92ad5224c6a2c5cb94f5846d764fcbe3a",
+    "review": "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R5-QA.md",
+    "review_sha256": "a7bfd2cb759e5216c224b055e953ee19bc80c483fbada609685774478bfaf618",
+    "review_commit": "c8c5640eaaee8df5d7319d18729c0d26d0cbd821",
     "attestation": "docs/reviews/attestations/TASK-0001-closure-verdict.json",
-    "attestation_sha256": "cc23ceeae1e62199e17576e3d11418cd07d7e0076a38ac8af57ff30f9a98bf6c",
-    "attestation_commit": "b5065a9df57e4c915d25ae0f4ffdd097a8841e6d",
-    "attestation_parent": "0f0e6f360ec2f30d2eb94181e077801134d6c8c9"
+    "attestation_sha256": "3cf922f194c8018745655286f562534a4417d5d47493c8a9999e03d5100e163a",
+    "attestation_commit": "9d904ab726a07bb619a8a90f013b0f8c194b381f",
+    "attestation_parent": "c8c5640eaaee8df5d7319d18729c0d26d0cbd821"
   },
   "hosted": {
     "evidence_boundary": "immutable inspected snapshot; GitHub API facts are not revalidated offline",
@@ -119,7 +119,7 @@
   ],
   "dependencies": [],
   "limitations": [
-    "The hosted GitHub facts are a repository-retained inspected snapshot and are not re-queried by offline validation.",
-    "This governance closure does not establish production readiness or GitHub-native human approval."
+    "Hosted GitHub facts remain an immutable repository-retained snapshot and are not re-queried by offline validation.",
+    "Acceptance proves repository baseline governance criteria only; it does not establish production readiness or GitHub-native human approval."
   ]
 }
