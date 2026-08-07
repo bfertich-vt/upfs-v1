@@ -1,0 +1,81 @@
+task_id: RECOVERY-TASK-0003-CLOSURE-003
+title: Enforce TASK-0003 schema string bounds and pre-evidence connector validation
+status: candidate
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+historical_task: TASK-0003
+base_commit: 01a2c97f5c6a7ec6045705ac5e3ef4c25228938b
+rejected_candidate: 7fc5e3e3916f2d7eb16146969dc2e0ae7817cbcc
+rejected_review: 01a2c97f5c6a7ec6045705ac5e3ef4c25228938b
+dependencies:
+  - TASK-0001
+  - TASK-0002
+  - RECOVERY-TASK-0003-CLOSURE-001
+  - RECOVERY-TASK-0003-CLOSURE-002
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - specs/04_schema/canonical_model.md
+  - specs/04_schema/identity_tenant_model.md
+  - specs/05_apis/api_standards.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - contracts/schemas/transaction.schema.json
+  - contracts/schemas/provider-transaction.schema.json
+  - tasks/recovery/RECOVERY-TASK-0003-CLOSURE-001.yaml
+  - tasks/recovery/RECOVERY-TASK-0003-CLOSURE-002.yaml
+  - docs/handoffs/RECOVERY-TASK-0003-CLOSURE-001.md
+  - docs/handoffs/RECOVERY-TASK-0003-CLOSURE-002.md
+  - docs/reviews/RECOVERY-TASK-0003-CLOSURE-001-QA.md
+  - docs/reviews/RECOVERY-TASK-0003-CLOSURE-002-QA.md
+authorized_files:
+  - services/transaction-registry.mjs
+  - services/transaction-registry.test.mjs
+  - services/connector-ingestion.mjs
+  - services/connector-ingestion.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0003-CLOSURE-003.yaml
+  - docs/handoffs/RECOVERY-TASK-0003-CLOSURE-003.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - contracts/**
+  - artifacts/**
+  - scripts/**
+  - .github/**
+  - package files
+  - specs/**
+  - TASK-0004+
+  - TASK-0011+
+  - prior task, handoff, and review records
+  - unrelated files
+acceptance:
+  - Runtime canonical-string validation exactly enforces every existing transaction-schema maximum length.
+  - Provider and provenance-kind values of length 100 are accepted and length 101 are rejected without contract drift.
+  - All bounded canonical metadata fields have zero, one, exact-boundary, over-boundary, whitespace, control, and mixed-string coverage.
+  - Connector category validation fails closed before evidence, canonical, nonce, idempotency, or audit mutation.
+  - Corrected connector retries succeed and valid category values are preserved exactly.
+  - R1 and R2 rejection evidence remains unchanged and capability remains a reference implementation only.
+security:
+  - Rejected metadata is never echoed in response or audit evidence.
+  - Connector prevalidation occurs before mutable evidence or canonical boundaries.
+  - Tenant and environment scope remains derived from verified membership and cross-scope responses remain non-disclosing.
+tests:
+  - node --test services/transaction-registry.test.mjs services/connector-ingestion.test.mjs
+  - Boundary coverage at 0, 1, exact schema maximum, and maximum plus 1
+  - Whitespace-only, boundary whitespace, control-character, and mixed-string rejection
+  - Mutation-free connector rejection and successful corrected retry
+  - npm test
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run queue:check
+  - npm run traceability:check
+  - npm run lint
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve both rejection records; use a reviewed revert before integration or a separate corrective-forward commit after integration.
+independent_review: A fresh QA/Security agent must review the exact committed candidate from an isolated worktree without editing implementation.

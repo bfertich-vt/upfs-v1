@@ -1,0 +1,71 @@
+task_id: RECOVERY-TASK-0003-CLOSURE-002
+title: Fail closed on non-canonical TASK-0003 identity and metadata strings
+status: candidate
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+historical_task: TASK-0003
+base_commit: 188f9a9e644a025913866eb6ea2d68298ba2a4f9
+rejected_candidate: 4cf37740480dcea9002451331e9b9dd02e5fa774
+rejected_review: 188f9a9e644a025913866eb6ea2d68298ba2a4f9
+dependencies: [TASK-0001, TASK-0002, RECOVERY-TASK-0003-CLOSURE-001]
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - specs/04_schema/canonical_model.md
+  - specs/04_schema/identity_tenant_model.md
+  - specs/05_apis/api_standards.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - contracts/schemas/transaction.schema.json
+  - tasks/recovery/RECOVERY-TASK-0003-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0003-CLOSURE-001.md
+  - docs/reviews/RECOVERY-TASK-0003-CLOSURE-001-QA.md
+authorized_files:
+  - services/transaction-registry.mjs
+  - services/transaction-registry.test.mjs
+  - services/connector-ingestion.mjs
+  - services/connector-ingestion.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0003-CLOSURE-002.yaml
+  - docs/handoffs/RECOVERY-TASK-0003-CLOSURE-002.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - contracts/**
+  - artifacts/**
+  - scripts/**
+  - .github/**
+  - package files
+  - specs/**
+  - TASK-0004+
+  - TASK-0011+
+  - rejected R1 task, handoff, and QA review
+  - unrelated files
+acceptance:
+  - Whitespace-only verified actor issuer or subject fails closed before scope derivation and cannot mutate transaction, history, idempotency, provenance, or success audit state.
+  - Actor issuer and subject are canonically trimmed before authorization, idempotency, attribution, provenance, and audit use; control characters are rejected.
+  - Provider/category, taxonomy, source observation, evidence reference, and provenance kind/actor/source_ref values must be bounded, control-free, nonempty canonical strings.
+  - Non-canonical transaction metadata fails before transaction, history, idempotency, or success-audit mutation with bounded non-disclosing errors.
+  - Valid canonical values and connector compatibility remain intact.
+  - R1 rejection evidence is preserved and capability remains classified as reference implementation only.
+security:
+  - Authorization derives only from the sanitized verified actor; malformed identity never reaches deriveScope.
+  - Cross-tenant and cross-environment responses remain non-disclosing.
+  - Failure responses contain bounded codes only and never echo rejected metadata.
+tests:
+  - node --test services/transaction-registry.test.mjs services/connector-ingestion.test.mjs
+  - Explicit whitespace, mixed whitespace/control, trim-boundary, mutation-free, leakage, and valid-value cases
+  - npm test
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run queue:check
+  - npm run traceability:check
+  - npm run lint
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve rejection and corrective history; use reviewed revert before integration or a separate corrective-forward commit after integration.
+independent_review: A fresh QA/Security agent must review the exact committed candidate from an isolated worktree without editing implementation.

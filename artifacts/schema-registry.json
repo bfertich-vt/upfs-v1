@@ -1,0 +1,41 @@
+{
+  "registry_version": "1.0.0",
+  "schemas": [
+    {
+      "schema_id": "https://schemas.example.invalid/upfs/transaction/1.0.0",
+      "schema_version": "1.0.0",
+      "source_path": "contracts/schemas/canonical-transaction.schema.json",
+      "sha256": "7ffa70302a6d04d5f32c116ba829d6a85452b5c47fa356865f0526be58b62c43"
+    },
+    {
+      "schema_id": "https://upfs.example.invalid/schemas/identity-foundation.schema.json",
+      "schema_version": "1.0.0",
+      "source_path": "contracts/schemas/identity-foundation.schema.json",
+      "sha256": "4d1e9ece1ca131fea50c0b0b35761c7086a6610747cbfbd0913cb4d860c7f022"
+    },
+    {
+      "schema_id": "https://schemas.example.invalid/upfs/provider-transaction/1.0.0",
+      "schema_version": "1.0.0",
+      "source_path": "contracts/schemas/provider-transaction.schema.json",
+      "sha256": "182f03a7d1436da5f2502a5eca1eb4d215f94efcd8e3fa3f85827961b54fd25d"
+    },
+    {
+      "schema_id": "https://schemas.example.invalid/upfs/raw-evidence/1.0.0",
+      "schema_version": "1.0.0",
+      "source_path": "contracts/schemas/raw-evidence.schema.json",
+      "sha256": "c135bc9c38c0c7d4b4a1256cfbd8c491f655a5a31bc5d680af54b1f5c9ced5b4"
+    },
+    {
+      "schema_id": "https://upfs.example.invalid/schemas/transaction-search-response/1.0.0",
+      "schema_version": "1.0.0",
+      "source_path": "contracts/schemas/transaction-search-response.schema.json",
+      "sha256": "b3098605e8809aa5757282d65ffedc7f80031644e61a132d23f5510bf55589dd"
+    },
+    {
+      "schema_id": "https://schemas.example.invalid/upfs/transaction/1.1.0",
+      "schema_version": "1.1.0",
+      "source_path": "contracts/schemas/transaction.schema.json",
+      "sha256": "4d19012b395b60ff3322c4dc4c2983b20a52c6822e443a32250ba496f6991565"
+    }
+  ]
+}
