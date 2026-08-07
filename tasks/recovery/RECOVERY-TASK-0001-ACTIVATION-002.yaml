@@ -1,0 +1,39 @@
+task_id: RECOVERY-TASK-0001-ACTIVATION-002
+title: Correct Stage B activation formatting coverage
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 401d145fc7328777e40398ae1fc449def69bafa9
+dependencies: [RECOVERY-TASK-0001-ACTIVATION-001]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/QA_SECURITY.md
+  - docs/handoffs/RECOVERY-TASK-0001-ACTIVATION-001.md
+  - docs/reviews/RECOVERY-TASK-0001-ACTIVATION-001-QA.md
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0001-stage-a-state.json
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-ACTIVATION-001.yaml
+  - tasks/recovery/RECOVERY-TASK-0001-ACTIVATION-002.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-ACTIVATION-002.md
+acceptance:
+  - R1 activation bindings, state, queue, matrix semantics, and active closure remain unchanged except R2 references.
+  - R2 task YAML is formatted by pinned Prettier and covered by production formatting validation.
+  - An unformatted R2 task fixture fails closed.
+  - TASK-0002 remains blocked.
+security:
+  - Formatting drift cannot evade the targeted activation fixture.
+tests:
+  - node --test scripts/closure-format-check.test.mjs scripts/historical-closure-validator.test.mjs
+  - npm run format:check
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve R1 rejection and correct forward without altering accepted Stage A evidence.
+independent_review: A fresh different QA/Security reviewer reviews exact R2 candidate.

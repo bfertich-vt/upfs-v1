@@ -19,6 +19,7 @@ function fixture() {
     "docs/governance/task-closures/TASK-0001-stage-a-state.json",
     "docs/governance/task-closures/TASK-0001.json",
     "tasks/queue.yaml",
+    "tasks/recovery/RECOVERY-TASK-0001-ACTIVATION-002.yaml",
     "MANIFEST.sha256",
     "CODEOWNERS",
     ".env.example",
@@ -97,6 +98,29 @@ async function withGitEnvironment(values, action) {
 test("closure formatting covers Prettier files and stable exclusions", async () => {
   const root = fixture();
   assert.deepEqual((await validateClosureFormatting(root)).errors, []);
+
+  const activationTask = path.join(
+    root,
+    "tasks/recovery/RECOVERY-TASK-0001-ACTIVATION-002.yaml",
+  );
+  const formattedActivationTask = fs.readFileSync(activationTask, "utf8");
+  const unformattedActivationTask = formattedActivationTask.replace(
+    /inputs:\n((?:  - .+\n)+)authorized_files:/,
+    (_, inputLines) =>
+      `inputs: [${inputLines
+        .trim()
+        .split("\n")
+        .map((line) => line.replace(/^  - /, ""))
+        .join(", ")}]\nauthorized_files:`,
+  );
+  assert.notEqual(unformattedActivationTask, formattedActivationTask);
+  fs.writeFileSync(activationTask, unformattedActivationTask);
+  assert.ok(
+    (await validateClosureFormatting(root)).errors.some((error) =>
+      error.includes("RECOVERY-TASK-0001-ACTIVATION-002.yaml is not formatted"),
+    ),
+  );
+  fs.writeFileSync(activationTask, formattedActivationTask);
 
   const json = path.join(
     root,
@@ -192,8 +216,8 @@ test("TASK-0001 Stage B activation authority is exact and fail closed", async ()
       '  "task_status": "complete",',
       '  "extra": true,\n  "task_status": "complete",',
     ),
-    valid.replace('-R18"', '-R13"'),
-    valid.replace('"ACCEPTED"', '"REJECTED"'),
+    valid.replace('ACTIVATION-001"', 'ACTIVATION-999"'),
+    valid.replace('"REJECTED"', '"ACCEPTED"'),
     valid.replace('"verified"', '"absent"'),
     valid.replace("aaafb17804586738976fd31e1a0a84dda00c2b25", "a".repeat(40)),
     valid.replace('"STAGE_B_REVIEW_PENDING"', '"ACTIVATION_PENDING"'),

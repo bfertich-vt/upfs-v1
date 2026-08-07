@@ -32,6 +32,7 @@ const candidates = [
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R17.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R18.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-ACTIVATION-001.yaml",
+  "tasks/recovery/RECOVERY-TASK-0001-ACTIVATION-002.yaml",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R2.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R3.md",
@@ -49,6 +50,7 @@ const candidates = [
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R17.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R18.md",
   "docs/handoffs/RECOVERY-TASK-0001-ACTIVATION-001.md",
+  "docs/handoffs/RECOVERY-TASK-0001-ACTIVATION-002.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R2-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R3-QA.md",
@@ -65,9 +67,9 @@ export function canonicalStageAState(body) {
   const value = {
     version: 1,
     task_id: "TASK-0001",
-    active_recovery_task: "RECOVERY-TASK-0001-ACTIVATION-001",
-    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R18",
-    predecessor_disposition: "ACCEPTED",
+    active_recovery_task: "RECOVERY-TASK-0001-ACTIVATION-002",
+    predecessor_task: "RECOVERY-TASK-0001-ACTIVATION-001",
+    predecessor_disposition: "REJECTED",
     task_status: "complete",
     attestation_status: "verified",
     reviewed_candidate: "aaafb17804586738976fd31e1a0a84dda00c2b25",
@@ -85,7 +87,7 @@ export function canonicalStageAState(body) {
 }
 
 export function canonicalTaskOneRow() {
-  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-ACTIVATION-001.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json; docs/governance/task-closures/TASK-0001.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Exact accepted R18 Stage A candidate, review, and attestation are Git-bound. | Hosted observations remain immutable snapshots. | Governance activation; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | ACCEPTED | Authoritative activation state and active closure record agree exactly. | Hosted API facts retain their documented snapshot boundary. | Backend owns activation; independent Stage B review remains required. | Stage B activation state, queue, matrix, active closure, tests, task, and handoff only. | None for this activation control. | Canonical state/queue/matrix/closure, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every rejected and inactive record. | Follow the authoritative activation state and fresh Stage B review. |";
+  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-ACTIVATION-002.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json; docs/governance/task-closures/TASK-0001.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Exact accepted R18 Stage A candidate, review, and attestation are Git-bound. | Hosted observations remain immutable snapshots. | Governance activation; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | ACCEPTED | Authoritative activation state and active closure record agree exactly. | Hosted API facts retain their documented snapshot boundary. | Backend owns activation; independent Stage B review remains required. | Stage B R2 formatting correction, task, tests, and handoff only. | None for this activation control. | Pinned format, canonical state/queue/matrix/closure, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every rejected and inactive record. | Follow the authoritative activation state and fresh Stage B R2 review. |";
 }
 
 function pathIdentity(value, expectedType) {
