@@ -10,7 +10,7 @@ function fixture() {
   for (const rel of [
     "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md",
     "scripts/queue-validator.mjs",
-    "docs/governance/task-closures/TASK-0001.json",
+    "docs/governance/task-closures/rejected/TASK-0001-r1.json",
   ]) {
     fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
     fs.copyFileSync(path.resolve(rel), path.join(root, rel));
@@ -22,7 +22,10 @@ test("closure formatting covers Prettier files and stable exclusions", async () 
   const root = fixture();
   assert.deepEqual((await validateClosureFormatting(root)).errors, []);
 
-  const json = path.join(root, "docs/governance/task-closures/TASK-0001.json");
+  const json = path.join(
+    root,
+    "docs/governance/task-closures/rejected/TASK-0001-r1.json",
+  );
   fs.writeFileSync(
     json,
     fs.readFileSync(json, "utf8").replace(/\n  "/, '\n     "'),
@@ -34,7 +37,7 @@ test("closure formatting covers Prettier files and stable exclusions", async () 
   );
 
   fs.copyFileSync(
-    path.resolve("docs/governance/task-closures/TASK-0001.json"),
+    path.resolve("docs/governance/task-closures/rejected/TASK-0001-r1.json"),
     json,
   );
   const matrix = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");

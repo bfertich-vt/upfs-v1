@@ -1,0 +1,41 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002-R4
+title: Replace narrative verdict parsing with structural QA attestation
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 5c63996d5e303ece1995671e57d25305a728c27f
+dependencies: [RECOVERY-TASK-0001-CLOSURE-002-R3]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/QA_SECURITY.md
+  - docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R3-QA.md
+  - scripts/historical-closure-validator.mjs
+authorized_files:
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+  - scripts/closure-format-check.mjs
+  - docs/governance/delivery-governance.md
+  - docs/governance/task-closures/TASK-0001.json
+  - docs/governance/task-closures/rejected/TASK-0001-r1.json
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/queue.yaml
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R4.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R4.md
+acceptance:
+  - Structural canonical JSON is the sole accepted verdict grammar; narrative prose never authorizes closure.
+  - Attestation path, content, digest, immutable blob, ancestry, sole-parent topology, and introduction are fail-closed.
+  - TASK-0001 remains blocked until fresh QA introduces the attestation and a later separately reviewed activation candidate binds it.
+  - Rejected evidence and all Git history remain preserved; TASK-0002 and later work does not advance.
+security:
+  - Governance-only correction with no runtime, tenant, financial, API, contract, migration, or durable-state changes.
+tests:
+  - node --test scripts/historical-closure-validator.test.mjs scripts/closure-format-check.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Correct forward only; never rewrite QA history or create an author-owned attestation.
+independent_review: Fresh QA/Security must review the exact r4 handoff candidate and introduce the attestation in its own distinct commit.

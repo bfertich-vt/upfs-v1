@@ -196,29 +196,109 @@ function strictReviewTopology(root, qa, remediation, label, errors) {
     );
 }
 
-export function acceptedVerdict(body, candidate) {
-  if (typeof body !== "string" || !SHA40.test(candidate || "")) return false;
-  const normalized = body.replace(/\r\n/g, "\n");
-  const canonical = `**Verdict: ACCEPTED** for exact candidate \`${candidate}\`.`;
-  const verdictFields = normalized
-    .split("\n")
-    .filter((line) => /\*\*Verdict\s*:/i.test(line));
-  if (verdictFields.length !== 1 || verdictFields[0] !== canonical)
+export function structuredVerdictAttestation(bytes, expected) {
+  if (!Buffer.isBuffer(bytes) || !object(expected)) return false;
+  if (
+    bytes.length >= 3 &&
+    bytes[0] === 0xef &&
+    bytes[1] === 0xbb &&
+    bytes[2] === 0xbf
+  )
     return false;
+  let body;
+  try {
+    body = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return false;
+  }
+  body = body.replace(/\r\n/g, "\n");
+  const value = {
+    version: 1,
+    task_id: expected.task_id,
+    reviewed_candidate: expected.reviewed_candidate,
+    verdict: "ACCEPTED",
+    reviewer_role: "Independent QA/Security",
+  };
+  if (
+    !/^TASK-\d{4}$/.test(value.task_id || "") ||
+    !SHA40.test(value.reviewed_candidate || "")
+  )
+    return false;
+  return body === `${JSON.stringify(value, null, 2)}\n`;
+}
 
-  // The canonical field above is the only verdict grammar. These patterns
-  // reject prose that would negate that field for this candidate without
-  // rejecting truthful scope limits about later commits or hosted checks.
-  const conflicts = [
-    /\bnot\s+accepted\b/i,
-    /\b(?:approval|acceptance)\s+(?:is\s+)?denied\b/i,
-    /\bthis\s+review\s+rejects?\s+(?:this\s+|the\s+)?candidate\b/i,
-    /\b(?:this|the|exact)\s+candidate\b[^\n.]{0,80}\b(?:rejected|denied)\b/i,
-    /\b(?:rejected|denied)\b[^\n.]{0,80}\b(?:this|the|exact)\s+candidate\b/i,
-    /^\s*\*\*(?:ACCEPTED|REJECTED)\*\*\s*$/im,
-    /^\s*\*\*REJECTED\*\*/im,
-  ];
-  return !conflicts.some((pattern) => pattern.test(normalized));
+function strictAttestationTopology(root, qa, taskId, label, errors) {
+  const canonical = `docs/reviews/attestations/${taskId}-closure-verdict.json`;
+  if (qa.attestation !== canonical)
+    errors.push(`${label}.attestation must use the canonical task path.`);
+  if (
+    qa.attestation_commit === qa.attestation_parent ||
+    qa.attestation_commit === qa.review_commit
+  )
+    errors.push(
+      `${label}.attestation_commit must be a distinct review commit.`,
+    );
+  if (
+    !commitExists(
+      root,
+      qa.attestation_parent,
+      `${label}.attestation_parent`,
+      errors,
+    ) ||
+    !commitExists(
+      root,
+      qa.attestation_commit,
+      `${label}.attestation_commit`,
+      errors,
+    )
+  )
+    return;
+  ancestor(
+    root,
+    qa.review_commit,
+    qa.attestation_parent,
+    `${label}.attestation ancestry`,
+    errors,
+  );
+  const parents = git(
+    root,
+    ["show", "-s", "--format=%P", qa.attestation_commit],
+    `${label}.attestation parents`,
+    errors,
+  )
+    ?.trim()
+    .split(/\s+/);
+  if (parents?.length !== 1 || parents[0] !== qa.attestation_parent)
+    errors.push(
+      `${label}.attestation_commit must have attestation_parent as its sole parent.`,
+    );
+  const before = git(
+    root,
+    ["cat-file", "-e", `${qa.attestation_parent}:${qa.attestation}`],
+    `${label}.attestation preseed probe`,
+    [],
+    true,
+  );
+  if (before !== null)
+    errors.push(`${label}.attestation must not be pre-seeded.`);
+  const introduced = git(
+    root,
+    [
+      "diff-tree",
+      "--no-commit-id",
+      "--name-status",
+      "-r",
+      qa.attestation_commit,
+      "--",
+      qa.attestation,
+    ],
+    `${label}.attestation introduction`,
+    errors,
+  )?.trim();
+  if (introduced !== `A\t${qa.attestation}`)
+    errors.push(
+      `${label}.attestation must be introduced at attestation_commit.`,
+    );
 }
 
 function criterionEvidenceCell(body, criterion) {
@@ -403,7 +483,10 @@ function validateAccepted(root, task, tasks, row, errors) {
         "review_sha256",
         "review_commit",
         "reviewed_candidate",
-        "verdict",
+        "attestation",
+        "attestation_sha256",
+        "attestation_commit",
+        "attestation_parent",
       ],
       `${rel}.independent_qa`,
       errors,
@@ -428,19 +511,51 @@ function validateAccepted(root, task, tasks, row, errors) {
       errors.push(
         `${rel}.independent_qa.review differs from its review-commit blob.`,
       );
-    const body = immutable?.toString("utf8") || "";
-    acceptedReviewBody = body;
-    if (
-      qa.verdict !== "ACCEPTED" ||
-      !acceptedVerdict(body, qa.reviewed_candidate)
-    )
-      errors.push(
-        `${rel}.independent_qa must bind an explicit ACCEPTED verdict to the reviewed candidate.`,
-      );
+    acceptedReviewBody = immutable?.toString("utf8") || "";
     strictReviewTopology(
       root,
       qa,
       remediation,
+      `${rel}.independent_qa`,
+      errors,
+    );
+    const attestation = fileBytes(
+      root,
+      qa.attestation,
+      qa.attestation_sha256,
+      `${rel}.independent_qa.attestation`,
+      errors,
+    );
+    const immutableAttestation = immutableBytes(
+      root,
+      qa.attestation,
+      qa.attestation_commit,
+      qa.attestation_sha256,
+      `${rel}.independent_qa.attestation`,
+      errors,
+    );
+    if (
+      attestation &&
+      immutableAttestation &&
+      !attestation.equals(immutableAttestation)
+    )
+      errors.push(
+        `${rel}.independent_qa.attestation differs from its attestation-commit blob.`,
+      );
+    if (
+      !immutableAttestation ||
+      !structuredVerdictAttestation(immutableAttestation, {
+        task_id: task.id,
+        reviewed_candidate: qa.reviewed_candidate,
+      })
+    )
+      errors.push(
+        `${rel}.independent_qa attestation is not the exact canonical ACCEPTED structure.`,
+      );
+    strictAttestationTopology(
+      root,
+      qa,
+      task.id,
       `${rel}.independent_qa`,
       errors,
     );

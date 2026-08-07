@@ -25,6 +25,27 @@ machine-readable `docs/governance/task-closures/TASK-NNNN.json` record proves an
 `ACCEPTED` current disposition. The original reclassification record and queue
 `historical_evidence` remain unchanged; closure evidence is additive.
 
+Rejected or superseded records are retained under `task-closures/rejected/` and
+cannot activate closure. Authorization comes only from a dedicated
+`docs/reviews/attestations/TASK-NNNN-closure-verdict.json` artifact introduced
+by Independent QA/Security. Its UTF-8 content is canonical JSON (LF or CRLF is
+accepted) with exactly these ordered keys and values: `version` (number `1`),
+`task_id` (the exact task), `reviewed_candidate` (the exact 40-character SHA),
+`verdict` (exactly `ACCEPTED`), and `reviewer_role` (exactly `Independent
+QA/Security`). Prose, Markdown, examples, quotations, duplicate objects, extra
+or missing keys, alternate types, and noncanonical serialization are not
+verdict evidence. Narrative reviews remain immutable criterion evidence and
+are never parsed for authorization.
+
+Closure uses two stages to avoid circular self-approval. The remediation
+candidate leaves the task blocked. Fresh QA reviews it and introduces the
+attestation as the sole new file in a distinct single-parent commit. The
+supervisor may then create a separate activation candidate that binds that
+commit, restores the active closure record, and promotes the queue and matrix.
+Different fresh QA reviews the activation candidate before hosted integration.
+Neither implementation nor activation authors may fabricate or pre-seed the QA
+attestation.
+
 The queue validator binds the closure to existing immutable implementation,
 handoff, and independent-QA Git objects; an explicit accepted verdict; the
 exact hosted pull-request head; both required successful check runs; an

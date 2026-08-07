@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import test from "node:test";
 import { validateQueueDocument } from "./queue-validator.mjs";
-import { acceptedVerdict } from "./historical-closure-validator.mjs";
+import { structuredVerdictAttestation } from "./historical-closure-validator.mjs";
 
 function expectInvalid(root, queue, pattern) {
   assert.throws(() => validateQueueDocument(queue, root), pattern);
@@ -32,31 +33,53 @@ function commitTree(root, tree, parents, message) {
   ).trim();
 }
 
-test("accepted verdict parser implements one closed canonical grammar", () => {
+test("structured verdict attestation implements one closed canonical grammar", () => {
   const candidate = "a".repeat(40);
-  const valid = `**Verdict: ACCEPTED** for exact candidate \`${candidate}\`.`;
-  assert.equal(acceptedVerdict(valid, candidate), true);
+  const expected = { task_id: "TASK-0001", reviewed_candidate: candidate };
+  const valid = `${JSON.stringify({ version: 1, task_id: "TASK-0001", reviewed_candidate: candidate, verdict: "ACCEPTED", reviewer_role: "Independent QA/Security" }, null, 2)}\n`;
+  assert.equal(
+    structuredVerdictAttestation(Buffer.from(valid), expected),
+    true,
+  );
+  assert.equal(
+    structuredVerdictAttestation(
+      Buffer.from(valid.replaceAll("\n", "\r\n")),
+      expected,
+    ),
+    true,
+  );
   for (const body of [
-    `${valid}, but this candidate is not accepted.`,
-    `${valid}; approval is denied.`,
-    `${valid}\nThis review rejects the candidate.`,
-    `${valid}\n**Verdict: REJECTED** for exact candidate \`${candidate}\`.`,
-    `${valid}\n${valid}`,
-    `**verdict: ACCEPTED** for exact candidate \`${candidate}\`.`,
-    `**Verdict: accepted** for exact candidate \`${candidate}\`.`,
-    ` **Verdict: ACCEPTED** for exact candidate \`${candidate}\`.`,
-    `**Verdict:  ACCEPTED** for exact candidate \`${candidate}\`.`,
-    `**Verdict: ACCEPTED** for exact candidate \`${candidate}\`. `,
-    `**Verdict: ACCEPTED** for exact candidate \`${"b".repeat(40)}\`.`,
-    `**Verdict: ACCEPTED**\nfor exact candidate \`${candidate}\`.`,
-    `**Verdict: ACCEPTED** for exact candidate \`${candidate}\`.\nPreamble marker: **Verdict: ACCEPTED**`,
-    `${valid}\n**REJECTED**`,
-    `${valid}\nAcceptance is denied.`,
-    `${valid}\nThe exact candidate is rejected.`,
+    `\`\`\`json\n${valid}\`\`\`\n`,
+    `> ${valid}`,
+    `${valid}${valid}`,
+    `${valid}prose`,
+    valid.replace('"ACCEPTED"', '"REJECTED"'),
+    valid.replace('"Independent QA/Security"', '"Supervisor"'),
+    valid.replace('"TASK-0001"', '"TASK-0002"'),
+    valid.replace(candidate, "b".repeat(40)),
+    valid.replace('"version": 1', '"version": "1"'),
+    valid.replace('  "verdict": "ACCEPTED",\n', ""),
+    valid.replace(
+      '  "verdict": "ACCEPTED",',
+      '  "extra": true,\n  "verdict": "ACCEPTED",',
+    ),
+    `\ufeff${valid}`,
+    `${valid}\u2028`,
+    "not json\n",
   ]) {
-    assert.equal(acceptedVerdict(body, candidate), false, body);
+    assert.equal(
+      structuredVerdictAttestation(Buffer.from(body), expected),
+      false,
+      body,
+    );
   }
-  assert.equal(acceptedVerdict(valid, "b".repeat(40)), false);
+  assert.equal(
+    structuredVerdictAttestation(Buffer.from(valid), {
+      ...expected,
+      reviewed_candidate: "b".repeat(40),
+    }),
+    false,
+  );
 });
 
 test("TASK-0001 accepted closure passes and all evidence substitutions fail closed", (t) => {
@@ -72,16 +95,62 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
     ["checkout", "--detach", "daeb6d9f4c04800e453ee92a91d8f69ef3138c3a"],
     { cwd: root, stdio: "ignore" },
   );
-  const copied = [
-    "tasks/queue.yaml",
-    "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md",
-    "docs/governance/task-closures/TASK-0001.json",
-    "docs/governance/task-closures/evidence/TASK-0001-validation-report.json",
-  ];
-  for (const rel of copied) {
-    fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
-    fs.copyFileSync(path.join(source, rel), path.join(root, rel));
-  }
+  const bridgeTree = execFileSync(
+    "git",
+    ["show", "-s", "--format=%T", "daeb6d9f4c04800e453ee92a91d8f69ef3138c3a"],
+    { cwd: root, encoding: "utf8" },
+  ).trim();
+  const attestationParent = commitTree(
+    root,
+    bridgeTree,
+    [
+      "daeb6d9f4c04800e453ee92a91d8f69ef3138c3a",
+      "ee01b09e3f86fd37461c4b98a05c41f54868a157",
+    ],
+    "fixture: join protected merge and QA history",
+  );
+  execFileSync("git", ["checkout", "--detach", attestationParent], {
+    cwd: root,
+    stdio: "ignore",
+  });
+  const evidence =
+    "docs/governance/task-closures/evidence/TASK-0001-validation-report.json";
+  fs.mkdirSync(path.dirname(path.join(root, evidence)), { recursive: true });
+  fs.copyFileSync(path.join(source, evidence), path.join(root, evidence));
+  const closureRel = "docs/governance/task-closures/TASK-0001.json";
+  fs.mkdirSync(path.dirname(path.join(root, closureRel)), { recursive: true });
+  fs.copyFileSync(
+    path.join(
+      source,
+      "docs/governance/task-closures/rejected/TASK-0001-r1.json",
+    ),
+    path.join(root, closureRel),
+  );
+
+  const attestationRel =
+    "docs/reviews/attestations/TASK-0001-closure-verdict.json";
+  const attestationPath = path.join(root, attestationRel);
+  fs.mkdirSync(path.dirname(attestationPath), { recursive: true });
+  const attestationBody = `${JSON.stringify({ version: 1, task_id: "TASK-0001", reviewed_candidate: "a408443dc7fc866777f83de681ec7688ac35e1ff", verdict: "ACCEPTED", reviewer_role: "Independent QA/Security" }, null, 2)}\n`;
+  fs.writeFileSync(attestationPath, attestationBody);
+  execFileSync("git", ["add", attestationRel], { cwd: root });
+  execFileSync(
+    "git",
+    [
+      "-c",
+      "user.name=Independent QA",
+      "-c",
+      "user.email=qa@example.invalid",
+      "commit",
+      "-m",
+      "qa: attest TASK-0001 closure verdict",
+    ],
+    { cwd: root, stdio: "ignore" },
+  );
+  const attestationCommit = execFileSync("git", ["rev-parse", "HEAD"], {
+    cwd: root,
+    encoding: "utf8",
+  }).trim();
 
   const queuePath = path.join(root, "tasks/queue.yaml");
   const closurePath = path.join(
@@ -89,11 +158,34 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
     "docs/governance/task-closures/TASK-0001.json",
   );
   const matrixPath = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
-  const originalQueue = fs.readFileSync(queuePath, "utf8");
-  const originalMatrix = fs.readFileSync(matrixPath, "utf8");
+  const originalQueue = fs
+    .readFileSync(queuePath, "utf8")
+    .replace(/(  - id: TASK-0001[\s\S]*?\n    status:) blocked/, "$1 complete");
+  fs.writeFileSync(queuePath, originalQueue);
+  const originalMatrix = fs
+    .readFileSync(matrixPath, "utf8")
+    .split(/\r?\n/)
+    .map((line) =>
+      line.startsWith("| TASK-0001 |")
+        ? line.replace("| blocked |", "| ACCEPTED |")
+        : line,
+    )
+    .join("\n");
+  fs.writeFileSync(matrixPath, originalMatrix);
   const originalClosure = JSON.parse(fs.readFileSync(closurePath, "utf8"));
+  delete originalClosure.independent_qa.verdict;
+  Object.assign(originalClosure.independent_qa, {
+    attestation: attestationRel,
+    attestation_sha256: crypto
+      .createHash("sha256")
+      .update(attestationBody)
+      .digest("hex"),
+    attestation_commit: attestationCommit,
+    attestation_parent: attestationParent,
+  });
   const writeClosure = (value) =>
     fs.writeFileSync(closurePath, `${JSON.stringify(value, null, 2)}\n`);
+  writeClosure(originalClosure);
   const mutate = (callback, pattern, queue = originalQueue) => {
     const record = structuredClone(originalClosure);
     callback(record);
@@ -191,15 +283,14 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
       "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md";
     record.independent_qa.review_sha256 =
       "8b79a979a5b1efa38f5a3235d892956ef1bc573db099552bf2dec3886ab9c5f7";
-    record.independent_qa.verdict = "ACCEPTED";
     record.hosted.head_sha = record.independent_qa.review_commit;
     record.hosted.checks.forEach((check) => {
       check.head_sha = record.hosted.head_sha;
     });
-  }, /explicit ACCEPTED verdict/);
+  }, /exact canonical ACCEPTED structure/);
   mutate((record) => {
-    record.independent_qa.verdict = "REJECTED";
-  }, /explicit ACCEPTED verdict/);
+    record.independent_qa.attestation_sha256 = "a".repeat(64);
+  }, /stale or incorrect SHA-256/);
   mutate((record) => {
     record.hosted.pull_request = 999;
   }, /protected_merge does not bind/);
