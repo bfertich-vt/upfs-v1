@@ -167,10 +167,15 @@ function v3ManifestErrors(worktree, manifest, requireObjects = false) {
   const erratumCount = refs.filter(
     ({ kind }) => kind === "erratum-source",
   ).length;
-  if (candidateCount !== 32)
-    errors.push("requires exactly 32 handoff candidates");
+  if (
+    JSON.stringify(manifest.required_counts) !==
+    JSON.stringify({ "handoff-candidate": 33, "erratum-source": 2, total: 35 })
+  )
+    errors.push("required counts do not match the immutable object set");
+  if (candidateCount !== 33)
+    errors.push("requires exactly 33 handoff candidates");
   if (erratumCount !== 2) errors.push("requires exactly two erratum sources");
-  if (refs.length !== 34) errors.push("requires exactly 34 immutable objects");
+  if (refs.length !== 35) errors.push("requires exactly 35 immutable objects");
   for (const entry of refs) {
     if (!/^[a-f0-9]{40}$/.test(entry.commit ?? ""))
       errors.push("immutable commit is malformed");
@@ -222,11 +227,27 @@ function copy(file, target) {
   return target;
 }
 
-test("complete immutable provenance bundle hydrates every historic handoff without a semantic bypass", () => {
+test("frozen v2 provenance bundle hydrates its pre-v3 historical topology without a semantic bypass", () => {
   const fixture = temp("upfs-complete-provenance-bundle-");
   const authoritative = temp("upfs-complete-provenance-authoritative-");
   const candidate = temp("upfs-complete-provenance-candidate-");
   try {
+    const codeownersCandidate =
+      "287b3894147080cb067ad2254869a2cabf998fce";
+    assert.ok(
+      handoffCandidateCommits(root).includes(codeownersCandidate),
+      "current handoff discovery must require the CODEOWNERS candidate",
+    );
+    const currentV3 = JSON.parse(
+      fs.readFileSync(historicalProvenanceV3Manifest, "utf8"),
+    );
+    assert.ok(
+      currentV3.refs.some(
+        ({ commit, kind }) =>
+          commit === codeownersCandidate && kind === "handoff-candidate",
+      ),
+      "current v3 transport must retain the CODEOWNERS candidate",
+    );
     const sourceClone = spawnSync(
       "git",
       ["clone", "--no-local", root, candidate],
@@ -235,13 +256,7 @@ test("complete immutable provenance bundle hydrates every historic handoff witho
       },
     );
     assert.equal(sourceClone.status, 0, sourceClone.stderr);
-    git(candidate, [
-      "checkout",
-      "--quiet",
-      "-B",
-      "candidate",
-      git(root, ["rev-parse", "HEAD"]),
-    ]);
+    git(candidate, ["checkout", "--quiet", historicalProvenanceV3FixtureBase]);
     git(authoritative, ["init", "--bare"]);
     git(authoritative, [
       "fetch",
@@ -389,6 +404,7 @@ test("v3 provenance bundle is complete, immutable, and fails closed under transp
     for (const relative of [
       "scripts/fixtures/historical-provenance-v3.bundle",
       "scripts/fixtures/historical-provenance-v3.json",
+      "docs/handoffs/RECOVERY-CODEOWNERS-ROUTING-035.md",
     ])
       copy(path.join(root, relative), path.join(candidate, relative));
     git(candidate, ["config", "user.email", "fixture@example.test"]);
@@ -397,6 +413,7 @@ test("v3 provenance bundle is complete, immutable, and fails closed under transp
       "add",
       "scripts/fixtures/historical-provenance-v3.bundle",
       "scripts/fixtures/historical-provenance-v3.json",
+      "docs/handoffs/RECOVERY-CODEOWNERS-ROUTING-035.md",
     ]);
     git(candidate, ["commit", "-m", "stage immutable v3 provenance fixture"]);
     git(authoritative, ["init", "--bare"]);
@@ -445,6 +462,21 @@ test("v3 provenance bundle is complete, immutable, and fails closed under transp
       validateRepositoryHandoffSpecificationDigests(fixture).status,
       "failed",
       "a fresh shallow clone must fail before v3 hydration",
+    );
+    assert.notEqual(
+      spawnSync(
+        "git",
+        [
+          "-C",
+          fixture,
+          "cat-file",
+          "-e",
+          "287b3894147080cb067ad2254869a2cabf998fce^{commit}",
+        ],
+        { encoding: "utf8" },
+      ).status,
+      0,
+      "the CODEOWNERS candidate must not leak from local history into the isolated shallow clone",
     );
 
     git(fixture, [
@@ -542,11 +574,40 @@ test("v3 provenance bundle is complete, immutable, and fails closed under transp
     substituted.refs[2].commit = substituted.refs[3].commit;
     assert.ok(v3ManifestErrors(fixture, substituted).length > 0);
     const mismatched = structuredClone(manifest);
-    mismatched.refs[2].object_sha256 = "0".repeat(64);
+    mismatched.refs.find(
+      ({ commit }) =>
+        commit === "287b3894147080cb067ad2254869a2cabf998fce",
+    ).object_sha256 = "0".repeat(64);
     assert.ok(v3ManifestErrors(fixture, mismatched, true).length > 0);
     const omitted = structuredClone(manifest);
-    omitted.refs.pop();
-    assert.ok(v3ManifestErrors(fixture, omitted).length > 0);
+    omitted.refs = omitted.refs.filter(
+      ({ commit }) =>
+        commit !== "287b3894147080cb067ad2254869a2cabf998fce",
+    );
+    assert.ok(
+      v3ManifestErrors(fixture, omitted).some((error) =>
+        error.includes("requires exactly 33 handoff candidates"),
+      ),
+      "the CODEOWNERS candidate object is mandatory",
+    );
+    const staleCounts = structuredClone(manifest);
+    staleCounts.required_counts = {
+      "handoff-candidate": 32,
+      "erratum-source": 2,
+      total: 34,
+    };
+    assert.ok(
+      v3ManifestErrors(fixture, staleCounts).some((error) =>
+        error.includes("required counts do not match"),
+      ),
+      "a stale manifest count cannot represent the current immutable set",
+    );
+    const unexpected = structuredClone(manifest);
+    unexpected.refs.push({ ...unexpected.refs[0], commit: "f".repeat(40) });
+    assert.ok(
+      v3ManifestErrors(fixture, unexpected).length > 0,
+      "an unexpected extra object must fail closed",
+    );
 
     git(partial, ["init", "--initial-branch=fixture/partial"]);
     git(partial, [
