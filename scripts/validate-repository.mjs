@@ -338,6 +338,31 @@ export function validateWorkflowPins(validationRoot = root) {
   );
   const packageJson = JSON.parse(readUtf8("package.json", validationRoot));
 
+  for (const [workflowName, workflowText] of [
+    ["validate", validateWorkflow],
+    ["security", securityWorkflow],
+  ]) {
+    const document = parseDocument(workflowText);
+    assert(
+      document.errors.length === 0,
+      `${workflowName} workflow must be valid YAML.`,
+    );
+    const workflow = document.toJS({ maxAliasCount: 100 }) ?? {};
+    assert(
+      Object.prototype.hasOwnProperty.call(workflow.on ?? {}, "pull_request"),
+      `${workflowName} workflow must run for pull requests.`,
+    );
+    const actionSteps = Object.values(workflow.jobs ?? {})
+      .flatMap((job) => (Array.isArray(job?.steps) ? job.steps : []))
+      .filter((step) => typeof step?.uses === "string");
+    for (const step of actionSteps) {
+      assert(
+        /^[^@\s]+@[a-f0-9]{40}$/.test(step.uses),
+        `${workflowName} workflow action ${step.uses} must use an immutable 40-character commit pin.`,
+      );
+    }
+  }
+
   validateNodeWorkflowPin(validateWorkflow);
 
   assert(
@@ -345,8 +370,39 @@ export function validateWorkflowPins(validationRoot = root) {
     "validate workflow must install pinned validator dependencies.",
   );
   assert(
-    packageJson.dependencies?.yaml === "2.8.1",
-    "package.json must pin yaml 2.8.1.",
+    packageJson.dependencies?.yaml === "2.9.0",
+    "package.json must pin yaml 2.9.0.",
+  );
+  for (const section of [
+    "dependencies",
+    "devDependencies",
+    "optionalDependencies",
+  ]) {
+    for (const [name, version] of Object.entries(packageJson[section] ?? {})) {
+      assert(
+        /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version),
+        `package.json ${section} entry ${name} must use an exact version.`,
+      );
+    }
+  }
+  for (const command of [
+    "npm run contracts:check",
+    "npm run documentation:check",
+    "./scripts/validate.ps1",
+  ]) {
+    assert(
+      validateWorkflow.includes(command),
+      `validate workflow must run ${command}.`,
+    );
+  }
+  assert(
+    validateWorkflow.includes("if ($report.status -ne 'passed')") &&
+      validateWorkflow.includes("if-no-files-found: error"),
+    "validate workflow must fail closed on a failed or missing evidence report.",
+  );
+  assert(
+    securityWorkflow.includes("npm run security:dependencies"),
+    "security workflow must run the dependency security gate.",
   );
   validateTrivyWorkflowPin(securityWorkflow);
   recordCheck("workflow-pins", {

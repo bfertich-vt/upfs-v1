@@ -5,7 +5,7 @@
   "description": "Pinned repository validation tooling for UPFS.",
   "license": "UNLICENSED",
   "dependencies": {
-    "yaml": "2.8.1"
+    "yaml": "2.9.0"
   },
   "devDependencies": {
     "embedded-postgres": "18.4.0-beta.17",
@@ -38,6 +38,6 @@
     "rehearsal:postgres:embedded": "node scripts/task-0014-embedded-postgres.mjs"
   },
   "optionalDependencies": {
-    "@embedded-postgres/linux-x64": "^18.4.0-beta.17"
+    "@embedded-postgres/linux-x64": "18.4.0-beta.17"
   }
 }
