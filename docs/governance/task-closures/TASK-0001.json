@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "task_id": "TASK-0001",
+  "disposition": "ACCEPTED",
+  "historical": {
+    "classification": "Unsupported completion claim",
+    "artifact": "docs/handoffs/TASK-0001.md",
+    "artifact_sha256": "73551a37afe0451f9cd370d5b67a2f812d784ddbbd89e62cd05ba974081bbc80",
+    "artifact_commit": "8099cf2ebbc8bf14a480e03dd32715622fff3000",
+    "evidence_excerpt": "# Handoff report"
+  },
+  "remediation": {
+    "task": "tasks/recovery/RECOVERY-TASK-0001-REVALIDATION-001.yaml",
+    "task_sha256": "b24db443a22ec69e2c0b3bb7b2008a1242d5f5d6505ef07481fa62eefca770a2",
+    "handoff": "docs/handoffs/RECOVERY-TASK-0001-REVALIDATION-001.md",
+    "handoff_sha256": "6771f9b1c19a34402f35d71be2478e12200f39c09cbd7418c2312d7b0f679bbe",
+    "implementation_commit": "521d003da45cc97619afedab4404d2c436dcc828",
+    "candidate_commit": "a408443dc7fc866777f83de681ec7688ac35e1ff"
+  },
+  "independent_qa": {
+    "review": "docs/reviews/RECOVERY-TASK-0001-REVALIDATION-001-R2-QA.md",
+    "review_sha256": "6dd7130a38a0426e294b6202727ae43f49f2616074217ce5a8dedd7a326c4f2f",
+    "review_commit": "ee01b09e3f86fd37461c4b98a05c41f54868a157",
+    "reviewed_candidate": "a408443dc7fc866777f83de681ec7688ac35e1ff"
+  },
+  "stage_a": {
+    "candidate_commit": "aaafb17804586738976fd31e1a0a84dda00c2b25",
+    "review": "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R18-QA.md",
+    "review_sha256": "3f46e460df6f864f89f9cfef4729b0280e79ad1029715f59dc485ba766bd9bad",
+    "review_commit": "0f0e6f360ec2f30d2eb94181e077801134d6c8c9",
+    "attestation": "docs/reviews/attestations/TASK-0001-closure-verdict.json",
+    "attestation_sha256": "cc23ceeae1e62199e17576e3d11418cd07d7e0076a38ac8af57ff30f9a98bf6c",
+    "attestation_commit": "b5065a9df57e4c915d25ae0f4ffdd097a8841e6d",
+    "attestation_parent": "0f0e6f360ec2f30d2eb94181e077801134d6c8c9"
+  },
+  "hosted": {
+    "evidence_boundary": "immutable inspected snapshot; GitHub API facts are not revalidated offline",
+    "repository": "bfertich-vt/upfs-v1",
+    "pull_request": 15,
+    "base_sha": "6dcd1860b874acb46a574f9a50762d2e97936770",
+    "head_sha": "ee01b09e3f86fd37461c4b98a05c41f54868a157",
+    "checks": [
+      {
+        "name": "repository-validation",
+        "run_id": 31143279411,
+        "job_id": 92757458237,
+        "head_sha": "ee01b09e3f86fd37461c4b98a05c41f54868a157",
+        "conclusion": "success"
+      },
+      {
+        "name": "repository-security",
+        "run_id": 31143279421,
+        "job_id": 92757458474,
+        "head_sha": "ee01b09e3f86fd37461c4b98a05c41f54868a157",
+        "conclusion": "success"
+      }
+    ],
+    "validation_artifact": {
+      "artifact_id": 8980559218,
+      "name": "validation-evidence",
+      "archive_digest": "sha256:aba069485d8ec379d932a70556cce5da153ff854b22aea455fdefc4f6ea07f78",
+      "content": "docs/governance/task-closures/evidence/TASK-0001-validation-report.json",
+      "content_sha256": "38c907c246ebb50bd96142e9de379b68602100bfb08395c16ef5f4460bf4af9c",
+      "content_status": "passed"
+    }
+  },
+  "protected_merge": {
+    "commit": "daeb6d9f4c04800e453ee92a91d8f69ef3138c3a",
+    "base_parent": "6dcd1860b874acb46a574f9a50762d2e97936770",
+    "head_tree": "255f27129647ff3df73da30cc8530136893030ec",
+    "merged_at": "2026-08-07T03:07:44Z",
+    "pull_request": 15
+  },
+  "acceptance_mapping": [
+    {
+      "criterion": "Validators run locally and in pull requests",
+      "evidence": [
+        {
+          "artifact": "docs/reviews/RECOVERY-TASK-0001-REVALIDATION-001-R2-QA.md",
+          "artifact_sha256": "6dd7130a38a0426e294b6202727ae43f49f2616074217ce5a8dedd7a326c4f2f",
+          "commit": "ee01b09e3f86fd37461c4b98a05c41f54868a157",
+          "excerpt": "Both validation and security workflows retain `pull_request` triggers."
+        }
+      ]
+    },
+    {
+      "criterion": "Branch protection and CODEOWNERS requirements are documented",
+      "evidence": [
+        {
+          "artifact": "docs/reviews/RECOVERY-TASK-0001-REVALIDATION-001-R2-QA.md",
+          "artifact_sha256": "6dd7130a38a0426e294b6202727ae43f49f2616074217ce5a8dedd7a326c4f2f",
+          "commit": "ee01b09e3f86fd37461c4b98a05c41f54868a157",
+          "excerpt": "`docs/REPOSITORY_GOVERNANCE.md` truthfully separates target controls from current enforcement."
+        }
+      ]
+    },
+    {
+      "criterion": "Dependency, secret, contract, and documentation checks have pinned tooling",
+      "evidence": [
+        {
+          "artifact": "docs/reviews/RECOVERY-TASK-0001-REVALIDATION-001-R2-QA.md",
+          "artifact_sha256": "6dd7130a38a0426e294b6202727ae43f49f2616074217ce5a8dedd7a326c4f2f",
+          "commit": "ee01b09e3f86fd37461c4b98a05c41f54868a157",
+          "excerpt": "Package declarations remain exact; workflow actions remain 40-character immutable SHAs;"
+        }
+      ]
+    },
+    {
+      "criterion": "CI produces an evidence summary and fails closed",
+      "evidence": [
+        {
+          "artifact": "docs/reviews/RECOVERY-TASK-0001-REVALIDATION-001-R2-QA.md",
+          "artifact_sha256": "6dd7130a38a0426e294b6202727ae43f49f2616074217ce5a8dedd7a326c4f2f",
+          "commit": "ee01b09e3f86fd37461c4b98a05c41f54868a157",
+          "excerpt": "Local validation generated `artifacts/validation-report.json` with status `passed`"
+        }
+      ]
+    }
+  ],
+  "dependencies": [],
+  "limitations": [
+    "The hosted GitHub facts are a repository-retained inspected snapshot and are not re-queried by offline validation.",
+    "This governance closure does not establish production readiness or GitHub-native human approval."
+  ]
+}

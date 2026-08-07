@@ -31,6 +31,7 @@ const candidates = [
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R16.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R17.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R18.yaml",
+  "tasks/recovery/RECOVERY-TASK-0001-ACTIVATION-001.yaml",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R2.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R3.md",
@@ -47,6 +48,7 @@ const candidates = [
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R16.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R17.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R18.md",
+  "docs/handoffs/RECOVERY-TASK-0001-ACTIVATION-001.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R2-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R3-QA.md",
@@ -63,14 +65,18 @@ export function canonicalStageAState(body) {
   const value = {
     version: 1,
     task_id: "TASK-0001",
-    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R18",
-    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R17",
-    predecessor_disposition: "REJECTED",
-    task_status: "blocked",
-    attestation_status: "absent",
-    review_target: "R18_HANDOFF_CANDIDATE",
-    activation_phase: "STAGE_A_REVIEW_PENDING",
-    next_action: "FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED",
+    active_recovery_task: "RECOVERY-TASK-0001-ACTIVATION-001",
+    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R18",
+    predecessor_disposition: "ACCEPTED",
+    task_status: "complete",
+    attestation_status: "verified",
+    reviewed_candidate: "aaafb17804586738976fd31e1a0a84dda00c2b25",
+    review_commit: "0f0e6f360ec2f30d2eb94181e077801134d6c8c9",
+    attestation_commit: "b5065a9df57e4c915d25ae0f4ffdd097a8841e6d",
+    attestation_sha256:
+      "cc23ceeae1e62199e17576e3d11418cd07d7e0076a38ac8af57ff30f9a98bf6c",
+    activation_phase: "STAGE_B_REVIEW_PENDING",
+    next_action: "FRESH_QA_REVIEW_THEN_MERGE_IF_ACCEPTED",
   };
   return (
     typeof body === "string" &&
@@ -79,7 +85,7 @@ export function canonicalStageAState(body) {
 }
 
 export function canonicalTaskOneRow() {
-  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R18.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R18 mutation-sensitive object parity coverage, task, and handoff only. | None for this corrective control. | Canonical row, complete ADS inventory, ASCII paths, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R18 handoff. |";
+  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-ACTIVATION-001.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json; docs/governance/task-closures/TASK-0001.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Exact accepted R18 Stage A candidate, review, and attestation are Git-bound. | Hosted observations remain immutable snapshots. | Governance activation; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | ACCEPTED | Authoritative activation state and active closure record agree exactly. | Hosted API facts retain their documented snapshot boundary. | Backend owns activation; independent Stage B review remains required. | Stage B activation state, queue, matrix, active closure, tests, task, and handoff only. | None for this activation control. | Canonical state/queue/matrix/closure, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every rejected and inactive record. | Follow the authoritative activation state and fresh Stage B review. |";
 }
 
 function pathIdentity(value, expectedType) {
@@ -650,8 +656,38 @@ export async function validateClosureFormatting(root, options = {}) {
     );
   if (!canonicalStageAState(indexed.toString("utf8")))
     errors.push(
-      `${stateRel} must be the one exact canonical R18 Stage A state record.`,
+      `${stateRel} must be the one exact canonical Stage B activation state record.`,
     );
+  try {
+    const activation = JSON.parse(
+      fs.readFileSync(
+        path.join(root, "docs/governance/task-closures/TASK-0001.json"),
+        "utf8",
+      ),
+    );
+    const state = JSON.parse(indexed.toString("utf8"));
+    if (
+      activation.disposition !== "ACCEPTED" ||
+      activation.stage_a?.candidate_commit !== state.reviewed_candidate ||
+      activation.stage_a?.review_commit !== state.review_commit ||
+      activation.stage_a?.attestation_commit !== state.attestation_commit ||
+      activation.stage_a?.attestation_sha256 !== state.attestation_sha256
+    )
+      errors.push(
+        "Active TASK-0001 closure disagrees with canonical activation state.",
+      );
+    const queue = fs.readFileSync(path.join(root, "tasks/queue.yaml"), "utf8");
+    if (!/  - id: TASK-0001[\s\S]*?\n    status: complete\n/.test(queue))
+      errors.push(
+        "TASK-0001 queue status disagrees with canonical activation state.",
+      );
+    if (!/  - id: TASK-0002[\s\S]*?\n    status: blocked\n/.test(queue))
+      errors.push("TASK-0002 must remain blocked during Stage B review.");
+  } catch (error) {
+    errors.push(
+      `TASK-0001 activation cross-check failed closed: ${error.message}`,
+    );
+  }
   try {
     validateAdsScope(
       context.worktree,

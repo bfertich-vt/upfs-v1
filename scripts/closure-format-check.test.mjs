@@ -17,6 +17,8 @@ function fixture() {
     "scripts/queue-validator.mjs",
     "docs/governance/task-closures/rejected/TASK-0001-r1.json",
     "docs/governance/task-closures/TASK-0001-stage-a-state.json",
+    "docs/governance/task-closures/TASK-0001.json",
+    "tasks/queue.yaml",
     "MANIFEST.sha256",
     "CODEOWNERS",
     ".env.example",
@@ -148,7 +150,7 @@ test("R5 authorization includes every modified validator test surface", () => {
   assert.match(task, /  - scripts\/historical-closure-validator\.test\.mjs/);
 });
 
-test("TASK-0001 R18 requires clean committed HEAD authority across closure-authorizing scope", async () => {
+test("TASK-0001 Stage B activation authority is exact and fail closed", async () => {
   const root = fixture();
   const matrix = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
   const original = fs.readFileSync(matrix, "utf8");
@@ -185,18 +187,18 @@ test("TASK-0001 R18 requires clean committed HEAD authority across closure-autho
   assert.equal(canonicalStageAState(valid), true);
   for (const mutation of [
     valid + valid,
-    valid.replace('  "task_status": "blocked",\n', ""),
+    valid.replace('  "task_status": "complete",\n', ""),
     valid.replace(
-      '  "task_status": "blocked",',
-      '  "extra": true,\n  "task_status": "blocked",',
+      '  "task_status": "complete",',
+      '  "extra": true,\n  "task_status": "complete",',
     ),
-    valid.replace('-R17"', '-R13"'),
-    valid.replace('"REJECTED"', '"ACCEPTED"'),
-    valid.replace('"absent"', '"issued"'),
-    valid.replace('"R18_HANDOFF_CANDIDATE"', '"R11_HANDOFF_CANDIDATE"'),
-    valid.replace('"STAGE_A_REVIEW_PENDING"', '"ACTIVATION_PENDING"'),
+    valid.replace('-R18"', '-R13"'),
+    valid.replace('"ACCEPTED"', '"REJECTED"'),
+    valid.replace('"verified"', '"absent"'),
+    valid.replace("aaafb17804586738976fd31e1a0a84dda00c2b25", "a".repeat(40)),
+    valid.replace('"STAGE_B_REVIEW_PENDING"', '"ACTIVATION_PENDING"'),
     valid.replace(
-      '"FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED"',
+      '"FRESH_QA_REVIEW_THEN_MERGE_IF_ACCEPTED"',
       '"REVIEW_R6_OR_ACTIVATE"',
     ),
     valid.replace('  "task_id"', ' "task_id"'),
