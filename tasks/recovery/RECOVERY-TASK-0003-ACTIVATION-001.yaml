@@ -1,0 +1,68 @@
+task_id: RECOVERY-TASK-0003-ACTIVATION-001
+title: Activate independently accepted TASK-0003 reference implementation
+status: candidate
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+historical_task: TASK-0003
+base_commit: ce1b966ef0614b8d567eca86ccc3f80cf8777ef0
+dependencies: [TASK-0001, TASK-0002, RECOVERY-TASK-0003-CLOSURE-004]
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/04_schema/canonical_model.md
+  - specs/04_schema/identity_tenant_model.md
+  - specs/05_apis/api_standards.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/MASTER_PLAN.md
+  - docs/REPOSITORY_GOVERNANCE.md
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/recovery/RECOVERY-TASK-0003-CLOSURE-004.yaml
+  - docs/handoffs/RECOVERY-TASK-0003-CLOSURE-004.md
+  - docs/reviews/RECOVERY-TASK-0003-CLOSURE-004-QA.md
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+authorized_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0003.json
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0003-ACTIVATION-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0003-ACTIVATION-001.md
+prohibited_files:
+  - services/**
+  - apps/**
+  - contracts/**
+  - specs/**
+  - .github/**
+  - package files
+  - TASK-0001 and TASK-0002 records
+  - TASK-0004+
+  - TASK-0111+
+  - prior TASK-0003 tasks, handoffs, reviews, and implementation evidence
+acceptance:
+  - Bind the exact independently accepted TASK-0003 R4 implementation, candidate, review artifact digest, review commit, and R1-R3 rejection ancestry.
+  - Bind exact protected PR 25 base/head, successful pre-merge checks, inspected retained artifact, protected merge topology/tree/time, and successful post-merge checks.
+  - Mark only TASK-0003 complete and ACCEPTED, classified exactly Proven reference implementation, while keeping TASK-0004 blocked and TASK-0112 through TASK-0123 frozen.
+  - Disclose that PostgreSQL/RLS, OIDC, provider, deployed routes, managed runtime, and production operation remain unimplemented.
+security:
+  - Wrong or missing commits, digests, checks, jobs, artifact, merge/tree/time, rejection ancestry, status, classification, limitation, or later-task promotion fails closed.
+  - No product, contract, specification, tenant, financial, credential, workflow, or deployment state changes.
+tests:
+  - node --test scripts/historical-closure-validator.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run queue:check
+  - npm run traceability:check
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve R1-R4 and protected evidence; before integration revert only activation commits, and after integration correct forward through a separately reviewed status record.
+independent_review: Fresh QA/Security distinct from implementation, remediation, and activation author reviews the exact activation candidate before push or promotion.
