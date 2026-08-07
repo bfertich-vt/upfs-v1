@@ -193,7 +193,9 @@ test("keeps every bounded canonical metadata string in schema parity", () => {
       maximum: 100,
       withValue: (value) => ({
         ...tx,
-        provider_categories: [{ ...tx.provider_categories[0], provider: value }],
+        provider_categories: [
+          { ...tx.provider_categories[0], provider: value },
+        ],
       }),
     },
     {
@@ -201,7 +203,9 @@ test("keeps every bounded canonical metadata string in schema parity", () => {
       maximum: 300,
       withValue: (value) => ({
         ...tx,
-        provider_categories: [{ ...tx.provider_categories[0], category: value }],
+        provider_categories: [
+          { ...tx.provider_categories[0], category: value },
+        ],
       }),
     },
     ...Object.keys(tx.taxonomy).map((field) => ({
@@ -257,6 +261,10 @@ test("keeps every bounded canonical metadata string in schema parity", () => {
       ["trailing whitespace", "value "],
       ["control", "value\u0000"],
       ["mixed control", "safe\tunsafe"],
+      ["C1 lower boundary", "value\u0080"],
+      ["C1 representative", "value\u0085"],
+      ["C1 upper boundary", "value\u009f"],
+      ["mixed C0/C1", "safe\u0000middle\u0085unsafe"],
     ])
       assert.notEqual(
         validateTransaction(withValue(value)),
@@ -312,6 +320,10 @@ test("fails closed before scope or state mutation for malformed actor claims", (
     { ...actor, subject: "\t\r\n" },
     { ...actor, issuer: "https://issuer.invalid\u0000spoof" },
     { ...actor, subject: "user\tspoof" },
+    { ...actor, issuer: "https://issuer.invalid\u0080spoof" },
+    { ...actor, subject: "user\u0085spoof" },
+    { ...actor, subject: "user\u009fspoof" },
+    { ...actor, issuer: "issuer\u0000mixed\u0085spoof" },
   ]) {
     const result = s.upsert({
       actor: malformedActor,
@@ -331,6 +343,24 @@ test("fails closed before scope or state mutation for malformed actor claims", (
     201,
   );
   assert.equal(s.history({ actor, id: tx.id }).body.length, 1);
+});
+
+test("accepts valid Unicode outside the C0/C1 control ranges", () => {
+  const candidate = {
+    ...tx,
+    source_observations: ["observation:café"],
+    evidence_refs: ["evidence:東京"],
+    provider_categories: [{ provider: "Synthetíc", category: "CAFÉ_☕" }],
+    taxonomy: { ...tx.taxonomy, family: "生活" },
+    provenance: [
+      {
+        ...tx.provenance[0],
+        actor: "connector:équipe",
+        source_ref: "observation:東京",
+      },
+    ],
+  };
+  assert.equal(validateTransaction(candidate), null);
 });
 
 test("canonically trims valid actor boundaries for authorization and attribution", () => {

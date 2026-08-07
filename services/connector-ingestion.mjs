@@ -1,6 +1,10 @@
 import crypto from "node:crypto";
 import { RawEvidenceIntakeService } from "./evidence-intake.mjs";
-import { CanonicalTransactionService } from "./transaction-registry.mjs";
+import {
+  CanonicalTransactionService,
+  containsControlCharacter,
+  isCanonicalMetadataString,
+} from "./transaction-registry.mjs";
 
 const clone = (value) =>
   value === null || typeof value !== "object"
@@ -26,14 +30,6 @@ const error = (status, code, retryable = false, details = undefined) => ({
   status,
   body: { code, retryable, ...(details ? { details } : {}) },
 });
-const CONTROL_CHARACTER = /[\u0000-\u001f\u007f-\u009f]/u;
-const isCanonicalProviderString = (value, maximumLength) =>
-  typeof value === "string" &&
-  value.length > 0 &&
-  value.length <= maximumLength &&
-  value === value.trim() &&
-  !CONTROL_CHARACTER.test(value);
-
 /**
  * API-backed reference boundary for provider transaction delivery. Provider
  * secrets, stores, and scanners are injected; no real credentials are used.
@@ -55,7 +51,13 @@ export class ConnectorIngestionService {
     this.now = now;
     this.replayWindowSeconds = replayWindowSeconds;
     for (const connector of connectors)
-      this.#connectors.set(connector.id, { ...connector });
+      this.#connectors.set(
+        connector.id,
+        Object.create(
+          Object.getPrototypeOf(connector),
+          Object.getOwnPropertyDescriptors(connector),
+        ),
+      );
   }
   async ingest({
     actor,
@@ -70,6 +72,8 @@ export class ConnectorIngestionService {
     if (!canonicalActor) return error(401, "authentication_required");
     const connector = this.#connectors.get(connectorId);
     if (!connector) return error(404, "connector_not_found");
+    if (!isCanonicalMetadataString(connector.provider, 100))
+      return error(400, "invalid_provider_category");
     if (
       !Number.isInteger(timestamp) ||
       Math.abs(this.now().getTime() / 1000 - timestamp) >
@@ -238,8 +242,10 @@ function normalizeVerifiedActor(actor) {
     actor.verified !== true ||
     typeof actor.issuer !== "string" ||
     typeof actor.subject !== "string" ||
-    /[\u0000-\u001f\u007f]/.test(actor.issuer) ||
-    /[\u0000-\u001f\u007f]/.test(actor.subject)
+    !isCanonicalMetadataString(actor.issuer.trim(), 2048) ||
+    !isCanonicalMetadataString(actor.subject.trim(), 300) ||
+    containsControlCharacter(actor.issuer) ||
+    containsControlCharacter(actor.subject)
   )
     return null;
   const issuer = actor.issuer.trim();
@@ -288,7 +294,7 @@ export function normalizeProviderTransaction(payload) {
     return { error: "invalid_provider_field" };
   if (
     payload.category !== undefined &&
-    !isCanonicalProviderString(payload.category, 300)
+    !isCanonicalMetadataString(payload.category, 300)
   )
     return { error: "invalid_provider_field" };
   return {

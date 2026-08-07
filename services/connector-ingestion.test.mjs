@@ -32,7 +32,10 @@ const make = (
     malware: "clear",
     prompt_injection: "clear",
   }),
+  provider = "synthetic",
 ) => {
+  const configuredProvider =
+    typeof provider === "function" ? provider : () => provider;
   const evidence = new RawEvidenceIntakeService({
     authorize: (_a, t, e) => t === tenantId && e === environmentId,
     classify,
@@ -52,7 +55,9 @@ const make = (
     connectors: [
       {
         id: "conn-1",
-        provider: "synthetic",
+        get provider() {
+          return configuredProvider();
+        },
         tenantId,
         environmentId,
         secret: "synthetic-secret",
@@ -162,6 +167,10 @@ test("enforces authenticated actor and connector-derived tenant/environment scop
     { ...actor, subject: "\t\r\n" },
     { ...actor, issuer: "issuer\u0000spoof" },
     { ...actor, subject: "subject\tspoof" },
+    { ...actor, issuer: "issuer\u0080spoof" },
+    { ...actor, subject: "subject\u0085spoof" },
+    { ...actor, subject: "subject\u009fspoof" },
+    { ...actor, issuer: "issuer\u0000mixed\u0085spoof" },
   ]) {
     const result = await service.ingest(
       args(service, {
@@ -274,6 +283,10 @@ test("applies provider schema bounds and preserves strict category handling", ()
     "FOOD ",
     "FOOD\tBAD",
     "FOOD\u0000BAD",
+    "FOOD\u0080BAD",
+    "FOOD\u0085BAD",
+    "FOOD\u009fBAD",
+    "FOOD\u0000MIXED\u0085BAD",
   ])
     assert.equal(
       normalizeProviderTransaction({ ...payload, category }).error,
@@ -282,6 +295,11 @@ test("applies provider schema bounds and preserves strict category handling", ()
   assert.equal(
     normalizeProviderTransaction({ ...payload, category: "x" }).value.category,
     "x",
+  );
+  assert.equal(
+    normalizeProviderTransaction({ ...payload, category: "CAFÉ_☕" }).value
+      .category,
+    "CAFÉ_☕",
   );
   assert.equal(
     normalizeProviderTransaction({ ...payload, category: "x".repeat(300) })
@@ -312,6 +330,10 @@ test("rejects non-canonical category before any state mutation and permits corre
     "FOOD ",
     "FOOD\tBAD",
     "FOOD\u0000BAD",
+    "FOOD\u0080BAD",
+    "FOOD\u0085BAD",
+    "FOOD\u009fBAD",
+    "FOOD\u0000MIXED\u0085BAD",
     "x".repeat(301),
   ].entries()) {
     const { service, evidence, canonical } = make();
@@ -345,4 +367,47 @@ test("rejects non-canonical category before any state mutation and permits corre
       { provider: "synthetic", category: "CORRECTED_CATEGORY" },
     ]);
   }
+});
+
+test("rejects configured provider before evidence or replay state and permits corrected retry", async () => {
+  for (const [index, provider] of [
+    "",
+    "   ",
+    " provider",
+    "provider ",
+    "provider\u0000bad",
+    "provider\u0080bad",
+    "provider\u0085bad",
+    "provider\u009fbad",
+    "provider\u0000mixed\u0085bad",
+    "x".repeat(101),
+  ].entries()) {
+    let configuredProvider = provider;
+    const { service, evidence, canonical } = make(
+      undefined,
+      () => configuredProvider,
+    );
+    const nonce = `nonce-provider-${String(index).padStart(4, "0")}`;
+    const idempotencyKey = `idempotency-provider-${index}`;
+    const invalid = await service.ingest(
+      args(service, { nonce, idempotencyKey }),
+    );
+    assert.deepEqual(invalid, {
+      status: 400,
+      body: { code: "invalid_provider_category", retryable: false },
+    });
+    assert.deepEqual(evidence.audit(), []);
+    assert.deepEqual(canonical.audit(), []);
+    assert.deepEqual(service.audit(), []);
+
+    configuredProvider = "x".repeat(100);
+    const retried = await service.ingest(
+      args(service, { nonce, idempotencyKey }),
+    );
+    assert.equal(retried.status, 201);
+    assert.equal(retried.body.provider_categories[0].provider.length, 100);
+  }
+
+  const one = make(undefined, "é");
+  assert.equal((await one.service.ingest(args(one.service))).status, 201);
 });

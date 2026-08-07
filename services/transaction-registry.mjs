@@ -5,7 +5,9 @@ import crypto from "node:crypto";
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const VERSION = /^\d+\.\d+\.\d+$/;
-const CONTROL_CHARACTER = /[\u0000-\u001f\u007f]/;
+const CONTROL_CHARACTER = /[\u0000-\u001f\u007f-\u009f]/u;
+export const containsControlCharacter = (value) =>
+  typeof value === "string" && CONTROL_CHARACTER.test(value);
 const TAXONOMY_FIELDS = [
   "domain",
   "family",
@@ -313,8 +315,8 @@ export class CanonicalTransactionService {
     if (
       !actor ||
       actor.verified !== true ||
-      !isCanonicalString(actor.issuer, 2048) ||
-      !isCanonicalString(actor.subject, 300)
+      !isCanonicalMetadataString(actor.issuer, 2048) ||
+      !isCanonicalMetadataString(actor.subject, 300)
     )
       return null;
     let scope;
@@ -448,8 +450,8 @@ export function validateTransaction(t) {
     t.provider_categories.some(
       (entry) =>
         !entry ||
-        !isCanonicalString(entry.provider, 100) ||
-        !isCanonicalString(entry.category, 300) ||
+        !isCanonicalMetadataString(entry.provider, 100) ||
+        !isCanonicalMetadataString(entry.category, 300) ||
         Object.keys(entry).some(
           (key) => !["provider", "category"].includes(key),
         ),
@@ -462,7 +464,9 @@ export function validateTransaction(t) {
     Array.isArray(t.taxonomy) ||
     Object.keys(t.taxonomy).sort().join("|") !==
       TAXONOMY_FIELDS.slice().sort().join("|") ||
-    TAXONOMY_FIELDS.some((key) => !isCanonicalString(t.taxonomy[key], 100))
+    TAXONOMY_FIELDS.some(
+      (key) => !isCanonicalMetadataString(t.taxonomy[key], 100),
+    )
   )
     return "invalid_taxonomy";
   if (
@@ -474,10 +478,10 @@ export function validateTransaction(t) {
         Object.keys(entry).some(
           (key) => !["kind", "actor", "at", "source_ref"].includes(key),
         ) ||
-        !isCanonicalString(entry.kind, 100) ||
-        !isCanonicalString(entry.actor, 300) ||
+        !isCanonicalMetadataString(entry.kind, 100) ||
+        !isCanonicalMetadataString(entry.actor, 300) ||
         !isValidDateTime(entry.at) ||
-        !isCanonicalString(entry.source_ref, 300),
+        !isCanonicalMetadataString(entry.source_ref, 300),
     )
   )
     return "invalid_provenance";
@@ -501,18 +505,18 @@ function validUniqueStrings(value) {
   return (
     Array.isArray(value) &&
     value.length > 0 &&
-    value.every((entry) => isCanonicalString(entry, 300)) &&
+    value.every((entry) => isCanonicalMetadataString(entry, 300)) &&
     new Set(value).size === value.length
   );
 }
 
-function isCanonicalString(value, maximumLength) {
+export function isCanonicalMetadataString(value, maximumLength) {
   return (
     typeof value === "string" &&
     value.length > 0 &&
     value.length <= maximumLength &&
     value === value.trim() &&
-    !CONTROL_CHARACTER.test(value)
+    !containsControlCharacter(value)
   );
 }
 
@@ -527,10 +531,10 @@ function normalizeVerifiedActor(actor) {
   const issuer = actor.issuer.trim();
   const subject = actor.subject.trim();
   if (
-    !isCanonicalString(issuer, 2048) ||
-    !isCanonicalString(subject, 300) ||
-    CONTROL_CHARACTER.test(actor.issuer) ||
-    CONTROL_CHARACTER.test(actor.subject)
+    !isCanonicalMetadataString(issuer, 2048) ||
+    !isCanonicalMetadataString(subject, 300) ||
+    containsControlCharacter(actor.issuer) ||
+    containsControlCharacter(actor.subject)
   )
     return null;
   return Object.freeze({ ...actor, issuer, subject });
