@@ -267,6 +267,27 @@ test("applies provider schema bounds and preserves strict category handling", ()
     normalizeProviderTransaction({ ...payload, category: 42 }).error,
     "invalid_provider_field",
   );
+  for (const category of [
+    "",
+    "   ",
+    " FOOD",
+    "FOOD ",
+    "FOOD\tBAD",
+    "FOOD\u0000BAD",
+  ])
+    assert.equal(
+      normalizeProviderTransaction({ ...payload, category }).error,
+      "invalid_provider_field",
+    );
+  assert.equal(
+    normalizeProviderTransaction({ ...payload, category: "x" }).value.category,
+    "x",
+  );
+  assert.equal(
+    normalizeProviderTransaction({ ...payload, category: "x".repeat(300) })
+      .value.category.length,
+    300,
+  );
   assert.equal(
     normalizeProviderTransaction({
       ...payload,
@@ -281,4 +302,47 @@ test("applies provider schema bounds and preserves strict category handling", ()
     }).error,
     "invalid_provider_field",
   );
+});
+
+test("rejects non-canonical category before any state mutation and permits corrected retry", async () => {
+  for (const [index, category] of [
+    "",
+    "   ",
+    " FOOD",
+    "FOOD ",
+    "FOOD\tBAD",
+    "FOOD\u0000BAD",
+    "x".repeat(301),
+  ].entries()) {
+    const { service, evidence, canonical } = make();
+    const nonce = `nonce-category-${String(index).padStart(4, "0")}`;
+    const idempotencyKey = `idempotency-category-${index}`;
+    const invalid = await service.ingest(
+      args(service, {
+        nonce,
+        idempotencyKey,
+        payload: { ...payload, category },
+      }),
+    );
+    assert.equal(invalid.status, 400);
+    assert.deepEqual(invalid.body, {
+      code: "invalid_provider_field",
+      retryable: false,
+    });
+    assert.deepEqual(evidence.audit(), []);
+    assert.deepEqual(canonical.audit(), []);
+    assert.deepEqual(service.audit(), []);
+
+    const corrected = await service.ingest(
+      args(service, {
+        nonce,
+        idempotencyKey,
+        payload: { ...payload, category: "CORRECTED_CATEGORY" },
+      }),
+    );
+    assert.equal(corrected.status, 201);
+    assert.deepEqual(corrected.body.provider_categories, [
+      { provider: "synthetic", category: "CORRECTED_CATEGORY" },
+    ]);
+  }
 });

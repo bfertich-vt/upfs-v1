@@ -448,7 +448,7 @@ export function validateTransaction(t) {
     t.provider_categories.some(
       (entry) =>
         !entry ||
-        !isCanonicalString(entry.provider, 300) ||
+        !isCanonicalString(entry.provider, 100) ||
         !isCanonicalString(entry.category, 300) ||
         Object.keys(entry).some(
           (key) => !["provider", "category"].includes(key),
@@ -474,7 +474,7 @@ export function validateTransaction(t) {
         Object.keys(entry).some(
           (key) => !["kind", "actor", "at", "source_ref"].includes(key),
         ) ||
-        !isCanonicalString(entry.kind, 300) ||
+        !isCanonicalString(entry.kind, 100) ||
         !isCanonicalString(entry.actor, 300) ||
         !isValidDateTime(entry.at) ||
         !isCanonicalString(entry.source_ref, 300),

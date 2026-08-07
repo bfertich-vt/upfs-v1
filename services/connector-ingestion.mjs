@@ -26,6 +26,13 @@ const error = (status, code, retryable = false, details = undefined) => ({
   status,
   body: { code, retryable, ...(details ? { details } : {}) },
 });
+const CONTROL_CHARACTER = /[\u0000-\u001f\u007f-\u009f]/u;
+const isCanonicalProviderString = (value, maximumLength) =>
+  typeof value === "string" &&
+  value.length > 0 &&
+  value.length <= maximumLength &&
+  value === value.trim() &&
+  !CONTROL_CHARACTER.test(value);
 
 /**
  * API-backed reference boundary for provider transaction delivery. Provider
@@ -281,7 +288,7 @@ export function normalizeProviderTransaction(payload) {
     return { error: "invalid_provider_field" };
   if (
     payload.category !== undefined &&
-    (typeof payload.category !== "string" || payload.category.length > 300)
+    !isCanonicalProviderString(payload.category, 300)
   )
     return { error: "invalid_provider_field" };
   return {

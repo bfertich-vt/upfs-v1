@@ -176,6 +176,96 @@ test("requires canonical metadata boundaries and accepts valid normal values", (
   assert.equal(validateTransaction(tx), null);
 });
 
+test("keeps every bounded canonical metadata string in schema parity", () => {
+  const cases = [
+    {
+      name: "source observation",
+      maximum: 300,
+      withValue: (value) => ({ ...tx, source_observations: [value] }),
+    },
+    {
+      name: "evidence reference",
+      maximum: 300,
+      withValue: (value) => ({ ...tx, evidence_refs: [value] }),
+    },
+    {
+      name: "provider",
+      maximum: 100,
+      withValue: (value) => ({
+        ...tx,
+        provider_categories: [{ ...tx.provider_categories[0], provider: value }],
+      }),
+    },
+    {
+      name: "provider category",
+      maximum: 300,
+      withValue: (value) => ({
+        ...tx,
+        provider_categories: [{ ...tx.provider_categories[0], category: value }],
+      }),
+    },
+    ...Object.keys(tx.taxonomy).map((field) => ({
+      name: `taxonomy ${field}`,
+      maximum: 100,
+      withValue: (value) => ({
+        ...tx,
+        taxonomy: { ...tx.taxonomy, [field]: value },
+      }),
+    })),
+    {
+      name: "provenance kind",
+      maximum: 100,
+      withValue: (value) => ({
+        ...tx,
+        provenance: [{ ...tx.provenance[0], kind: value }],
+      }),
+    },
+    {
+      name: "provenance actor",
+      maximum: 300,
+      withValue: (value) => ({
+        ...tx,
+        provenance: [{ ...tx.provenance[0], actor: value }],
+      }),
+    },
+    {
+      name: "provenance source reference",
+      maximum: 300,
+      withValue: (value) => ({
+        ...tx,
+        provenance: [{ ...tx.provenance[0], source_ref: value }],
+      }),
+    },
+  ];
+
+  for (const { name, maximum, withValue } of cases) {
+    assert.notEqual(validateTransaction(withValue("")), null, `${name}: zero`);
+    assert.equal(validateTransaction(withValue("x")), null, `${name}: one`);
+    assert.equal(
+      validateTransaction(withValue("x".repeat(maximum))),
+      null,
+      `${name}: exact maximum`,
+    );
+    assert.notEqual(
+      validateTransaction(withValue("x".repeat(maximum + 1))),
+      null,
+      `${name}: over maximum`,
+    );
+    for (const [label, value] of [
+      ["whitespace", "   "],
+      ["leading whitespace", " value"],
+      ["trailing whitespace", "value "],
+      ["control", "value\u0000"],
+      ["mixed control", "safe\tunsafe"],
+    ])
+      assert.notEqual(
+        validateTransaction(withValue(value)),
+        null,
+        `${name}: ${label}`,
+      );
+  }
+});
+
 test("derives tenant and environment scope from verified actor and rejects forged scope without disclosure", () => {
   const s = service();
   assert.equal(
