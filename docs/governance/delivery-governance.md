@@ -40,3 +40,11 @@ discloses this trust boundary. Repository Git facts and retained artifact
 content are revalidated offline. A future contradictory hosted observation
 requires corrective-forward evidence; it never permits rewriting the original
 historical record.
+
+Closure-control files are covered by `npm run format:check`. Newly added
+JavaScript, JSON, YAML, Markdown task, handoff, review, governance, and retained
+evidence files use pinned Prettier. The historical 110-row pipe table and the
+legacy compact queue validator are deliberate stable exclusions: rewriting
+either with Prettier creates broad unrelated churn. Their dedicated formatting
+gate instead rejects trailing whitespace, split/malformed matrix rows, matrix
+cardinality/field drift, and missing or duplicated closure integration hooks.

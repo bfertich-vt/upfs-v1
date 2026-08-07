@@ -14,6 +14,22 @@ const digest = (bytes) =>
   crypto.createHash("sha256").update(bytes).digest("hex");
 const inside = (root, target) =>
   target === root || target.startsWith(`${root}${path.sep}`);
+const positiveSafeInteger = (value) => Number.isSafeInteger(value) && value > 0;
+
+function canonicalRfc3339(value) {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\dZ$/.test(
+      value,
+    )
+  )
+    return false;
+  const parsed = new Date(value);
+  return (
+    !Number.isNaN(parsed.valueOf()) &&
+    parsed.toISOString().replace(".000Z", "Z") === value
+  );
+}
 
 function safePath(root, rel, label, errors) {
   if (
@@ -119,6 +135,86 @@ function ancestor(root, older, newer, label, errors) {
     label,
     errors,
   );
+}
+
+function strictReviewTopology(root, qa, remediation, label, errors) {
+  if (qa.reviewed_candidate !== remediation.candidate_commit) {
+    errors.push(
+      `${label} reviewed_candidate must equal remediation.candidate_commit.`,
+    );
+    return;
+  }
+  if (qa.review_commit === qa.reviewed_candidate) {
+    errors.push(`${label} review_commit must be distinct from the candidate.`);
+    return;
+  }
+  if (
+    !commitExists(root, qa.reviewed_candidate, `${label}.candidate`, errors) ||
+    !commitExists(root, qa.review_commit, `${label}.review_commit`, errors)
+  )
+    return;
+  const parents = git(
+    root,
+    ["show", "-s", "--format=%P", qa.review_commit],
+    `${label}.parents`,
+    errors,
+  )
+    ?.trim()
+    .split(/\s+/);
+  if (parents?.length !== 1 || parents[0] !== qa.reviewed_candidate)
+    errors.push(
+      `${label} review_commit must have the exact reviewed candidate as its sole parent.`,
+    );
+  const before = git(
+    root,
+    ["cat-file", "-e", `${qa.reviewed_candidate}:${qa.review}`],
+    `${label}.preseed probe`,
+    [],
+    true,
+  );
+  if (before !== null)
+    errors.push(
+      `${label} review artifact must not be pre-seeded in the candidate.`,
+    );
+  const introduced = git(
+    root,
+    [
+      "diff-tree",
+      "--no-commit-id",
+      "--name-status",
+      "-r",
+      qa.review_commit,
+      "--",
+      qa.review,
+    ],
+    `${label}.introduction`,
+    errors,
+  )?.trim();
+  if (introduced !== `A\t${qa.review}`)
+    errors.push(
+      `${label} review artifact must be introduced at review_commit.`,
+    );
+}
+
+export function acceptedVerdict(body, candidate) {
+  const accepted = [...body.matchAll(/^\*\*Verdict:\s*ACCEPTED\*\*[^\n]*$/gim)];
+  const rejected =
+    /^\*\*(?:Verdict:\s*)?REJECTED\*\*[^\n]*$/im.test(body) ||
+    /^##\s+Disposition\s*\r?\n\s*\*\*REJECTED\*\*/im.test(body);
+  return (
+    accepted.length === 1 && !rejected && accepted[0][0].includes(candidate)
+  );
+}
+
+function criterionEvidenceCell(body, criterion) {
+  const prefix = `| ${criterion} |`;
+  const row = body.split(/\r?\n/).find((line) => line.startsWith(prefix));
+  if (!row) return "";
+  const fields = row
+    .slice(1, -1)
+    .split("|")
+    .map((value) => value.trim());
+  return fields.length === 3 && fields[0] === criterion ? fields[1] : "";
 }
 
 function exact(value, keys, label, errors) {
@@ -283,6 +379,7 @@ function validateAccepted(root, task, tasks, row, errors) {
   }
 
   const qa = record.independent_qa;
+  let acceptedReviewBody = "";
   if (
     exact(
       qa,
@@ -317,19 +414,19 @@ function validateAccepted(root, task, tasks, row, errors) {
         `${rel}.independent_qa.review differs from its review-commit blob.`,
       );
     const body = immutable?.toString("utf8") || "";
+    acceptedReviewBody = body;
     if (
       qa.verdict !== "ACCEPTED" ||
-      !body.includes("**Verdict: ACCEPTED**") ||
-      !body.includes(qa.reviewed_candidate)
+      !acceptedVerdict(body, qa.reviewed_candidate)
     )
       errors.push(
         `${rel}.independent_qa must bind an explicit ACCEPTED verdict to the reviewed candidate.`,
       );
-    ancestor(
+    strictReviewTopology(
       root,
-      qa.reviewed_candidate,
-      qa.review_commit,
-      `${rel}.independent_qa ancestry`,
+      qa,
+      remediation,
+      `${rel}.independent_qa`,
       errors,
     );
   }
@@ -355,8 +452,7 @@ function validateAccepted(root, task, tasks, row, errors) {
       hosted.evidence_boundary !==
         "immutable inspected snapshot; GitHub API facts are not revalidated offline" ||
       hosted.repository !== "bfertich-vt/upfs-v1" ||
-      !Number.isInteger(hosted.pull_request) ||
-      hosted.pull_request < 1 ||
+      !positiveSafeInteger(hosted.pull_request) ||
       hosted.head_sha !== qa?.review_commit
     )
       errors.push(
@@ -369,6 +465,7 @@ function validateAccepted(root, task, tasks, row, errors) {
     else {
       const names = new Set();
       const runs = new Set();
+      const jobs = new Set();
       for (const check of hosted.checks) {
         if (
           !exact(
@@ -381,9 +478,10 @@ function validateAccepted(root, task, tasks, row, errors) {
           continue;
         names.add(check.name);
         runs.add(check.run_id);
+        jobs.add(check.job_id);
         if (
-          !Number.isInteger(check.run_id) ||
-          !Number.isInteger(check.job_id) ||
+          !positiveSafeInteger(check.run_id) ||
+          !positiveSafeInteger(check.job_id) ||
           check.head_sha !== hosted.head_sha ||
           check.conclusion !== "success"
         )
@@ -395,10 +493,11 @@ function validateAccepted(root, task, tasks, row, errors) {
         names.size !== 2 ||
         !names.has("repository-validation") ||
         !names.has("repository-security") ||
-        runs.size !== 2
+        runs.size !== 2 ||
+        jobs.size !== 2
       )
         errors.push(
-          `${rel}.hosted.checks must uniquely bind repository-validation and repository-security.`,
+          `${rel}.hosted.checks must uniquely bind repository-validation and repository-security run/job IDs.`,
         );
     }
     const artifact = hosted.validation_artifact;
@@ -431,7 +530,7 @@ function validateAccepted(root, task, tasks, row, errors) {
         errors.push(`${rel}.hosted.validation_artifact.content must be JSON.`);
       }
       if (
-        !Number.isInteger(artifact.artifact_id) ||
+        !positiveSafeInteger(artifact.artifact_id) ||
         artifact.name !== "validation-evidence" ||
         !/^sha256:[a-f0-9]{64}$/.test(artifact.archive_digest || "") ||
         artifact.content_status !== "passed" ||
@@ -481,7 +580,7 @@ function validateAccepted(root, task, tasks, row, errors) {
       mergeTree !== headTree ||
       merge.head_tree !== headTree ||
       merge.pull_request !== hosted?.pull_request ||
-      !/^\d{4}-\d{2}-\d{2}T/.test(merge.merged_at || "")
+      !canonicalRfc3339(merge.merged_at)
     )
       errors.push(
         `${rel}.protected_merge does not bind the base, exact hosted-head tree, PR, and timestamp.`,
@@ -493,7 +592,10 @@ function validateAccepted(root, task, tasks, row, errors) {
         `${rel}.protected_merge.subject`,
         errors,
       )?.trim() || "";
-    if (!subject.includes(`#${merge.pull_request}`))
+    const prToken = new RegExp(
+      `(?:^|[^0-9])#${merge.pull_request}(?:$|[^0-9])`,
+    );
+    if (!prToken.test(subject))
       errors.push(`${rel}.protected_merge subject does not bind its PR.`);
     ancestor(
       root,
@@ -513,6 +615,7 @@ function validateAccepted(root, task, tasks, row, errors) {
     );
   else {
     const mapped = new Set();
+    const usedEvidence = new Set();
     for (const mapping of record.acceptance_mapping) {
       if (
         !exact(
@@ -527,10 +630,10 @@ function validateAccepted(root, task, tasks, row, errors) {
       if (
         !task.acceptance.includes(mapping.criterion) ||
         !Array.isArray(mapping.evidence) ||
-        !mapping.evidence.length
+        mapping.evidence.length !== 1
       )
         errors.push(
-          `${rel}.acceptance_mapping has an unknown criterion or absent evidence.`,
+          `${rel}.acceptance_mapping must bind one criterion to exactly one evidence record.`,
         );
       for (const evidence of mapping.evidence || []) {
         if (
@@ -550,14 +653,25 @@ function validateAccepted(root, task, tasks, row, errors) {
           `${rel}.acceptance evidence`,
           errors,
         );
+        const evidenceKey = `${evidence.commit}\0${evidence.artifact}\0${evidence.excerpt}`;
+        const criterionCell = criterionEvidenceCell(
+          acceptedReviewBody,
+          mapping.criterion,
+        );
         if (
+          evidence.artifact !== qa?.review ||
+          evidence.commit !== qa?.review_commit ||
+          evidence.artifact_sha256 !== qa?.review_sha256 ||
           typeof evidence.excerpt !== "string" ||
-          !evidence.excerpt.trim() ||
-          (bytes && !bytes.toString("utf8").includes(evidence.excerpt))
+          evidence.excerpt.trim().length < 32 ||
+          !criterionCell.includes(evidence.excerpt) ||
+          (bytes && !bytes.toString("utf8").includes(evidence.excerpt)) ||
+          usedEvidence.has(evidenceKey)
         )
           errors.push(
-            `${rel}.acceptance evidence has a missing or stale excerpt.`,
+            `${rel}.acceptance evidence must be unique, criterion-specific, and bound to the accepted QA review.`,
           );
+        usedEvidence.add(evidenceKey);
       }
     }
     if (mapped.size !== task.acceptance.length)
