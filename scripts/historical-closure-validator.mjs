@@ -87,6 +87,97 @@ const TASK_0002_PROTECTED_EVIDENCE = Object.freeze({
     pull_request: 20,
   },
 });
+const TASK_0003_PROTECTED_EVIDENCE = Object.freeze({
+  rejected_candidates: [
+    "188f9a9e644a025913866eb6ea2d68298ba2a4f9",
+    "01a2c97f5c6a7ec6045705ac5e3ef4c25228938b",
+    "1080d94ec9659852a5e63f278a05dd6e9aa84329",
+  ],
+  remediation: {
+    task: "tasks/recovery/RECOVERY-TASK-0003-CLOSURE-004.yaml",
+    task_sha256:
+      "886425e7c70203bad37340ccfa1693c9d347a1e26d15d9bfcb3d6997357fec2e",
+    handoff: "docs/handoffs/RECOVERY-TASK-0003-CLOSURE-004.md",
+    handoff_sha256:
+      "e535f510236b44d357f1f12530008c0f6a75b0d4e01e27e3c3e691d143c2df29",
+    implementation_commit: "1ed8e0dd5f216484a778eb00abe4ee223cedb24c",
+    candidate_commit: "6f53a94e40715b4058f47f979abbc4081c6e4837",
+  },
+  independent_qa: {
+    review: "docs/reviews/RECOVERY-TASK-0003-CLOSURE-004-QA.md",
+    review_sha256:
+      "3cf7708968ceaf1b2a3439d342974cbba6eb5c7aeaa08a8c9f7ca8f7ca882cff",
+    review_commit: "d5d9a7316423ca4c2d39c50c6da3a098788a170c",
+    reviewed_candidate: "6f53a94e40715b4058f47f979abbc4081c6e4837",
+  },
+  protected_review: {
+    mechanism: "independent-codex-qa-protected-flow",
+    candidate_commit: "6f53a94e40715b4058f47f979abbc4081c6e4837",
+    review_commit: "d5d9a7316423ca4c2d39c50c6da3a098788a170c",
+    pr_head: "d5d9a7316423ca4c2d39c50c6da3a098788a170c",
+    tree: "6db599207b14c34dfc2eda43dafb9f3fe986cfd7",
+  },
+  hosted: {
+    evidence_boundary:
+      "immutable inspected snapshot; GitHub API facts are not revalidated offline",
+    repository: "bfertich-vt/upfs-v1",
+    pull_request: 25,
+    base_sha: "1156e7e8d2c03463768c0306a73fbaa584af3539",
+    head_sha: "d5d9a7316423ca4c2d39c50c6da3a098788a170c",
+    checks: [
+      {
+        name: "repository-validation",
+        run_id: 31219179715,
+        job_id: 92999633267,
+        head_sha: "d5d9a7316423ca4c2d39c50c6da3a098788a170c",
+        conclusion: "success",
+      },
+      {
+        name: "repository-security",
+        run_id: 31219179723,
+        job_id: 92999633237,
+        head_sha: "d5d9a7316423ca4c2d39c50c6da3a098788a170c",
+        conclusion: "success",
+      },
+    ],
+    validation_artifact: {
+      artifact_id: 9009713582,
+      name: "validation-evidence",
+      archive_digest:
+        "sha256:61c33b3ad776da56c8534ac63ce2833a8e41668750d63c0d58e0c59b8b8356a0",
+      content_sha256:
+        "a930e5481de2122c0e719eec8983ad618a2ca13924eccf36851f4bffc085febb",
+      content_status: "passed",
+    },
+    post_merge_checks: [
+      {
+        name: "repository-validation",
+        run_id: 31219306164,
+        job_id: 93000044640,
+        head_sha: "ce1b966ef0614b8d567eca86ccc3f80cf8777ef0",
+        conclusion: "success",
+      },
+      {
+        name: "repository-security",
+        run_id: 31219307407,
+        job_id: 93000049813,
+        head_sha: "ce1b966ef0614b8d567eca86ccc3f80cf8777ef0",
+        conclusion: "success",
+      },
+    ],
+  },
+  protected_merge: {
+    commit: "ce1b966ef0614b8d567eca86ccc3f80cf8777ef0",
+    base_parent: "1156e7e8d2c03463768c0306a73fbaa584af3539",
+    head_tree: "6db599207b14c34dfc2eda43dafb9f3fe986cfd7",
+    merged_at: "2026-08-07T21:15:24Z",
+    pull_request: 25,
+  },
+});
+const PROTECTED_EVIDENCE = Object.freeze({
+  "TASK-0002": TASK_0002_PROTECTED_EVIDENCE,
+  "TASK-0003": TASK_0003_PROTECTED_EVIDENCE,
+});
 const DISPOSITION_SOURCE_COMMIT = "420403fc09962d35d19af0cd735b056cb2a9a1ba";
 const DISPOSITION_SOURCE_SHA256 =
   "05e29ce65b83b934fa80b116bb4052e74088de9e766d4b8de703941c091b2922";
@@ -521,6 +612,7 @@ function validateAccepted(root, task, tasks, row, errors) {
         "historical",
         "remediation",
         "independent_qa",
+        ...(task.id === "TASK-0003" ? ["rejected_candidates"] : []),
         protectedReviewMode ? "protected_review" : "stage_a",
         "hosted",
         "protected_merge",
@@ -665,10 +757,12 @@ function validateAccepted(root, task, tasks, row, errors) {
 
   const protectedReview = record.protected_review;
   if (protectedReviewMode) {
-    if (task.id !== "TASK-0002")
+    const expectedProtectedEvidence = PROTECTED_EVIDENCE[task.id];
+    if (!expectedProtectedEvidence)
       errors.push(`${rel}.protected_review is not authorized for this task.`);
     else
       for (const key of [
+        ...(task.id === "TASK-0003" ? ["rejected_candidates"] : []),
         "remediation",
         "independent_qa",
         "protected_review",
@@ -677,11 +771,20 @@ function validateAccepted(root, task, tasks, row, errors) {
       ])
         if (
           JSON.stringify(record[key]) !==
-          JSON.stringify(TASK_0002_PROTECTED_EVIDENCE[key])
+          JSON.stringify(expectedProtectedEvidence[key])
         )
           errors.push(
-            `${rel}.${key} does not match exact TASK-0002 protected evidence.`,
+            `${rel}.${key} does not match exact ${task.id} protected evidence.`,
           );
+    if (task.id === "TASK-0003")
+      for (const rejected of record.rejected_candidates || [])
+        ancestor(
+          root,
+          rejected,
+          remediation?.candidate_commit,
+          `${rel}.rejected candidate ${rejected} ancestry`,
+          errors,
+        );
     if (
       exact(
         protectedReview,
@@ -724,17 +827,19 @@ function validateAccepted(root, task, tasks, row, errors) {
         protectedReview.mechanism !== "independent-codex-qa-protected-flow" ||
         protectedReview.candidate_commit !== remediation?.candidate_commit ||
         protectedReview.review_commit !== qa?.review_commit ||
-        protectedReview.review_commit === protectedReview.pr_head ||
+        (task.id === "TASK-0002" &&
+          protectedReview.review_commit === protectedReview.pr_head) ||
         reviewParents.length !== 1 ||
         reviewParents[0] !== protectedReview.candidate_commit ||
-        prParents.length !== 1 ||
-        prParents[0] !== protectedReview.candidate_commit ||
+        (task.id === "TASK-0002" &&
+          (prParents.length !== 1 ||
+            prParents[0] !== protectedReview.candidate_commit)) ||
         !reviewTree ||
         reviewTree !== prTree ||
         protectedReview.tree !== reviewTree
       )
         errors.push(
-          `${rel}.protected_review must bind distinct, single-parent, tree-equivalent QA and PR-head commits to the exact candidate.`,
+          `${rel}.protected_review must bind the exact single-parent QA evidence and protected PR-head tree to the candidate.`,
         );
     }
   }
@@ -1154,11 +1259,11 @@ function validateAccepted(root, task, tasks, row, errors) {
     )
   )
     errors.push(`${rel}.limitations must disclose remaining boundaries.`);
-  if (task.id === "TASK-0002") {
+  if (["TASK-0002", "TASK-0003"].includes(task.id)) {
     const limitations = (record.limitations || []).join(" ").toLowerCase();
     if (row?.[8] !== "Proven reference implementation")
       errors.push(
-        `${MATRIX} TASK-0002 classification must remain Proven reference implementation.`,
+        `${MATRIX} ${task.id} classification must remain Proven reference implementation.`,
       );
     for (const boundary of ["durable", "oidc", "deployment", "runtime"])
       if (!limitations.includes(boundary))
