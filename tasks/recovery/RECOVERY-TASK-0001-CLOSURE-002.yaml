@@ -1,0 +1,66 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002
+title: Bind the final accepted disposition for historical TASK-0001
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: daeb6d9f4c04800e453ee92a91d8f69ef3138c3a
+dependencies:
+  - RECOVERY-TASK-0001-REVALIDATION-001
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - docs/MASTER_PLAN.md
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/delivery-governance.md
+  - docs/governance/TASK-RECLASSIFICATION-007.md
+  - docs/handoffs/TASK-0001.md
+  - docs/handoffs/RECOVERY-TASK-0001-REVALIDATION-001.md
+  - docs/reviews/RECOVERY-TASK-0001-REVALIDATION-001-R2-QA.md
+  - tasks/queue.yaml
+  - tasks/recovery/RECOVERY-TASK-0001-REVALIDATION-001.yaml
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+authorized_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/delivery-governance.md
+  - docs/governance/task-closures/TASK-0001.json
+  - docs/governance/task-closures/evidence/TASK-0001-validation-report.json
+  - scripts/queue-validator.mjs
+  - scripts/queue-validator.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002.md
+prohibited_files:
+  - tasks/production/**
+  - tasks/queue.yaml TASK-0002 through TASK-0123 rows
+  - specs/**
+  - contracts/**
+  - apps/**
+  - services/**
+acceptance:
+  - Original TASK-0001 historical classification and evidence remain byte-for-byte bound and are not overwritten.
+  - TASK-0001 is complete and its matrix disposition is ACCEPTED only with a machine-validated closure record.
+  - Closure binds remediation task/handoff, implementation and candidate commits, independent review commit and accepted verdict, exact hosted PR head, both successful required checks, inspected validation artifact content/digest/status, protected merge, every acceptance criterion, and dependencies.
+  - Missing, forged, stale, nonexistent, wrong-head, wrong-check, wrong-artifact, wrong-merge, matrix/queue-mismatched, and incomplete-dependency evidence fails closed.
+  - recovery_freeze remains true; TASK-0002 through TASK-0110 remain blocked; TASK-0112 through TASK-0123 are untouched.
+security:
+  - This is repository governance only and changes no tenant, authorization, financial, API, contract, migration, or runtime behavior.
+  - Offline validation re-verifies repository Git objects and retained artifact content while disclosing that hosted API observations are an inspected immutable snapshot.
+  - No secrets, credentials, customer data, or production financial data are retained.
+tests:
+  - node --test scripts/queue-validator.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run validate
+  - npm run queue:check
+  - npm run traceability:check
+  - npm test
+  - git diff --check
+  - npm audit --audit-level=high
+rollback: Correct forward or revert only after independent review; preserve original historical, remediation, QA, hosted, and merge evidence.
+independent_review: Required from a fresh QA/Security worktree at the exact committed candidate; author cannot self-accept.

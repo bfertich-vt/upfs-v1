@@ -3,7 +3,7 @@ recovery_freeze: true
 tasks:
   - id: TASK-0001
     title: Establish repository baseline and specification CI
-    status: blocked
+    status: complete
     dependencies: []
     source: docs/MASTER_PLAN.md
     classification: "Unsupported completion claim"
