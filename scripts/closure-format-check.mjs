@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import prettier from "prettier";
@@ -21,6 +22,7 @@ const candidates = [
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R5.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R6.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R7.yaml",
+  "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R8.yaml",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R2.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R3.md",
@@ -28,6 +30,7 @@ const candidates = [
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R5.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R6.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R7.md",
+  "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R8.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R2-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R3-QA.md",
@@ -44,12 +47,12 @@ export function canonicalStageAState(body) {
   const value = {
     version: 1,
     task_id: "TASK-0001",
-    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R7",
-    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R6",
+    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R8",
+    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R7",
     predecessor_disposition: "REJECTED",
     task_status: "blocked",
     attestation_status: "absent",
-    review_target: "R7_HANDOFF_CANDIDATE",
+    review_target: "R8_HANDOFF_CANDIDATE",
     activation_phase: "STAGE_A_REVIEW_PENDING",
     next_action: "FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED",
   };
@@ -57,6 +60,10 @@ export function canonicalStageAState(body) {
     typeof body === "string" &&
     body.replace(/\r\n/g, "\n") === `${JSON.stringify(value, null, 2)}\n`
   );
+}
+
+export function canonicalTaskOneRow() {
+  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R8.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R8 closed-world matrix state control, tests, task, and handoff only. | None for this corrective control. | Canonical whole-row and state-blob validation, formatting, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R8 handoff. |";
 }
 
 export async function validateClosureFormatting(root) {
@@ -88,28 +95,51 @@ export async function validateClosureFormatting(root) {
       errors.push(`${matrixRel} ${row.slice(2, 11)} must retain 18 fields.`);
   const taskOne =
     matrixRows.find((row) => row.startsWith("| TASK-0001 |")) || "";
-  const stateRel = "docs/governance/task-closures/TASK-0001-stage-a-state.json";
-  const marker = `Authoritative state: ${stateRel}; all matrix prose is non-authoritative.`;
-  if (taskOne.split(marker).length !== 2)
+  if (taskOne !== canonicalTaskOneRow())
     errors.push(
-      `${matrixRel} TASK-0001 must contain exactly one canonical authoritative-state marker.`,
+      `${matrixRel} TASK-0001 must equal the exact canonical whole row.`,
     );
-  const withoutMarker = taskOne.replace(marker, "");
+  const stateRel = "docs/governance/task-closures/TASK-0001-stage-a-state.json";
+  const statePath = path.join(root, stateRel);
+  const stateDir = path.dirname(statePath);
+  const lookalikes = fs.existsSync(stateDir)
+    ? fs
+        .readdirSync(stateDir)
+        .filter((name) => /task-?0001.*stage.*a.*state/i.test(name))
+    : [];
+  if (lookalikes.length !== 1 || lookalikes[0] !== path.basename(stateRel))
+    errors.push(
+      `${stateRel} must be the repository's only TASK-0001 Stage A state record.`,
+    );
+  let regular = false;
+  try {
+    const stat = fs.lstatSync(statePath);
+    regular =
+      stat.isFile() &&
+      !stat.isSymbolicLink() &&
+      fs.realpathSync
+        .native(statePath)
+        .startsWith(`${fs.realpathSync.native(root)}${path.sep}`);
+  } catch {}
+  let indexEntry = "";
+  try {
+    indexEntry = execFileSync("git", ["ls-files", "-s", "--", stateRel], {
+      cwd: root,
+      encoding: "utf8",
+    }).trim();
+  } catch {}
   if (
-    /\b(?:active(?:_round)?|attestation|issued|absent|accepted|rejected|review_target|activation_phase|next_action|reviews?\s+R\d+)\b/i.test(
-      withoutMarker,
+    !regular ||
+    !/^100644 [a-f0-9]{40} 0\tdocs\/governance\/task-closures\/TASK-0001-stage-a-state\.json$/.test(
+      indexEntry,
     )
   )
     errors.push(
-      `${matrixRel} TASK-0001 prose must not make or override authoritative state claims.`,
+      `${stateRel} must be one contained regular Git blob with mode 100644.`,
     );
-  const statePath = path.join(root, stateRel);
-  if (
-    !fs.existsSync(statePath) ||
-    !canonicalStageAState(fs.readFileSync(statePath, "utf8"))
-  )
+  if (!regular || !canonicalStageAState(fs.readFileSync(statePath, "utf8")))
     errors.push(
-      `${stateRel} must be the one exact canonical R7 Stage A state record.`,
+      `${stateRel} must be the one exact canonical R8 Stage A state record.`,
     );
 
   const queueRel = "scripts/queue-validator.mjs";
