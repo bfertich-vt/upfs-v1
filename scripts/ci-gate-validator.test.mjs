@@ -232,8 +232,7 @@ test("frozen v2 provenance bundle hydrates its pre-v3 historical topology withou
   const authoritative = temp("upfs-complete-provenance-authoritative-");
   const candidate = temp("upfs-complete-provenance-candidate-");
   try {
-    const codeownersCandidate =
-      "287b3894147080cb067ad2254869a2cabf998fce";
+    const codeownersCandidate = "287b3894147080cb067ad2254869a2cabf998fce";
     assert.ok(
       handoffCandidateCommits(root).includes(codeownersCandidate),
       "current handoff discovery must require the CODEOWNERS candidate",
@@ -575,14 +574,12 @@ test("v3 provenance bundle is complete, immutable, and fails closed under transp
     assert.ok(v3ManifestErrors(fixture, substituted).length > 0);
     const mismatched = structuredClone(manifest);
     mismatched.refs.find(
-      ({ commit }) =>
-        commit === "287b3894147080cb067ad2254869a2cabf998fce",
+      ({ commit }) => commit === "287b3894147080cb067ad2254869a2cabf998fce",
     ).object_sha256 = "0".repeat(64);
     assert.ok(v3ManifestErrors(fixture, mismatched, true).length > 0);
     const omitted = structuredClone(manifest);
     omitted.refs = omitted.refs.filter(
-      ({ commit }) =>
-        commit !== "287b3894147080cb067ad2254869a2cabf998fce",
+      ({ commit }) => commit !== "287b3894147080cb067ad2254869a2cabf998fce",
     );
     assert.ok(
       v3ManifestErrors(fixture, omitted).some((error) =>

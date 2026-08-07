@@ -1,0 +1,36 @@
+id: RECOVERY-PROVENANCE-CODEOWNERS-037-R4
+title: Apply deterministic formatting to the accepted provenance regression test
+status: in_progress
+role: Backend
+source:
+  - agents/BACKEND.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-PROVENANCE-CODEOWNERS-037
+authorized_files:
+  - scripts/ci-gate-validator.test.mjs
+  - tasks/recovery/RECOVERY-PROVENANCE-CODEOWNERS-037-R4.yaml
+  - docs/handoffs/RECOVERY-PROVENANCE-CODEOWNERS-037-R4.md
+acceptance_criteria:
+  - Prettier accepts scripts/ci-gate-validator.test.mjs without changing test semantics.
+  - The focused frozen-v2 and current-v3 provenance tests remain green.
+  - The complete repository gates remain green.
+  - Hosted validation failure 31135560276 remains recorded as rejected evidence.
+tests:
+  - npm run format:check
+  - node --test --test-name-pattern "frozen v2 provenance bundle|v3 provenance bundle" scripts/ci-gate-validator.test.mjs
+  - npm test
+  - npm run validate
+  - npm run queue:check
+  - npm run traceability:check
+  - git diff --check
+security:
+  - Do not remove, weaken, skip, or semantically alter any test or validator behavior.
+  - Introduce no secret, credential, customer, financial, provider, production, or tenant data.
+  - Tenant behavior is unchanged; all existing tenant gates remain mandatory.
+rollback: Revert only this formatting correction through a separately reviewed corrective-forward change; preserve the hosted failure and all earlier evidence.
+external_prerequisites:
+  - Fresh independent Codex QA/Security review of the exact committed candidate.
+  - Exact-head hosted repository-validation and repository-security checks before protected integration.
