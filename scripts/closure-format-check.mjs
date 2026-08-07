@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import prettier from "prettier";
@@ -25,6 +25,7 @@ const candidates = [
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R8.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R9.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R10.yaml",
+  "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R11.yaml",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R2.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R3.md",
@@ -35,6 +36,7 @@ const candidates = [
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R8.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R9.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R10.md",
+  "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R11.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R2-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R3-QA.md",
@@ -51,12 +53,12 @@ export function canonicalStageAState(body) {
   const value = {
     version: 1,
     task_id: "TASK-0001",
-    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R10",
-    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R9",
+    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R11",
+    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R10",
     predecessor_disposition: "REJECTED",
     task_status: "blocked",
     attestation_status: "absent",
-    review_target: "R10_HANDOFF_CANDIDATE",
+    review_target: "R11_HANDOFF_CANDIDATE",
     activation_phase: "STAGE_A_REVIEW_PENDING",
     next_action: "FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED",
   };
@@ -67,7 +69,7 @@ export function canonicalStageAState(body) {
 }
 
 export function canonicalTaskOneRow() {
-  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R10.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R10 full-tree metadata discovery, tests, task, and handoff only. | None for this corrective control. | Canonical row, full-tree names, Unicode fail-closed, single-link topology, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R10 handoff. |";
+  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R11.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R11 ASCII path and ADS controls, tests, task, and handoff only. | None for this corrective control. | Canonical row, ASCII paths, ADS-free storage, single-link topology, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R11 handoff. |";
 }
 
 function nulGit(root, args) {
@@ -103,6 +105,41 @@ function worktreePaths(root, current = root, output = [], limit = 100000) {
       worktreePaths(root, absolute, output, limit);
   }
   return output;
+}
+
+function portableAsciiPath(rel) {
+  if (!/^[\x20-\x7e]+$/.test(rel) || /[<>:"\\|?*]/.test(rel)) return false;
+  return rel
+    .split("/")
+    .every(
+      (segment) =>
+        segment &&
+        !/[. ]$/.test(segment) &&
+        !/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(segment),
+    );
+}
+
+function namedStreams(file) {
+  if (process.platform !== "win32") return [];
+  const script =
+    "& { param([string]$p) @(Get-Item -LiteralPath $p -Stream * -ErrorAction Stop | Select-Object Stream,Length) | ConvertTo-Json -Compress }";
+  const result = spawnSync(
+    "powershell",
+    ["-NoProfile", "-NonInteractive", "-Command", script, file],
+    { encoding: "utf8", windowsHide: true },
+  );
+  if (result.status !== 0)
+    throw new Error("alternate-data-stream enumeration failed");
+  let values;
+  try {
+    values = JSON.parse(result.stdout || "[]");
+  } catch {
+    throw new Error("alternate-data-stream output was malformed");
+  }
+  const list = Array.isArray(values) ? values : [values];
+  return list
+    .map((entry) => entry.Stream)
+    .filter((stream) => stream && stream !== ":$DATA" && stream !== "$DATA");
 }
 
 export async function validateClosureFormatting(root) {
@@ -159,6 +196,11 @@ export async function validateClosureFormatting(root) {
   const lookalikes = new Set(
     [...gitPaths, ...treePaths].filter(stateLookalike),
   );
+  for (const rel of new Set([...gitPaths, ...treePaths]))
+    if (!portableAsciiPath(rel))
+      errors.push(
+        `Repository path violates canonical printable-ASCII grammar: ${rel}`,
+      );
   if (lookalikes.size !== 1 || !lookalikes.has(stateRel))
     errors.push(
       `${stateRel} must be the repository's only TASK-0001 Stage A state record.`,
@@ -205,8 +247,14 @@ export async function validateClosureFormatting(root) {
     );
   if (!canonicalStageAState(indexed.toString("utf8")))
     errors.push(
-      `${stateRel} must be the one exact canonical R8 Stage A state record.`,
+      `${stateRel} must be the one exact canonical R11 Stage A state record.`,
     );
+  try {
+    if (namedStreams(statePath).length)
+      errors.push(`${stateRel} must not contain named alternate data streams.`);
+  } catch (error) {
+    errors.push(`${stateRel} storage topology failed closed: ${error.message}`);
+  }
 
   const queueRel = "scripts/queue-validator.mjs";
   const queueValidator = fs.readFileSync(path.join(root, queueRel), "utf8");

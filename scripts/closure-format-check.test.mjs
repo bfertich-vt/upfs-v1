@@ -95,7 +95,7 @@ test("R5 authorization includes every modified validator test surface", () => {
   assert.match(task, /  - scripts\/historical-closure-validator\.test\.mjs/);
 });
 
-test("TASK-0001 R10 state discovery covers ignored, Unicode, and link topology", async () => {
+test("TASK-0001 R11 enforces ASCII paths, ADS-free storage, and link topology", async () => {
   const root = fixture();
   const matrix = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
   const original = fs.readFileSync(matrix, "utf8");
@@ -111,7 +111,7 @@ test("TASK-0001 R10 state discovery covers ignored, Unicode, and link topology",
     "ATTESTATION",
     "  ",
     ".",
-    "r10",
+    "r11",
   ]) {
     fs.writeFileSync(
       matrix,
@@ -137,10 +137,10 @@ test("TASK-0001 R10 state discovery covers ignored, Unicode, and link topology",
       '  "task_status": "blocked",',
       '  "extra": true,\n  "task_status": "blocked",',
     ),
-    valid.replace('-R10"', '-R9"'),
+    valid.replace('-R11"', '-R10"'),
     valid.replace('"REJECTED"', '"ACCEPTED"'),
     valid.replace('"absent"', '"issued"'),
-    valid.replace('"R10_HANDOFF_CANDIDATE"', '"R9_HANDOFF_CANDIDATE"'),
+    valid.replace('"R11_HANDOFF_CANDIDATE"', '"R10_HANDOFF_CANDIDATE"'),
     valid.replace('"STAGE_A_REVIEW_PENDING"', '"ACTIVATION_PENDING"'),
     valid.replace(
       '"FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED"',
@@ -182,6 +182,9 @@ test("TASK-0001 R10 state discovery covers ignored, Unicode, and link topology",
     "docs/alternate/TASK-0001-stαge-a-state.json",
     "docs/alternate/ＴＡＳＫ-０００１-stage-a-state.json",
     "docs/évidence/TASK-0001-state.json",
+    "docs/alternate/TАSK-0001-stаge-a-stаte.json",
+    "docs/alternate/TA\u0301SK-0001-stage-a-state.json",
+    "docs/alternate/TASK-0001-stage-a-state\u200b.json",
   ]) {
     const target = path.join(root, rel);
     fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -201,6 +204,21 @@ test("TASK-0001 R10 state discovery covers ignored, Unicode, and link topology",
     "hardlink nlink",
   );
   fs.rmSync(hardlink);
+  if (process.platform === "win32") {
+    for (const stream of [
+      "Zone.Identifier",
+      "TASK-0001-stage-a-state.json",
+      "conflict stream & name",
+    ]) {
+      fs.writeFileSync(`${state}:${stream}`, '{"task_status":"complete"}\n');
+      assert.notDeepEqual(
+        (await validateClosureFormatting(root)).errors,
+        [],
+        stream,
+      );
+      fs.rmSync(`${state}:${stream}`);
+    }
+  }
   const blob = execFileSync("git", ["hash-object", state], {
     cwd: root,
     encoding: "utf8",
