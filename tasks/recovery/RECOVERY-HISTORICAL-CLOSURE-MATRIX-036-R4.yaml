@@ -1,0 +1,49 @@
+id: RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R4
+title: Correct the rejected R3 reconstruction commit identity
+status: in_progress
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+author_thread: /root/schema_historical_closure_matrix_r4
+author_worktree: C:\source\upfs-schema-historical-closure-matrix-r4
+author_branch: codex/recovery-historical-closure-matrix-r4
+base_commit: 35e6aa33ed7ac54e62e9f9840dab706bbc866ed6
+actual_implementation_commit: 2e370717294a45a2e4109aaf4cfc47694f72e77c
+rejected_candidate_head: f49b4568112e3c4559b4aca14d58a5103026866f
+preserved_rejection_commit: 4d4c114
+preserved_rejection_normalization: 35e6aa33ed7ac54e62e9f9840dab706bbc866ed6
+authorized_files:
+  - docs/handoffs/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R3.md
+  - tasks/recovery/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R4.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R4.md
+prohibited_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/recovery/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R2.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R2.md
+  - docs/reviews/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R2-QA.md
+  - docs/reviews/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R3-QA.md
+  - tasks/queue.yaml
+  - specs/**
+  - apps/**
+  - services/**
+  - contracts/**
+  - scripts/**
+  - .github/**
+acceptance_criteria:
+  - Replace every nonexistent R3 implementation SHA reference with exact commit 2e370717294a45a2e4109aaf4cfc47694f72e77c.
+  - Prove the exact implementation object resolves as a Git commit and the rejected false SHA no longer occurs in the corrected handoff.
+  - Preserve the rejected R3 candidate and independent QA rejection without rewriting history.
+  - Do not modify matrix rows, accepted R2 evidence, queue state, product code, specifications, validators, provenance bundles, ADR-007, or TASK-0112 through TASK-0123.
+required_checks:
+  - Targeted exact SHA grep and git cat-file commit check
+  - Exact 18-field parser and contiguous TASK-0001 through TASK-0110 ID check
+  - npm run format:check
+  - npm run validate
+  - npm run queue:check
+  - npm run traceability:check
+  - npm test
+  - git diff --check
+security:
+  - No secrets, credentials, customer data, private financial data, provider data, production access, or tenant-controlled runtime path.
+  - Preserve conservative unknown runtime and tenant-isolation classifications; documentation correction is not production evidence.
+rollback: Revert only the R4 commits through reviewed corrective-forward flow; preserve the rejected R3 evidence and every historical object.
+
