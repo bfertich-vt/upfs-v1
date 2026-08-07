@@ -178,7 +178,10 @@ test("TASK-0001 Stage B activation authority is exact and fail closed", async ()
   const root = fixture();
   const matrix = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
   const original = fs.readFileSync(matrix, "utf8");
-  assert.ok(original.split(/\r?\n/).includes(canonicalTaskOneRow()));
+  const taskOne = original
+    .split(/\r?\n/)
+    .find((line) => line.startsWith("| TASK-0001 |"));
+  assert.equal(canonicalTaskOneRow(taskOne), true);
   for (const mutation of [
     " appended",
     " removed",
@@ -194,14 +197,30 @@ test("TASK-0001 Stage B activation authority is exact and fail closed", async ()
   ]) {
     fs.writeFileSync(
       matrix,
-      original.replace(
-        canonicalTaskOneRow(),
-        `${canonicalTaskOneRow()}${mutation}`,
-      ),
+      original.replace(taskOne, `${taskOne}${mutation}`),
     );
     assert.notDeepEqual((await validateClosureFormatting(root)).errors, []);
   }
   fs.writeFileSync(matrix, original);
+
+  const activeClosure = path.join(
+    root,
+    "docs/governance/task-closures/TASK-0001.json",
+  );
+  const protectedClosure = fs.readFileSync(activeClosure, "utf8");
+  fs.writeFileSync(
+    activeClosure,
+    protectedClosure.replace(
+      "c35de5a92ad5224c6a2c5cb94f5846d764fcbe3a",
+      "aaafb17804586738976fd31e1a0a84dda00c2b25",
+    ),
+  );
+  assert.ok(
+    (await validateClosureFormatting(root)).errors.some((error) =>
+      error.includes("must remain exact and distinct"),
+    ),
+  );
+  fs.writeFileSync(activeClosure, protectedClosure);
 
   const state = path.join(
     root,

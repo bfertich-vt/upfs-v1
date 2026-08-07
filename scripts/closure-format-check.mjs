@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import process from "node:process";
@@ -86,8 +87,12 @@ export function canonicalStageAState(body) {
   );
 }
 
-export function canonicalTaskOneRow() {
-  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-ACTIVATION-002.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json; docs/governance/task-closures/TASK-0001.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Exact accepted R18 Stage A candidate, review, and attestation are Git-bound. | Hosted observations remain immutable snapshots. | Governance activation; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | ACCEPTED | Authoritative activation state and active closure record agree exactly. | Hosted API facts retain their documented snapshot boundary. | Backend owns activation; independent Stage B review remains required. | Stage B R2 formatting correction, task, tests, and handoff only. | None for this activation control. | Pinned format, canonical state/queue/matrix/closure, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every rejected and inactive record. | Follow the authoritative activation state and fresh Stage B R2 review. |";
+export function canonicalTaskOneRow(body) {
+  return (
+    typeof body === "string" &&
+    crypto.createHash("sha256").update(body, "utf8").digest("hex") ===
+      "b24ac10c1df11c3f5eede8a15413d4a78c8b99fd17840649a98251ea21958a96"
+  );
 }
 
 function pathIdentity(value, expectedType) {
@@ -565,7 +570,7 @@ export async function validateClosureFormatting(root, options = {}) {
       errors.push(`${matrixRel} ${row.slice(2, 11)} must retain 18 fields.`);
   const taskOne =
     matrixRows.find((row) => row.startsWith("| TASK-0001 |")) || "";
-  if (taskOne !== canonicalTaskOneRow())
+  if (!canonicalTaskOneRow(taskOne))
     errors.push(
       `${matrixRel} TASK-0001 must equal the exact canonical whole row.`,
     );
@@ -658,7 +663,7 @@ export async function validateClosureFormatting(root, options = {}) {
     );
   if (!canonicalStageAState(indexed.toString("utf8")))
     errors.push(
-      `${stateRel} must be the one exact canonical Stage B activation state record.`,
+      `${stateRel} must be the one exact preserved historical Stage B activation state record.`,
     );
   try {
     const activation = JSON.parse(
@@ -670,13 +675,23 @@ export async function validateClosureFormatting(root, options = {}) {
     const state = JSON.parse(indexed.toString("utf8"));
     if (
       activation.disposition !== "ACCEPTED" ||
-      activation.stage_a?.candidate_commit !== state.reviewed_candidate ||
-      activation.stage_a?.review_commit !== state.review_commit ||
-      activation.stage_a?.attestation_commit !== state.attestation_commit ||
-      activation.stage_a?.attestation_sha256 !== state.attestation_sha256
+      activation.remediation?.candidate_commit !==
+        "a408443dc7fc866777f83de681ec7688ac35e1ff" ||
+      activation.stage_a?.candidate_commit !==
+        "c35de5a92ad5224c6a2c5cb94f5846d764fcbe3a" ||
+      activation.stage_a?.review_commit !==
+        "c8c5640eaaee8df5d7319d18729c0d26d0cbd821" ||
+      activation.stage_a?.attestation_commit !==
+        "9d904ab726a07bb619a8a90f013b0f8c194b381f" ||
+      activation.stage_a?.attestation_sha256 !==
+        "3cf922f194c8018745655286f562534a4417d5d47493c8a9999e03d5100e163a" ||
+      activation.stage_a?.candidate_commit === state.reviewed_candidate ||
+      activation.stage_a?.review_commit === state.review_commit ||
+      activation.stage_a?.attestation_commit === state.attestation_commit ||
+      activation.stage_a?.attestation_sha256 === state.attestation_sha256
     )
       errors.push(
-        "Active TASK-0001 closure disagrees with canonical activation state.",
+        "Protected TASK-0001 closure must remain exact and distinct from preserved historical activation state.",
       );
     const queue = fs.readFileSync(path.join(root, "tasks/queue.yaml"), "utf8");
     if (!/  - id: TASK-0001[\s\S]*?\n    status: complete\n/.test(queue))
