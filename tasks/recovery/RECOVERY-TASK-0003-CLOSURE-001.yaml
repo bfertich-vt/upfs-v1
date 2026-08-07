@@ -28,6 +28,8 @@ authorized_files:
   - scripts/generate-registry.mjs
   - contracts/schemas/transaction.schema.json
   - artifacts/schema-registry.json
+  - services/connector-ingestion.mjs
+  - services/connector-ingestion.test.mjs
   - tasks/recovery/RECOVERY-TASK-0003-CLOSURE-001.yaml
   - docs/handoffs/RECOVERY-TASK-0003-CLOSURE-001.md
 prohibited_files:
@@ -37,7 +39,7 @@ prohibited_files:
   - workflows and package files
   - identity and TASK-0001/TASK-0002 files
   - specs/**
-  - TASK-0004+
+  - TASK-0004+ except the explicitly authorized TASK-0005 connector compatibility files above
   - TASK-0111+
   - unrelated files
 acceptance:
