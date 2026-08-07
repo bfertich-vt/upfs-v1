@@ -49,6 +49,34 @@ function fixture() {
   return root;
 }
 
+function linkedFixture() {
+  const source = fixture();
+  const linked = fs.mkdtempSync(path.join(os.tmpdir(), "upfs-closure-linked-"));
+  fs.rmSync(linked, { recursive: true, force: true });
+  execFileSync("git", ["worktree", "add", "--detach", linked, "HEAD"], {
+    cwd: source,
+    stdio: "ignore",
+  });
+  return { source, linked };
+}
+
+function removeLinkedFixture(source, linked) {
+  try {
+    execFileSync("git", ["worktree", "remove", "--force", linked], {
+      cwd: source,
+      stdio: "ignore",
+    });
+  } finally {
+    fs.rmSync(source, { recursive: true, force: true });
+    fs.rmSync(linked, { recursive: true, force: true });
+  }
+}
+
+function writeMetadata(file, body) {
+  if (process.platform === "win32") fs.chmodSync(file, 0o600);
+  fs.writeFileSync(file, body);
+}
+
 async function withGitEnvironment(values, action) {
   const prior = new Map();
   for (const [key, value] of Object.entries(values)) {
@@ -120,7 +148,7 @@ test("R5 authorization includes every modified validator test surface", () => {
   assert.match(task, /  - scripts\/historical-closure-validator\.test\.mjs/);
 });
 
-test("TASK-0001 R15 requires clean committed HEAD authority across closure-authorizing scope", async () => {
+test("TASK-0001 R16 requires clean committed HEAD authority across closure-authorizing scope", async () => {
   const root = fixture();
   const matrix = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
   const original = fs.readFileSync(matrix, "utf8");
@@ -162,10 +190,10 @@ test("TASK-0001 R15 requires clean committed HEAD authority across closure-autho
       '  "task_status": "blocked",',
       '  "extra": true,\n  "task_status": "blocked",',
     ),
-    valid.replace('-R14"', '-R13"'),
+    valid.replace('-R15"', '-R13"'),
     valid.replace('"REJECTED"', '"ACCEPTED"'),
     valid.replace('"absent"', '"issued"'),
-    valid.replace('"R15_HANDOFF_CANDIDATE"', '"R11_HANDOFF_CANDIDATE"'),
+    valid.replace('"R16_HANDOFF_CANDIDATE"', '"R11_HANDOFF_CANDIDATE"'),
     valid.replace('"STAGE_A_REVIEW_PENDING"', '"ACTIVATION_PENDING"'),
     valid.replace(
       '"FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED"',
@@ -355,7 +383,70 @@ test("R15 ignores inherited Git redirects and uses the canonical index", async (
   );
 });
 
-test("R15 Git execution failures and malformed output fail closed", async () => {
+test("R16 accepts legitimate linked worktrees and rejects an index hardlink alias", async () => {
+  const { source, linked } = linkedFixture();
+  try {
+    assert.deepEqual((await validateClosureFormatting(linked)).errors, []);
+    const gitFile = fs.readFileSync(path.join(linked, ".git"), "utf8");
+    const gitDir = path.resolve(linked, /^gitdir: ([^\r\n]+)/.exec(gitFile)[1]);
+    const index = path.join(gitDir, "index");
+    const external = path.join(source, "external-clean.index");
+    fs.copyFileSync(index, external);
+    fs.rmSync(index);
+    fs.linkSync(external, index);
+    const result = await validateClosureFormatting(linked);
+    assert.ok(
+      result.errors.some((error) => error.includes("direct regular file")),
+      result.errors.join("\n"),
+    );
+    fs.rmSync(index);
+    fs.copyFileSync(external, index);
+  } finally {
+    removeLinkedFixture(source, linked);
+  }
+});
+
+test("R16 rejects forged linked-worktree .git and commondir metadata", async () => {
+  const { source, linked } = linkedFixture();
+  const dotGit = path.join(linked, ".git");
+  const savedDotGit = path.join(linked, ".git.saved");
+  const originalDotGit = fs.readFileSync(dotGit);
+  const gitDir = path.resolve(
+    linked,
+    /^gitdir: ([^\r\n]+)/.exec(originalDotGit.toString("utf8"))[1],
+  );
+  const commonFile = path.join(gitDir, "commondir");
+  const originalCommon = fs.readFileSync(commonFile);
+  try {
+    fs.renameSync(dotGit, savedDotGit);
+    fs.writeFileSync(dotGit, `gitdir: ${path.join(source, ".git")}\n`);
+    assert.notDeepEqual((await validateClosureFormatting(linked)).errors, []);
+    fs.rmSync(dotGit);
+    fs.renameSync(savedDotGit, dotGit);
+    writeMetadata(commonFile, `${path.join(source, "missing-common")}\n`);
+    assert.notDeepEqual((await validateClosureFormatting(linked)).errors, []);
+    writeMetadata(commonFile, originalCommon);
+    if (process.platform !== "win32") {
+      const index = path.join(gitDir, "index");
+      const external = path.join(source, "external.index");
+      fs.copyFileSync(index, external);
+      fs.rmSync(index);
+      fs.symlinkSync(external, index, "file");
+      assert.notDeepEqual((await validateClosureFormatting(linked)).errors, []);
+      fs.rmSync(index);
+      fs.copyFileSync(external, index);
+    }
+  } finally {
+    if (fs.existsSync(savedDotGit)) {
+      fs.rmSync(dotGit, { force: true });
+      fs.renameSync(savedDotGit, dotGit);
+    }
+    if (fs.existsSync(gitDir)) writeMetadata(commonFile, originalCommon);
+    removeLinkedFixture(source, linked);
+  }
+});
+
+test("R16 Git execution failures and malformed output fail closed", async () => {
   const root = fixture();
   const missing = await validateClosureFormatting(root, {
     gitCommand: path.join(root, "definitely-missing-git"),
@@ -365,7 +456,7 @@ test("R15 Git execution failures and malformed output fail closed", async () => 
   const fake = path.join(root, "fake-git.mjs");
   fs.writeFileSync(
     fake,
-    "const mode=process.env.UPFS_FAKE_GIT; if(mode==='timeout') await new Promise(r=>setTimeout(r,1000)); else process.stdout.write('malformed');\n",
+    "const mode=process.env.UPFS_FAKE_GIT; if(mode==='timeout') await new Promise(r=>setTimeout(r,1000)); else if(mode==='nonzero') process.exit(7); else if(mode==='stderr') process.stderr.write('unexpected'); else if(mode==='signal') process.kill(process.pid,'SIGTERM'); else process.stdout.write('malformed');\n",
   );
   const malformed = await withGitEnvironment(
     { UPFS_FAKE_GIT: "malformed" },
@@ -386,6 +477,18 @@ test("R15 Git execution failures and malformed output fail closed", async () => 
     }),
   );
   assert.ok(timedOut.errors.some((error) => error.includes("failed closed")));
+  for (const mode of ["nonzero", "stderr", "signal"]) {
+    const failed = await withGitEnvironment({ UPFS_FAKE_GIT: mode }, () =>
+      validateClosureFormatting(root, {
+        gitCommand: process.execPath,
+        gitCommandPrefix: [fake],
+      }),
+    );
+    assert.ok(
+      failed.errors.some((error) => error.includes("failed closed")),
+      `${mode}: ${failed.errors.join("\n")}`,
+    );
+  }
 });
 
 test("R15 rejects representative porcelain-v2 dirty states", async () => {

@@ -1,0 +1,39 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002-R16
+title: Require canonical Git metadata identity
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 96a4f3a1688e5e545e536c77b0e7baed4e7eb583
+dependencies: [RECOVERY-TASK-0001-CLOSURE-002-R15]
+inputs:
+  [
+    AGENTS.md,
+    agents/BACKEND.md,
+    agents/QA_SECURITY.md,
+    docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R15-QA.md,
+  ]
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0001-stage-a-state.json
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R16.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R16.md
+acceptance:
+  - Direct metadata resolution and sanitized Git plumbing agree on worktree, Git directory, common directory, object store, and index.
+  - Legitimate registered linked worktrees remain supported.
+  - The canonical index is contained, direct, regular, non-link, single-link, and permission/owner safe where portable.
+  - Forged Git metadata, aliases, malformed protocol, and all Git execution failures prevent acceptance.
+  - TASK-0001 remains blocked without attestation.
+security:
+  - Filesystem aliases and forged administrative metadata cannot substitute closure-authorizing index bytes.
+tests:
+  - node --test scripts/closure-format-check.test.mjs scripts/historical-closure-validator.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve history and correct forward; never validate aliased Git metadata.
+independent_review: Fresh QA reviews exact R16 handoff candidate; only if accepted may it attest exact candidate.
