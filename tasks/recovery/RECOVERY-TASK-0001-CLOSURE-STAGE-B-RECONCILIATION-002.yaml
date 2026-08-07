@@ -1,0 +1,48 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-STAGE-B-RECONCILIATION-002
+title: Bind incomplete tasks to immutable audited dispositions
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 544838be529a12f0f2c9cf9d306c397a685b8da2
+dependencies: [RECOVERY-TASK-0001-CLOSURE-STAGE-B-RECONCILIATION-001]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/reviews/RECOVERY-TASK-0001-CLOSURE-STAGE-B-RECONCILIATION-001-QA.md
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - scripts/historical-closure-validator.mjs
+authorized_files:
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-STAGE-B-RECONCILIATION-002.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-STAGE-B-RECONCILIATION-002.md
+prohibited_files:
+  - accepted matrix, queue, disposition evidence, prior rejection, and closure evidence
+  - TASK-0002 and TASK-0112 through TASK-0123
+  - product and runtime code
+  - permissive class-only validation or mutable unbound disposition sources
+acceptance:
+  - Every TASK-0002 through TASK-0110 disposition is bound to its exact audited value in the immutable protected matrix blob at commit 420403fc09962d35d19af0cd735b056cb2a9a1ba.
+  - Immutable source commit ancestry, object identity, SHA-256, 110-task completeness, uniqueness, and allowed grammar are fail-closed.
+  - Every cross-class substitution direction and blocked, false ACCEPTED, arbitrary, missing, duplicate, and tampered-source cases fail.
+  - Existing TASK-0001 closure and frozen-task controls remain unchanged.
+security:
+  - Prevent a mutable matrix edit from changing whether remediation is actionable, externally blocked, or not implemented.
+  - No runtime, tenant, authorization, financial, API, migration, or durable-state behavior changes.
+tests:
+  - node --test scripts/historical-closure-validator.test.mjs scripts/closure-format-check.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+  - git merge-base --is-ancestor 420403fc09962d35d19af0cd735b056cb2a9a1ba HEAD
+rollback: Preserve the rejection and immutable protected source; correct forward only without history rewrite.
+independent_review: Fresh QA/Security distinct from the rejecting reviewer must review the exact R2 candidate.

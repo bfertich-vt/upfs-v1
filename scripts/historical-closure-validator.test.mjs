@@ -7,6 +7,7 @@ import { execFileSync } from "node:child_process";
 import test from "node:test";
 import { validateQueueDocument } from "./queue-validator.mjs";
 import {
+  auditedDispositionMap,
   exactAttestationDiff,
   structuredVerdictAttestation,
 } from "./historical-closure-validator.mjs";
@@ -154,6 +155,50 @@ test("attestation whole-commit diff permits only one canonical addition", () => 
     );
 });
 
+test("audited disposition source is digest-bound, complete, and unique", () => {
+  const bytes = execFileSync("git", [
+    "show",
+    "420403fc09962d35d19af0cd735b056cb2a9a1ba:docs/HISTORICAL_TASK_CLOSURE_MATRIX.md",
+  ]);
+  const expected =
+    "05e29ce65b83b934fa80b116bb4052e74088de9e766d4b8de703941c091b2922";
+  const errors = [];
+  const dispositions = auditedDispositionMap(bytes, expected, errors);
+  assert.deepEqual(errors, []);
+  assert.equal(dispositions.size, 110);
+  assert.equal(dispositions.get("TASK-0002"), "REMEDIATION_REQUIRED");
+  assert.equal(dispositions.get("TASK-0017"), "EXTERNAL_PREREQUISITE");
+  assert.equal(dispositions.get("TASK-0022"), "NOT_IMPLEMENTED");
+
+  const tamperedErrors = [];
+  auditedDispositionMap(
+    Buffer.concat([bytes, Buffer.from("tamper")]),
+    expected,
+    tamperedErrors,
+  );
+  assert.match(tamperedErrors.join("\n"), /stale or incorrect SHA-256/);
+
+  const text = bytes.toString("utf8");
+  const task2 = text
+    .split(/\r?\n/)
+    .find((line) => line.startsWith("| TASK-0002 |"));
+  for (const malformed of [
+    Buffer.from(text.replace(`${task2}\n`, "")),
+    Buffer.from(text.replace(`${task2}\n`, `${task2}\n${task2}\n`)),
+  ]) {
+    const malformedErrors = [];
+    auditedDispositionMap(
+      malformed,
+      crypto.createHash("sha256").update(malformed).digest("hex"),
+      malformedErrors,
+    );
+    assert.match(
+      malformedErrors.join("\n"),
+      /exactly 110 tasks|duplicates TASK-0002/,
+    );
+  }
+});
+
 test("TASK-0001 accepted closure passes and all evidence substitutions fail closed", (t) => {
   const source = process.cwd();
   const root = fs.mkdtempSync(
@@ -178,6 +223,7 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
     [
       "daeb6d9f4c04800e453ee92a91d8f69ef3138c3a",
       "ee01b09e3f86fd37461c4b98a05c41f54868a157",
+      "420403fc09962d35d19af0cd735b056cb2a9a1ba",
     ],
     "fixture: join protected merge and QA history",
   );
@@ -691,35 +737,53 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
     blockedQueue,
     /TASK-0001 has a closure record but is not complete/,
   );
-  const invalidIncompleteDisposition = originalMatrix
-    .split(/\r?\n/)
-    .map((line) =>
-      line.startsWith("| TASK-0002 |")
-        ? line.replace("| REMEDIATION_REQUIRED |", "| blocked |")
-        : line,
-    )
-    .join("\n");
-  fs.writeFileSync(matrixPath, invalidIncompleteDisposition);
-  expectInvalid(
-    root,
-    originalQueue,
-    /TASK-0002 must use an audited incomplete disposition/,
-  );
-  fs.writeFileSync(
-    matrixPath,
-    invalidIncompleteDisposition.replace(
-      /^\| TASK-0002 \|.*$/m,
-      originalMatrix
-        .split(/\r?\n/)
-        .find((line) => line.startsWith("| TASK-0002 |"))
-        .replace("| REMEDIATION_REQUIRED |", "| ACCEPTED |"),
-    ),
-  );
-  expectInvalid(
-    root,
-    originalQueue,
-    /TASK-0002 must use an audited incomplete disposition/,
-  );
+  const replaceDisposition = (matrix, taskId, replacement) =>
+    matrix
+      .split(/\r?\n/)
+      .map((line) => {
+        if (!line.startsWith(`| ${taskId} |`)) return line;
+        const fields = line
+          .slice(1, -1)
+          .split("|")
+          .map((value) => value.trim());
+        fields[9] = replacement;
+        return `| ${fields.join(" | ")} |`;
+      })
+      .join("\n");
+  const audited = new Map([
+    ["TASK-0002", "REMEDIATION_REQUIRED"],
+    ["TASK-0017", "EXTERNAL_PREREQUISITE"],
+    ["TASK-0022", "NOT_IMPLEMENTED"],
+  ]);
+  for (const [taskId, expected] of audited)
+    for (const replacement of [
+      "REMEDIATION_REQUIRED",
+      "EXTERNAL_PREREQUISITE",
+      "NOT_IMPLEMENTED",
+    ].filter((value) => value !== expected)) {
+      fs.writeFileSync(
+        matrixPath,
+        replaceDisposition(originalMatrix, taskId, replacement),
+      );
+      expectInvalid(
+        root,
+        originalQueue,
+        new RegExp(
+          `${taskId} must preserve exact audited disposition ${expected}`,
+        ),
+      );
+    }
+  for (const replacement of ["blocked", "ACCEPTED", "ARBITRARY"]) {
+    fs.writeFileSync(
+      matrixPath,
+      replaceDisposition(originalMatrix, "TASK-0002", replacement),
+    );
+    expectInvalid(
+      root,
+      originalQueue,
+      /TASK-0002 must preserve exact audited disposition REMEDIATION_REQUIRED/,
+    );
+  }
   fs.writeFileSync(matrixPath, originalMatrix);
   const otherComplete = originalQueue.replace(
     /(id: TASK-0002[\s\S]*?status:) blocked/,
