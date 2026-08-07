@@ -95,7 +95,7 @@ test("R5 authorization includes every modified validator test surface", () => {
   assert.match(task, /  - scripts\/historical-closure-validator\.test\.mjs/);
 });
 
-test("TASK-0001 R11 enforces ASCII paths, ADS-free storage, and link topology", async () => {
+test("TASK-0001 R12 batches ADS checks across closure-authorizing scope", async () => {
   const root = fixture();
   const matrix = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
   const original = fs.readFileSync(matrix, "utf8");
@@ -111,7 +111,7 @@ test("TASK-0001 R11 enforces ASCII paths, ADS-free storage, and link topology", 
     "ATTESTATION",
     "  ",
     ".",
-    "r11",
+    "r12",
   ]) {
     fs.writeFileSync(
       matrix,
@@ -137,10 +137,10 @@ test("TASK-0001 R11 enforces ASCII paths, ADS-free storage, and link topology", 
       '  "task_status": "blocked",',
       '  "extra": true,\n  "task_status": "blocked",',
     ),
-    valid.replace('-R11"', '-R10"'),
+    valid.replace('-R12"', '-R11"'),
     valid.replace('"REJECTED"', '"ACCEPTED"'),
     valid.replace('"absent"', '"issued"'),
-    valid.replace('"R11_HANDOFF_CANDIDATE"', '"R10_HANDOFF_CANDIDATE"'),
+    valid.replace('"R12_HANDOFF_CANDIDATE"', '"R11_HANDOFF_CANDIDATE"'),
     valid.replace('"STAGE_A_REVIEW_PENDING"', '"ACTIVATION_PENDING"'),
     valid.replace(
       '"FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED"',

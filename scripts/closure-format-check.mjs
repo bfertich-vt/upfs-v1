@@ -26,6 +26,7 @@ const candidates = [
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R9.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R10.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R11.yaml",
+  "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R12.yaml",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R2.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R3.md",
@@ -37,6 +38,7 @@ const candidates = [
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R9.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R10.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R11.md",
+  "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R12.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R2-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R3-QA.md",
@@ -53,12 +55,12 @@ export function canonicalStageAState(body) {
   const value = {
     version: 1,
     task_id: "TASK-0001",
-    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R11",
-    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R10",
+    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R12",
+    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R11",
     predecessor_disposition: "REJECTED",
     task_status: "blocked",
     attestation_status: "absent",
-    review_target: "R11_HANDOFF_CANDIDATE",
+    review_target: "R12_HANDOFF_CANDIDATE",
     activation_phase: "STAGE_A_REVIEW_PENDING",
     next_action: "FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED",
   };
@@ -69,7 +71,7 @@ export function canonicalStageAState(body) {
 }
 
 export function canonicalTaskOneRow() {
-  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R11.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R11 ASCII path and ADS controls, tests, task, and handoff only. | None for this corrective control. | Canonical row, ASCII paths, ADS-free storage, single-link topology, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R11 handoff. |";
+  return "| TASK-0001 | docs/MASTER_PLAN.md; tasks/queue.yaml; tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R12.yaml; docs/governance/task-closures/TASK-0001-stage-a-state.json | Original repository baseline criteria and corrective evidence are preserved. | Historical implementation and QA evidence remain immutable. | Prior local validation evidence remains historical. | Hosted observations remain immutable snapshots. | Governance-only correction; runtime security behavior is unchanged. | Raw evidence and provenance remain append-only. | Unsupported completion claim. | blocked | Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative. | Hosted API facts retain their documented snapshot boundary. | Backend owns corrective control; separation of duties remains required. | R12 closure-scope ADS batch, tests, task, and handoff only. | None for this corrective control. | Canonical row, complete ADS inventory, ASCII paths, full-suite, audit, fsck, and diff gates. | Correct forward only; preserve every prior candidate and QA disposition. | Follow the authoritative state record and R12 handoff. |";
 }
 
 function nulGit(root, args) {
@@ -119,17 +121,49 @@ function portableAsciiPath(rel) {
     );
 }
 
-function namedStreams(file) {
+function closureScope(root, paths) {
+  const roots = /^(?:docs|tasks|scripts|specs|agents|\.github)\//;
+  const rootFiles =
+    /^(?:package(?:-lock)?\.json|AGENTS\.md|README\.md|[^/]*\.(?:json|ya?ml|toml|config|lock))$/i;
+  return [
+    ...new Set(
+      paths
+        .filter((rel) => roots.test(rel) || rootFiles.test(rel))
+        .filter((rel) => {
+          try {
+            const stat = fs.lstatSync(path.join(root, rel));
+            return stat.isFile() && !stat.isSymbolicLink();
+          } catch {
+            return false;
+          }
+        }),
+    ),
+  ].sort();
+}
+
+function validateAdsScope(root, relativePaths) {
   if (process.platform !== "win32") return [];
+  if (relativePaths.length > 10000)
+    throw new Error("ADS scope record limit exceeded");
+  const paths = relativePaths.map((rel) => path.resolve(root, rel));
+  const input = JSON.stringify(paths);
+  if (Buffer.byteLength(input) > 1024 * 1024)
+    throw new Error("ADS scope input limit exceeded");
   const script =
-    "& { param([string]$p) @(Get-Item -LiteralPath $p -Stream * -ErrorAction Stop | Select-Object Stream,Length) | ConvertTo-Json -Compress }";
+    "& { $paths = ([Console]::In.ReadToEnd() | ConvertFrom-Json); $out = @(); foreach ($p in $paths) { foreach ($s in @(Get-Item -LiteralPath $p -Stream * -ErrorAction Stop)) { $out += [pscustomobject]@{Path=$p;Stream=$s.Stream;Length=$s.Length} } }; @($out) | ConvertTo-Json -Compress }";
   const result = spawnSync(
     "powershell",
-    ["-NoProfile", "-NonInteractive", "-Command", script, file],
-    { encoding: "utf8", windowsHide: true },
+    ["-NoProfile", "-NonInteractive", "-Command", script],
+    {
+      encoding: "utf8",
+      windowsHide: true,
+      input,
+      timeout: 30000,
+      maxBuffer: 10 * 1024 * 1024,
+    },
   );
-  if (result.status !== 0)
-    throw new Error("alternate-data-stream enumeration failed");
+  if (result.error || result.status !== 0 || result.signal || result.stderr)
+    throw new Error("alternate-data-stream batch failed");
   let values;
   try {
     values = JSON.parse(result.stdout || "[]");
@@ -137,9 +171,29 @@ function namedStreams(file) {
     throw new Error("alternate-data-stream output was malformed");
   }
   const list = Array.isArray(values) ? values : [values];
-  return list
-    .map((entry) => entry.Stream)
-    .filter((stream) => stream && stream !== ":$DATA" && stream !== "$DATA");
+  if (list.length > 10000) throw new Error("ADS output record limit exceeded");
+  const expected = new Set(paths.map((value) => value.toLowerCase()));
+  const seen = new Set();
+  for (const entry of list) {
+    if (
+      !entry ||
+      typeof entry.Path !== "string" ||
+      typeof entry.Stream !== "string" ||
+      !Number.isSafeInteger(entry.Length)
+    )
+      throw new Error("ADS output record malformed");
+    const key = entry.Path.toLowerCase();
+    if (
+      !expected.has(key) ||
+      seen.has(key) ||
+      ![":$DATA", "$DATA"].includes(entry.Stream)
+    )
+      throw new Error("ADS output was unexpected, duplicated, or named");
+    seen.add(key);
+  }
+  if (seen.size !== expected.size)
+    throw new Error("ADS output omitted expected paths");
+  return [];
 }
 
 export async function validateClosureFormatting(root) {
@@ -250,10 +304,11 @@ export async function validateClosureFormatting(root) {
       `${stateRel} must be the one exact canonical R11 Stage A state record.`,
     );
   try {
-    if (namedStreams(statePath).length)
-      errors.push(`${stateRel} must not contain named alternate data streams.`);
+    validateAdsScope(root, closureScope(root, treePaths));
   } catch (error) {
-    errors.push(`${stateRel} storage topology failed closed: ${error.message}`);
+    errors.push(
+      `Closure-authorizing storage scope failed closed: ${error.message}`,
+    );
   }
 
   const queueRel = "scripts/queue-validator.mjs";
