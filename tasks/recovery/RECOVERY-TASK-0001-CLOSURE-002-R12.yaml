@@ -1,0 +1,38 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002-R12
+title: Batch ADS validation across closure-authorizing scope
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 701c26ba66becb5c5118a3944347fc5f05c733d8
+dependencies: [RECOVERY-TASK-0001-CLOSURE-002-R11]
+inputs:
+  [
+    AGENTS.md,
+    agents/BACKEND.md,
+    agents/QA_SECURITY.md,
+    docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R11-QA.md,
+  ]
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0001-stage-a-state.json
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R12.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R12.md
+acceptance:
+  - One structured-stdin literal-path PowerShell batch covers all regular closure-authorizing files.
+  - Returned path set exactly equals expected scope with one default stream per file.
+  - Named streams, omissions, duplicates, malformed/unexpected records, errors, stderr, timeout, and limits fail closed.
+  - Non-Windows retains applicable topology controls; TASK-0001 stays blocked without attestation.
+security:
+  - No shell interpolation or command-line path list; bounded input/output/records/time.
+tests:
+  - node --test scripts/closure-format-check.test.mjs scripts/historical-closure-validator.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve history and correct forward; never narrow ADS scope to one file.
+independent_review: Fresh QA reviews exact R12 handoff candidate; only if accepted may it attest exact candidate.

@@ -1,0 +1,37 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002-R11
+title: Enforce ASCII repository paths and ADS-free Stage A storage
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 243b2a36ccbf4c534f26bca8bb2657183db4be86
+dependencies: [RECOVERY-TASK-0001-CLOSURE-002-R10]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/QA_SECURITY.md
+  - docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R10-QA.md
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0001-stage-a-state.json
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R11.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R11.md
+acceptance:
+  - Every tracked and enumerated worktree path uses printable ASCII and rejects Windows reserved characters, devices, and trailing dot/space ambiguity.
+  - Bounded metadata traversal includes ignored trees, never follows links/reparse entries, and fails closed on errors or limit overflow.
+  - Windows native literal-path ADS enumeration rejects every named stream and fails closed on enumeration/JSON errors.
+  - Non-Windows retains applicable regular-file, link-count, index/blob/worktree, and path grammar controls while ADS is explicitly inapplicable.
+  - TASK-0001 remains blocked without attestation and inherited controls remain intact.
+security:
+  - Repository-wide printable ASCII grammar is `[0x20-0x7e]` excluding `<>:"\\|?*`, reserved devices, empty segments, and trailing dot/space.
+tests:
+  - node --test scripts/closure-format-check.test.mjs scripts/historical-closure-validator.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve history and correct forward; never accept Unicode ambiguity or named alternate streams.
+independent_review: Fresh QA reviews exact R11 handoff candidate; only if accepted may it attest exact candidate before separate activation.

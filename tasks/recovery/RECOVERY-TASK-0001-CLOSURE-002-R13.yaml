@@ -1,0 +1,39 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002-R13
+title: Derive closure ADS authority from the complete Git index
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 6ba714c6fa192331aa8283990f6f4ff24c72a5d7
+dependencies: [RECOVERY-TASK-0001-CLOSURE-002-R12]
+inputs:
+  [
+    AGENTS.md,
+    agents/BACKEND.md,
+    agents/QA_SECURITY.md,
+    docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R12-QA.md,
+  ]
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0001-stage-a-state.json
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R13.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R13.md
+acceptance:
+  - Complete NUL-delimited index inventory defines authoritative regular-file scope.
+  - Each entry has one stage zero, documented regular mode 100644 or 100755, normal flags, and one regular worktree file.
+  - Symlink, gitlink, conflicts, intent, skip/assume flags, missing worktree, and inventory disagreement fail closed.
+  - Mandatory root governance files and every tracked package/workflow/spec/task/handoff/review/evidence/script file receive exact ADS parity.
+  - TASK-0001 remains blocked without attestation.
+security:
+  - Inventory observed 711 mode-100644 entries; 100755 is allowed only as a regular executable mode.
+tests:
+  - node --test scripts/closure-format-check.test.mjs scripts/historical-closure-validator.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve history and correct forward; never derive authority from filename heuristics.
+independent_review: Fresh QA reviews exact R13 handoff candidate; only if accepted may it attest exact candidate.

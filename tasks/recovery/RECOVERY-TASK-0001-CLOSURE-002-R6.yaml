@@ -1,0 +1,41 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002-R6
+title: Correct TASK-0001 matrix to the active R6 Stage A round
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 0c67e24591f903e496d87ed3ec3e9560a788f690
+dependencies: [RECOVERY-TASK-0001-CLOSURE-002-R5]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/QA_SECURITY.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R5-QA.md
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R6.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R6.md
+acceptance:
+  - TASK-0001 matrix identifies R5 as rejected and R6 as the active corrective Stage A round.
+  - Matrix directs fresh QA to the exact candidate recorded in the R6 handoff without embedding a self-referential SHA.
+  - Matrix truthfully states TASK-0001 is blocked and no structured attestation exists.
+  - Regression gate rejects a predecessor round, wrong active task, attestation-state contradiction, or premature acceptance.
+  - All R5 structural security controls and rejection history remain unchanged.
+security:
+  - Documentation-control correction only; no runtime, tenant, financial, API, migration, or durable-state behavior changes.
+tests:
+  - node --test scripts/closure-format-check.test.mjs scripts/historical-closure-validator.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve R5 rejection and correct forward; never attest or activate a rejected predecessor.
+independent_review: Fresh QA reviews the exact R6 handoff candidate and only if accepted creates the structured attestation before separate activation.

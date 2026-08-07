@@ -1,0 +1,51 @@
+task_id: RECOVERY-TASK-0001-ACTIVATION-003
+title: Correct Stage B R2 final-candidate provenance
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 8800da54cab8af8b7905bd6bac3f15d28d62f093
+dependencies: [RECOVERY-TASK-0001-ACTIVATION-002]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - tasks/recovery/RECOVERY-TASK-0001-ACTIVATION-002.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-ACTIVATION-002.md
+  - docs/reviews/RECOVERY-TASK-0001-ACTIVATION-R2-QA.md
+authorized_files:
+  - tasks/recovery/RECOVERY-TASK-0001-ACTIVATION-003.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-ACTIVATION-003.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0001-stage-a-state.json
+  - docs/governance/task-closures/TASK-0001.json
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+acceptance:
+  - Preserve the exact R2 implementation and QA rejection without rewriting history.
+  - Identify 2d4239245f700fbf6b2eff28650b3867b10fd3e9 only as the implementation commit.
+  - Identify 9be06953659c1673dffd572eb1feb2d03c318ef7 only as the rejected R2 final candidate.
+  - Explain that Git assigns the R3 final-candidate identity after the handoff-only commit is created; the handoff must not falsely self-reference.
+  - TASK-0002 remains blocked and TASK-0112 through TASK-0123 remain frozen.
+security:
+  - Preserve immutable rejection evidence and fail closed on ambiguous candidate identity.
+  - Do not change runtime, tenant, authorization, financial-data, secret, or provider behavior.
+tests:
+  - node --test scripts/closure-format-check.test.mjs scripts/historical-closure-validator.test.mjs
+  - npm run format:check
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run queue:check
+  - npm run traceability:check
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve every existing commit and correct forward through a new independently reviewed record; do not amend or rewrite history.
+independent_review: A fresh QA/Security reviewer distinct from the R2 reviewer must review the exact resulting R3 final candidate.

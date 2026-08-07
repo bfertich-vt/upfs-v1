@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "task_id": "TASK-0001",
+  "active_recovery_task": "RECOVERY-TASK-0001-ACTIVATION-002",
+  "predecessor_task": "RECOVERY-TASK-0001-ACTIVATION-001",
+  "predecessor_disposition": "REJECTED",
+  "task_status": "complete",
+  "attestation_status": "verified",
+  "reviewed_candidate": "aaafb17804586738976fd31e1a0a84dda00c2b25",
+  "review_commit": "0f0e6f360ec2f30d2eb94181e077801134d6c8c9",
+  "attestation_commit": "b5065a9df57e4c915d25ae0f4ffdd097a8841e6d",
+  "attestation_sha256": "cc23ceeae1e62199e17576e3d11418cd07d7e0076a38ac8af57ff30f9a98bf6c",
+  "activation_phase": "STAGE_B_REVIEW_PENDING",
+  "next_action": "FRESH_QA_REVIEW_THEN_MERGE_IF_ACCEPTED"
+}

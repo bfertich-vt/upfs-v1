@@ -1,0 +1,41 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002-R9
+title: Bind canonical Stage A state across index and worktree
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 2f6e362438873ce757ee607a6b6726acd50b3484
+dependencies: [RECOVERY-TASK-0001-CLOSURE-002-R8]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/QA_SECURITY.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R8-QA.md
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0001-stage-a-state.json
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R9.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R9.md
+acceptance:
+  - NUL-safe tracked and relevant worktree discovery rejects repository-wide case, Unicode, nested, untracked, and lookalike Stage A records.
+  - Canonical path has exactly one stage-zero mode-100644 blob entry with normal index flags.
+  - Indexed canonical bytes equal the contained lstat-regular worktree bytes exactly, with no unstaged difference.
+  - Split staged/unstaged substitutions, intent-to-add, conflict stages, skip/assume flags, alternate modes, symlink, and gitlink fail closed.
+  - R5 structural controls remain unchanged; TASK-0001 remains blocked with no attestation.
+security:
+  - Closed-world governance correction only; dependency/build directories excluded from worktree scan are documented in validator code.
+tests:
+  - node --test scripts/closure-format-check.test.mjs scripts/historical-closure-validator.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve history and correct forward; never validate followed filesystem bytes independently of indexed bytes.
+independent_review: Fresh QA reviews the exact R9 handoff candidate; only if accepted may it create an exact-candidate attestation before separate activation.
