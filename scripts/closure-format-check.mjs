@@ -12,6 +12,7 @@ const candidates = [
   "docs/governance/delivery-governance.md",
   "docs/governance/task-closures/TASK-0001.json",
   "docs/governance/task-closures/rejected/TASK-0001-r1.json",
+  "docs/governance/task-closures/TASK-0001-stage-a-state.json",
   "docs/governance/task-closures/evidence/TASK-0001-validation-report.json",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R2.yaml",
@@ -19,12 +20,14 @@ const candidates = [
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R4.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R5.yaml",
   "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R6.yaml",
+  "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R7.yaml",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R2.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R3.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R4.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R5.md",
   "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R6.md",
+  "docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R7.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R2-QA.md",
   "docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R3-QA.md",
@@ -35,6 +38,25 @@ function noTrailingWhitespace(rel, body, errors) {
     if (/[\t ]+$/.test(line))
       errors.push(`${rel}:${index + 1} has trailing whitespace.`);
   });
+}
+
+export function canonicalStageAState(body) {
+  const value = {
+    version: 1,
+    task_id: "TASK-0001",
+    active_recovery_task: "RECOVERY-TASK-0001-CLOSURE-002-R7",
+    predecessor_task: "RECOVERY-TASK-0001-CLOSURE-002-R6",
+    predecessor_disposition: "REJECTED",
+    task_status: "blocked",
+    attestation_status: "absent",
+    review_target: "R7_HANDOFF_CANDIDATE",
+    activation_phase: "STAGE_A_REVIEW_PENDING",
+    next_action: "FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED",
+  };
+  return (
+    typeof body === "string" &&
+    body.replace(/\r\n/g, "\n") === `${JSON.stringify(value, null, 2)}\n`
+  );
 }
 
 export async function validateClosureFormatting(root) {
@@ -66,22 +88,28 @@ export async function validateClosureFormatting(root) {
       errors.push(`${matrixRel} ${row.slice(2, 11)} must retain 18 fields.`);
   const taskOne =
     matrixRows.find((row) => row.startsWith("| TASK-0001 |")) || "";
-  const r6Task = "tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R6.yaml";
-  const requiredCurrentState = [
-    r6Task,
-    "R5 was rejected",
-    "exact R6 candidate recorded by the R6 handoff",
-    "no structured attestation has yet been issued",
-    "| blocked |",
-  ];
-  for (const required of requiredCurrentState)
-    if (!taskOne.includes(required))
-      errors.push(
-        `${matrixRel} TASK-0001 must describe current R6 blocked/attestation state: ${required}`,
-      );
-  if (/Fresh QA (?:must )?reviews? r[1-5]\b/i.test(taskOne))
+  const stateRel = "docs/governance/task-closures/TASK-0001-stage-a-state.json";
+  const marker = `Authoritative state: ${stateRel}; all matrix prose is non-authoritative.`;
+  if (taskOne.split(marker).length !== 2)
     errors.push(
-      `${matrixRel} TASK-0001 must not direct QA to a rejected predecessor.`,
+      `${matrixRel} TASK-0001 must contain exactly one canonical authoritative-state marker.`,
+    );
+  const withoutMarker = taskOne.replace(marker, "");
+  if (
+    /\b(?:active(?:_round)?|attestation|issued|absent|accepted|rejected|review_target|activation_phase|next_action|reviews?\s+R\d+)\b/i.test(
+      withoutMarker,
+    )
+  )
+    errors.push(
+      `${matrixRel} TASK-0001 prose must not make or override authoritative state claims.`,
+    );
+  const statePath = path.join(root, stateRel);
+  if (
+    !fs.existsSync(statePath) ||
+    !canonicalStageAState(fs.readFileSync(statePath, "utf8"))
+  )
+    errors.push(
+      `${stateRel} must be the one exact canonical R7 Stage A state record.`,
     );
 
   const queueRel = "scripts/queue-validator.mjs";

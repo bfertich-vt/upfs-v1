@@ -3,7 +3,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { validateClosureFormatting } from "./closure-format-check.mjs";
+import {
+  canonicalStageAState,
+  validateClosureFormatting,
+} from "./closure-format-check.mjs";
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "upfs-closure-format-"));
@@ -11,6 +14,7 @@ function fixture() {
     "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md",
     "scripts/queue-validator.mjs",
     "docs/governance/task-closures/rejected/TASK-0001-r1.json",
+    "docs/governance/task-closures/TASK-0001-stage-a-state.json",
   ]) {
     fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
     fs.copyFileSync(path.resolve(rel), path.join(root, rel));
@@ -74,34 +78,49 @@ test("R5 authorization includes every modified validator test surface", () => {
   assert.match(task, /  - scripts\/historical-closure-validator\.test\.mjs/);
 });
 
-test("TASK-0001 matrix binds the current R6 round without predecessor or attestation drift", async () => {
+test("TASK-0001 uses one canonical R7 state record and non-authorizing prose", async () => {
   const root = fixture();
   const matrix = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
   const original = fs.readFileSync(matrix, "utf8");
-  for (const [from, to, pattern] of [
-    [
-      "RECOVERY-TASK-0001-CLOSURE-002-R6.yaml",
-      "RECOVERY-TASK-0001-CLOSURE-002-R5.yaml",
-      /current R6/,
-    ],
-    [
-      "exact R6 candidate recorded by the R6 handoff",
-      "review r5",
-      /rejected predecessor|current R6/,
-    ],
-    [
-      "no structured attestation has yet been issued",
-      "structured attestation has been issued",
-      /attestation state/,
-    ],
-    ["| blocked |", "| ACCEPTED |", /blocked\/attestation state/],
+  const marker =
+    "Authoritative state: docs/governance/task-closures/TASK-0001-stage-a-state.json; all matrix prose is non-authoritative.";
+  for (const mutation of [
+    original.replace(marker, ""),
+    original.replace(marker, `${marker} ${marker}`),
+    original.replace(
+      "Follow the authoritative state record",
+      "Attestation issued; review R6",
+    ),
+    original.replace("| blocked |", "| ACCEPTED |"),
   ]) {
-    fs.writeFileSync(matrix, original.replaceAll(from, to));
-    assert.ok(
-      (await validateClosureFormatting(root)).errors.some((error) =>
-        pattern.test(error),
-      ),
-      `${from} -> ${to}`,
-    );
+    fs.writeFileSync(matrix, mutation);
+    assert.notDeepEqual((await validateClosureFormatting(root)).errors, []);
   }
+  fs.writeFileSync(matrix, original);
+
+  const state = path.join(
+    root,
+    "docs/governance/task-closures/TASK-0001-stage-a-state.json",
+  );
+  const valid = fs.readFileSync(state, "utf8");
+  assert.equal(canonicalStageAState(valid), true);
+  for (const mutation of [
+    valid + valid,
+    valid.replace('  "task_status": "blocked",\n', ""),
+    valid.replace(
+      '  "task_status": "blocked",',
+      '  "extra": true,\n  "task_status": "blocked",',
+    ),
+    valid.replace('-R7"', '-R6"'),
+    valid.replace('"REJECTED"', '"ACCEPTED"'),
+    valid.replace('"absent"', '"issued"'),
+    valid.replace('"R7_HANDOFF_CANDIDATE"', '"R6_HANDOFF_CANDIDATE"'),
+    valid.replace('"STAGE_A_REVIEW_PENDING"', '"ACTIVATION_PENDING"'),
+    valid.replace(
+      '"FRESH_QA_REVIEW_THEN_ATTEST_IF_ACCEPTED"',
+      '"REVIEW_R6_OR_ACTIVATE"',
+    ),
+    valid.replace('  "task_id"', ' "task_id"'),
+  ])
+    assert.equal(canonicalStageAState(mutation), false, mutation);
 });

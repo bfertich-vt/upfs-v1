@@ -1,0 +1,42 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002-R7
+title: Make TASK-0001 Stage A matrix state canonical and single-valued
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: f68cd86aee783775486dece9247a10d1b1acd03a
+dependencies: [RECOVERY-TASK-0001-CLOSURE-002-R6]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/QA_SECURITY.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R6-QA.md
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0001-stage-a-state.json
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R7.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R7.md
+acceptance:
+  - Exactly one canonical structured record is authoritative for the TASK-0001 Stage A state.
+  - Exact fields bind R7 active task, rejected R6 predecessor, blocked task, absent attestation, stable R7 handoff review target, pending review phase, and unambiguous next action.
+  - Missing, extra, duplicate, reordered, malformed, unknown, conflicting, or noncanonical state fails closed.
+  - Matrix prose is explicitly non-authoritative and state-claim prose or duplicate markers fail closed.
+  - R5 structural security logic remains unchanged and TASK-0001 stays blocked.
+security:
+  - Governance state correction only; no runtime, tenant, financial, API, migration, or durable-state changes.
+tests:
+  - node --test scripts/closure-format-check.test.mjs scripts/historical-closure-validator.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve every rejection and correct forward; never infer authorization from prose.
+independent_review: Fresh QA reviews the exact R7 handoff candidate; only an accepted review may create the exact-candidate attestation before separate activation.
