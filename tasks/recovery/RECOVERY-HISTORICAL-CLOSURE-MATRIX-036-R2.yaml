@@ -1,0 +1,36 @@
+id: RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R2
+title: Correct closure matrix row schema for parseable evidence columns
+status: in_progress
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+author_worktree: C:\source\upfs-schema-historical-closure-matrix-036-r2
+author_branch: recovery/historical-closure-matrix-036-r2
+base_commit: ccbecdfcd20d2ca4387c7977affc3da40670a3d6
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/recovery/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R2.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R2.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/handoffs/TASK-*.md
+  - docs/reviews/**
+  - specs/**
+  - apps/**
+  - services/**
+  - contracts/**
+acceptance_criteria:
+  - Exactly 110 unique parseable rows TASK-0001 through TASK-0110.
+  - Every row has exactly 18 declared fields including disposition, implementation, contracts, tests, runtime, security/tenant, documentation/provenance, classification, missing work, dependencies, external prerequisites, role/files, rollback, and next action.
+  - Preserve all blocked/unknown dispositions and prior QA rejection f2f56ee.
+  - Do not touch TASK-0111+ or queue, product, specs, or historical evidence.
+required_checks:
+  - Exact 18-field row parser and ID count
+  - YAML parse
+  - npm run validate
+  - npm run queue:check
+  - npm run traceability:check
+  - npm test
+  - git diff --check
+security:
+  - No secrets/customer/private financial/provider data; preserve tenant isolation and fail-closed requirements.
+rollback: Revert R2 commits only; preserve prior matrix and QA rejection.

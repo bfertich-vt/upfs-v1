@@ -1,0 +1,52 @@
+id: RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R3
+title: Reconstruct independently accepted historical closure matrix on protected base
+status: in_progress
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+author_thread: /root/schema_historical_closure_matrix_r3
+author_worktree: C:\source\upfs-schema-historical-closure-matrix-r3
+author_branch: codex/recovery-historical-closure-matrix-r3
+base_commit: a7514bfb494805dd591277cfab980f33de20830a
+accepted_sources:
+  implementation: e58c3d0c3d6440a19bb87ec422a53f9150f301e9
+  handoff: 04774a2b0d915e8955d785e8c438f285887f521e
+  independent_qa: 8bf9b6018286825a730d04bdeb07704d11e1e5f2
+preserved_rejected_sources:
+  initial_candidate: a2db1dc363ab0e3ed57dbdb947302ae2b1b58642
+  corrected_rejection_record: 84e0b0eb4d4d3a98270b84db860d7cefa48b3965
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/recovery/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R2.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R2.md
+  - docs/reviews/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R2-QA.md
+  - tasks/recovery/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R3.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-R3.md
+prohibited_files:
+  - tasks/queue.yaml
+  - tasks/recovery/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036.yaml
+  - docs/handoffs/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036.md
+  - docs/reviews/RECOVERY-HISTORICAL-CLOSURE-MATRIX-036-QA.md
+  - specs/**
+  - apps/**
+  - services/**
+  - contracts/**
+  - scripts/fixtures/**
+  - .github/**
+acceptance_criteria:
+  - Exactly 110 unique parseable rows TASK-0001 through TASK-0110.
+  - Every row has exactly 18 required nonempty fields.
+  - Preserve conservative evidence classification and blocked dispositions without inferring acceptance from file existence or local tests.
+  - Carry only the accepted R2 matrix, task, handoff, and QA evidence; rejected sources remain preserved in Git and branches but are excluded from this replacement.
+  - Do not change historical task status, queue state, product code, specifications, validators, provenance bundles, ADR-007, or TASK-0112 through TASK-0123.
+required_checks:
+  - Exact 18-field row parser and contiguous ID check
+  - npm test
+  - npm run format:check
+  - npm run validate
+  - npm run queue:check
+  - npm run traceability:check
+  - git diff --check
+security:
+  - No secrets, credentials, customer data, private financial data, provider data, or production access.
+  - Runtime and tenant-isolation evidence must remain explicitly unproven where no accepted runtime evidence exists.
+rollback: Revert only the R3 reconstruction commits through reviewed corrective-forward flow; preserve accepted and rejected historical objects and evidence.
