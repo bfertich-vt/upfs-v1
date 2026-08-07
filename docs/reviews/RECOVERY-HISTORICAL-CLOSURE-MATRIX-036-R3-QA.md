@@ -71,4 +71,3 @@ The changed files contain no detected secrets, credentials, customer data, priva
 ## Required corrective-forward action
 
 Do not integrate this candidate. Preserve this rejection. In a separate author remediation commit, replace every false `2e3707172c7798513254838616039709b5fbca20` provenance reference with the exact existing commit `2e370717294a45a2e4109aaf4cfc47694f72e77c`, update any affected handoff/task digest evidence truthfully, and obtain a fresh independent QA/Security review of the new exact committed candidate. Do not amend, rewrite, delete, or bypass this rejected evidence.
-
