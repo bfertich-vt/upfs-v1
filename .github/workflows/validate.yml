@@ -44,7 +44,7 @@ jobs:
           node --input-type=module -e "import crypto from 'node:crypto'; import
           { execFileSync } from 'node:child_process'; import fs from 'node:fs';
           const m=JSON.parse(fs.readFileSync('scripts/fixtures/historical-provenance-v3.json'));
-          if(m.schema_version!==2||m.refs.length!==34||m.refs.filter(x=>x.kind==='handoff-candidate').length!==32||m.refs.filter(x=>x.kind==='erratum-source').length!==2)throw
+          if(m.schema_version!==2||m.refs.length!==35||m.refs.filter(x=>x.kind==='handoff-candidate').length!==33||m.refs.filter(x=>x.kind==='erratum-source').length!==2)throw
           new Error('historical provenance manifest count mismatch'); const
           d=crypto.createHash('sha256').update(fs.readFileSync(m.bundle)).digest('hex'); if(d!==m.sha256)throw
           new Error('historical provenance bundle digest mismatch'); const

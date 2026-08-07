@@ -1,0 +1,42 @@
+id: RECOVERY-PROVENANCE-CODEOWNERS-037
+title: Add the accepted CODEOWNERS candidate to immutable provenance transport
+status: in_progress
+role: Backend
+source:
+  - agents/BACKEND.md
+  - docs/governance/provenance-verification.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+dependencies:
+  - RECOVERY-CODEOWNERS-ROUTING-035
+authorized_files:
+  - scripts/fixtures/historical-provenance-v3.bundle
+  - scripts/fixtures/historical-provenance-v3.json
+  - scripts/ci-gate-validator.test.mjs
+  - .github/workflows/validate.yml
+  - tasks/recovery/RECOVERY-PROVENANCE-CODEOWNERS-037.yaml
+  - docs/handoffs/RECOVERY-PROVENANCE-CODEOWNERS-037.md
+acceptance_criteria:
+  - Exact accepted CODEOWNERS implementation commit 287b3894147080cb067ad2254869a2cabf998fce is transported and verified from its accepted handoff.
+  - The manifest binds all 35 objects to exact Git identities, SHA-256 object digests, derivation paths, and derivation-file digests.
+  - A genuinely isolated shallow clone hydrates every required object without access to local-only object storage.
+  - Missing, substituted, tampered, duplicated, mismatched, corrupted, unexpected, leaked, and semantic-bypass inputs fail closed.
+  - Validator semantics, historical evidence, queue state, and product behavior remain unchanged.
+tests:
+  - node --test --test-name-pattern "v3 provenance bundle" scripts/ci-gate-validator.test.mjs
+  - npm test
+  - npm run validate
+  - npm run queue:check
+  - npm run traceability:check
+  - git bundle verify scripts/fixtures/historical-provenance-v3.bundle
+  - git fsck --strict --no-reflogs
+  - git diff --check
+security:
+  - Preserve exact object identity and raw commit-byte SHA-256 checks with no wildcard, unavailable-source, current-record, or semantic bypass.
+  - Introduce no secret, credential, customer, financial, provider, production, or tenant data.
+  - Tenant isolation is not applicable to immutable repository metadata transport; existing tenant gates remain mandatory and unchanged.
+rollback: Revert only the independently reviewed correction through a separately reviewed corrective-forward change; preserve all prior commits, bundles, handoffs, reviews, and hosted run evidence.
+external_prerequisites:
+  - Fresh independent Codex QA/Security review of the committed candidate.
+  - Exact-head hosted repository-validation and repository-security checks before protected integration.
