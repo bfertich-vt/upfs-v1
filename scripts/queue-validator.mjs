@@ -3,6 +3,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { parseDocument } from "yaml";
+import { validateHistoricalClosures } from "./historical-closure-validator.mjs";
 
 const STATUSES = new Set(["planned", "ready", "in_progress", "blocked", "complete", "superseded"]);
 const RECLASSIFICATION_REPORT = "docs/governance/TASK-RECLASSIFICATION-007.md";
@@ -159,7 +160,7 @@ function validateHistoricalReclassification(root, tasks, errors, frozen) {
   for (const task of historical) {
     const record = records.get(task.id);
     if (!record) { errors.push(`${task.id} is absent from ${RECLASSIFICATION_REPORT}.`); continue; }
-    if (task.status !== "blocked") errors.push(`${task.id} must remain blocked during historical-evidence recovery.`);
+    if (!["blocked", "complete"].includes(task.status)) errors.push(`${task.id} must remain blocked or carry validated accepted closure evidence during historical-evidence recovery.`);
     if (task.classification !== record.classification || task.report_row !== task.id) errors.push(`${task.id} has a queue/report classification binding mismatch.`);
     const evidence = task.historical_evidence;
     if (!object(evidence) || typeof evidence.evidence_excerpt !== "string" || !evidence.evidence_excerpt.trim() || evidence.artifact !== record.artifact || evidence.artifact_sha256 !== record.artifact_sha256 || evidence.artifact_commit !== record.artifact_commit || evidence.evidence_excerpt !== record.evidence_excerpt) errors.push(`${task.id} has a queue/report immutable-evidence mismatch.`);
@@ -246,7 +247,8 @@ export function validateQueueDocument(content, root) {
   function visit(id, chain = []) { if (visiting.has(id)) { errors.push(`dependency cycle: ${[...chain, id].join(" -> ")}`); return; } if (visited.has(id)) return; visiting.add(id); const deps = Array.isArray(tasks.get(id).dependencies) ? tasks.get(id).dependencies : []; for (const dep of deps) if (typeof dep === "string" && tasks.has(dep)) visit(dep, [...chain, id]); visiting.delete(id); visited.add(id); }
   for (const id of tasks.keys()) visit(id);
   validateHistoricalReclassification(root, tasks, errors, recoveryFrozen);
-  for (const [id, task] of tasks) if (task.status === "complete") validateHandoff(root, id, errors);
+  validateHistoricalClosures(root, tasks, errors);
+  for (const [id, task] of tasks) if (task.status === "complete" && (!isHistoricalTaskId(id) || !task.historical_evidence)) validateHandoff(root, id, errors);
   const hasReady = [...tasks.values()].some((task) => task.status === "ready");
   const terminal = [...tasks.values()].every((task) => ["complete", "superseded"].includes(task.status));
   const frozenSilentWork = [...tasks.values()].filter((task) => ["planned", "in_progress"].includes(task.status));

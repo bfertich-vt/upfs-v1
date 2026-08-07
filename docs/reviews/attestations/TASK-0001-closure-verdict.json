@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "task_id": "TASK-0001",
+  "reviewed_candidate": "c35de5a92ad5224c6a2c5cb94f5846d764fcbe3a",
+  "verdict": "ACCEPTED",
+  "reviewer_role": "Independent QA/Security"
+}

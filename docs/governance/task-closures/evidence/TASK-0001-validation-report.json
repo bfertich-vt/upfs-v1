@@ -1,0 +1,52 @@
+{
+  "status": "passed",
+  "generated_at": "2026-08-07T03:06:48.070Z",
+  "metrics": {
+    "markdown_files": 260,
+    "json_contracts": 65,
+    "yaml_contracts": 5,
+    "required_files": 12
+  },
+  "checks": [
+    {
+      "name": "required-files",
+      "details": {
+        "count": 12
+      }
+    },
+    {
+      "name": "docs-links",
+      "details": {
+        "markdown_files": 260
+      }
+    },
+    {
+      "name": "json-contracts",
+      "details": {
+        "files": 65
+      }
+    },
+    {
+      "name": "yaml-contracts",
+      "details": {
+        "files": 5
+      }
+    },
+    {
+      "name": "task-queue",
+      "details": {
+        "state": "active",
+        "tasks": 123
+      }
+    },
+    {
+      "name": "workflow-pins",
+      "details": {
+        "validate_node": "24.16.0",
+        "yaml_parser": "2.9.0",
+        "trivy_action": "ed142fd0673e97e23eac54620cfb913e5ce36c25",
+        "trivy_version": "0.69.3"
+      }
+    }
+  ]
+}

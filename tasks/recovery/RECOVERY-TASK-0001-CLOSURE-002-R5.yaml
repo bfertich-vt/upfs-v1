@@ -1,0 +1,55 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002-R5
+title: Bind Stage A evidence and fail closed on attestation commit topology
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 437378580db46f5fb982f9a0aa85bf65a71b141c
+dependencies: [RECOVERY-TASK-0001-CLOSURE-002-R4]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R4.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R4.md
+  - docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R4-QA.md
+authorized_files:
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+  - docs/governance/delivery-governance.md
+  - docs/governance/task-closures/TASK-0001.json
+  - docs/governance/task-closures/rejected/TASK-0001-r1.json
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/queue.yaml
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R5.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R5.md
+prohibited_files:
+  - TASK-0002 and TASK-0112 through TASK-0123 records or implementation
+  - runtime and product code
+  - committed R4 task, handoff, and rejection evidence
+  - validator bypasses or weakened evidence requirements
+acceptance:
+  - Stage A candidate, narrative review, and attestation are modeled separately from the historical remediation candidate and review.
+  - The attestation binds the exact Stage A candidate and cross-class evidence substitution fails closed.
+  - The attestation commit has the narrative review commit as its exact sole parent and no author-controlled ordinary or merge commit may be interposed.
+  - The complete rename/copy-aware commit diff contains exactly one added canonical regular-blob attestation and rejects extra, modified, deleted, renamed, copied, symlink, and gitlink entries.
+  - R4 rejection evidence is preserved and TASK-0001 remains blocked pending fresh QA attestation and separately reviewed activation.
+security:
+  - Fail closed against stale, malformed, substituted, pre-seeded, interposed, smuggled, renamed, copied, symlink, gitlink, and noncanonical evidence.
+  - Governance-only correction; no runtime, tenant, financial, API, migration, or durable-state claims.
+tests:
+  - node --test scripts/historical-closure-validator.test.mjs scripts/closure-format-check.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve R4 rejection and correct forward only; never rewrite history, pre-seed an attestation, or weaken topology validation.
+independent_review: Fresh QA/Security must review the exact R5 handoff candidate and may create the sole-file structured attestation only after acceptance.

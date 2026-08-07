@@ -1,0 +1,72 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-002-R2
+title: Correct fail-closed TASK-0001 closure evidence validation
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 42186a5aa562ba2af872c625e42210b8b3926808
+preserved_history:
+  - eee8ead8672980a85f4e653e2e7b4af4ad3d49b8
+  - 9203e1bf014e9c121e52a7dfcd3815ba8cc12446
+  - 42186a5aa562ba2af872c625e42210b8b3926808
+dependencies:
+  - RECOVERY-TASK-0001-CLOSURE-002
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/QA_SECURITY.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - docs/governance/delivery-governance.md
+  - docs/governance/task-closures/TASK-0001.json
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002.md
+  - docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+authorized_files:
+  - package.json
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+  - scripts/closure-format-check.mjs
+  - scripts/closure-format-check.test.mjs
+  - docs/governance/delivery-governance.md
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R2.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R2.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0001.json
+  - docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-QA.md
+  - tasks/production/**
+  - specs/**
+  - contracts/**
+  - apps/**
+  - services/**
+acceptance:
+  - reviewed_candidate equals remediation candidate, is the sole parent of a distinct review commit, and the accepted review artifact is introduced only by that review commit.
+  - Exactly one unnegated ACCEPTED verdict binds the exact candidate; rejected, ambiguous, stale, pre-seeded, and non-direct review substitutions fail closed.
+  - Every queue criterion maps exactly once to one unique criterion-specific excerpt in the exact accepted QA artifact and commit; unrelated, generic, duplicate, and outside-chain evidence fails closed.
+  - PR, run, job, and artifact IDs are positive safe integers; run/job IDs are unique; merge time is canonical RFC3339 UTC; the merge subject contains an exact PR token.
+  - Formatting covers all closure-control files while the matrix and compact legacy queue validator use documented stable structural checks without broad churn.
+  - TASK-0002 through TASK-0110 remain blocked and TASK-0112 through TASK-0123 remain untouched.
+security:
+  - Repository evidence validation only; no runtime tenant, authorization, financial, API, contract, migration, or durable-state behavior changes.
+  - Git object topology, filesystem containment, symlink escape, exact keys, cross-task mismatch, dependency completeness, and evidence substitution fail closed.
+  - No credentials, secrets, customer data, or production financial data are introduced.
+tests:
+  - node --test scripts/queue-validator.test.mjs scripts/historical-closure-validator.test.mjs scripts/closure-format-check.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run validate
+  - npm run queue:check
+  - npm run traceability:check
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve all rejected history and correct forward; revert only after independent review and never weaken an evidence gate.
+independent_review: Fresh QA/Security review is required from an isolated worktree at the exact committed r2 candidate; author cannot self-accept.

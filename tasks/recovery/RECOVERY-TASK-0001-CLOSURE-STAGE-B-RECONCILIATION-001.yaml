@@ -1,0 +1,65 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-STAGE-B-RECONCILIATION-001
+title: Reconcile accepted TASK-0001 closure with protected disposition history
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commits:
+  - 4132317dbc06cbda3984773247ce55e5d46a6d32
+  - 420403fc09962d35d19af0cd735b056cb2a9a1ba
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+  - tasks/queue.yaml
+authorized_files:
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/handoffs/RECOVERY-HISTORICAL-DISPOSITIONS-001.md
+  - docs/handoffs/RECOVERY-HISTORICAL-DISPOSITIONS-002.md
+  - docs/handoffs/RECOVERY-HISTORICAL-DISPOSITIONS-003.md
+  - docs/handoffs/RECOVERY-HISTORICAL-DISPOSITIONS-004.md
+  - docs/handoffs/RECOVERY-HISTORICAL-DISPOSITIONS-005.md
+  - docs/reviews/RECOVERY-HISTORICAL-DISPOSITIONS-001-QA.md
+  - docs/reviews/RECOVERY-HISTORICAL-DISPOSITIONS-002-QA.md
+  - docs/reviews/RECOVERY-HISTORICAL-DISPOSITIONS-003-QA.md
+  - docs/reviews/RECOVERY-HISTORICAL-DISPOSITIONS-004-QA.md
+  - docs/reviews/RECOVERY-HISTORICAL-DISPOSITIONS-005-QA.md
+  - tasks/recovery/RECOVERY-HISTORICAL-DISPOSITIONS-001.yaml
+  - tasks/recovery/RECOVERY-HISTORICAL-DISPOSITIONS-002.yaml
+  - tasks/recovery/RECOVERY-HISTORICAL-DISPOSITIONS-003.yaml
+  - tasks/recovery/RECOVERY-HISTORICAL-DISPOSITIONS-004.yaml
+  - tasks/recovery/RECOVERY-HISTORICAL-DISPOSITIONS-005.yaml
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-STAGE-B-RECONCILIATION-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-STAGE-B-RECONCILIATION-001.md
+prohibited_files:
+  - product and runtime files
+  - accepted or rejected TASK-0001 evidence mutation or deletion
+  - TASK-0002 and TASK-0112 through TASK-0123 queue or product changes
+  - validator weakening or history rewrite
+acceptance:
+  - Both accepted histories remain reachable and immutable.
+  - TASK-0001 is ACCEPTED only with strict active closure evidence.
+  - Incomplete historical tasks retain exactly their audited REMEDIATION_REQUIRED, EXTERNAL_PREREQUISITE, or NOT_IMPLEMENTED disposition.
+  - Literal blocked and ACCEPTED disposition substitutions for incomplete tasks fail closed.
+  - TASK-0002 and TASK-0112 through TASK-0123 remain blocked and frozen.
+security:
+  - Fail closed on disposition substitution, missing active closure, stale evidence, queue drift, and task-boundary expansion.
+tests:
+  - node --test scripts/historical-closure-validator.test.mjs scripts/closure-format-check.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve both parents and correct forward only; never rewrite accepted or rejected evidence.
+independent_review: Fresh QA/Security must review the exact reconciled committed candidate.
