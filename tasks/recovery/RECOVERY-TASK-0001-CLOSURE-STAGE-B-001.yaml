@@ -1,0 +1,53 @@
+task_id: RECOVERY-TASK-0001-CLOSURE-STAGE-B-001
+title: Activate TASK-0001 from accepted Stage A closure evidence
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0001
+base_commit: 9d904ab726a07bb619a8a90f013b0f8c194b381f
+dependencies: [RECOVERY-TASK-0001-CLOSURE-002-R5]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-002-R5.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-002-R5.md
+  - docs/reviews/RECOVERY-TASK-0001-CLOSURE-002-R5-QA.md
+  - docs/reviews/attestations/TASK-0001-closure-verdict.json
+  - docs/governance/task-closures/rejected/TASK-0001-r1.json
+  - scripts/historical-closure-validator.mjs
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/queue.yaml
+authorized_files:
+  - docs/governance/task-closures/TASK-0001.json
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/queue.yaml
+  - tasks/recovery/RECOVERY-TASK-0001-CLOSURE-STAGE-B-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0001-CLOSURE-STAGE-B-001.md
+prohibited_files:
+  - all R1 through R5 tasks, handoffs, reviews, rejected records, and attestations
+  - TASK-0002 and TASK-0112 through TASK-0123
+  - runtime and product code
+  - validator or test weakening
+acceptance:
+  - The active closure preserves immutable historical, remediation, independent QA, hosted-check, artifact, and protected-merge evidence.
+  - Stage A binds exact candidate c35de5a92ad5224c6a2c5cb94f5846d764fcbe3a, review c8c5640eaaee8df5d7319d18729c0d26d0cbd821, and sole-file attestation 9d904ab726a07bb619a8a90f013b0f8c194b381f.
+  - TASK-0001 queue status and matrix disposition change together only when strict closure validation passes.
+  - TASK-0002 and TASK-0112 through TASK-0123 remain blocked and frozen.
+security:
+  - Fail closed on stale, wrong, substituted, tampered, interposed, noncanonical, or non-immutable Stage A evidence and queue or matrix drift.
+  - Governance-only activation; no runtime, tenant, financial, API, migration, or durable-state claim.
+tests:
+  - node --test scripts/historical-closure-validator.test.mjs scripts/closure-format-check.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm test
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve all evidence and correct forward; never rewrite history or remove an accepted or rejected review.
+independent_review: A fresh QA/Security agent must review the exact Stage B candidate before hosted integration.
