@@ -29,7 +29,14 @@
 
 - Focused before implementation commit: `node --test --test-concurrency=1 apps/customer-console/transaction-search-workbench.test.mjs` PASS, 13/13, 0 fail/skip, 107.8 ms.
 - Accessibility capability: `npm run accessibility:check` PASS after attaching an ignored dependency junction to `C:\source\upfs-v1\node_modules`; the junction is removed before clean-head proof.
-- Pinned Prettier was run only on the three allowed implementation/task files. Exact-final full suite, repository validation, format, lint, queue, traceability, audit, fsck, diff/scope, and clean-head results are pending and must be bound to the final candidate before QA.
+- Pinned Prettier was run only on the three allowed implementation/task files.
+
+### Exact candidate gate result
+
+- `npm test -- --test-concurrency=1` did not complete within the execution ceiling: the first run was terminated after 904 seconds with exit 124 and no auditable TAP summary. The one authorized rerun was terminated after 1,204 seconds with exit 124 and no auditable TAP summary. Both runs were inspected while active and had a single npm launcher/test runner/worker chain; no overlapping duplicate existed. This is a **required-gate failure**, not a pass or assertion failure. The candidate is not independently acceptable until a bounded corrective path obtains the complete full-suite result.
+- `powershell -ExecutionPolicy Bypass -File scripts/validate.ps1` PASS: 360 Markdown, 65 JSON, 5 YAML.
+- `npm run format:check` PASS: 48 pinned-Prettier files plus structural closure checks. `npm run lint`, `npm run queue:check`, and `npm run traceability:check` PASS.
+- `npm audit --audit-level=high` PASS: zero vulnerabilities. `git fsck --full --strict` PASS with only preserved pre-existing dangling objects and no corruption. `git diff --check` PASS.
 
 ## Limitations, rollback, independent review
 
