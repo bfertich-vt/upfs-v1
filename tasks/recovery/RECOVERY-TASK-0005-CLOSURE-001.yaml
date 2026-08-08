@@ -1,0 +1,72 @@
+task_id: RECOVERY-TASK-0005-CLOSURE-001
+title: Revalidate connector-to-canonical transaction vertical slice
+type: historical-capability-closure
+status: in_progress
+assigned_role: Schema/Search/AI
+historical_task: TASK-0005
+dependencies:
+  - TASK-0004
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/queue.yaml
+  - docs/handoffs/TASK-0005.md
+  - specs/04_schema/canonical_model.md
+  - specs/04_schema/identity_tenant_model.md
+  - specs/05_apis/api_standards.md
+  - specs/10_security/security_baseline.md
+  - specs/10_security/threat_model.md
+  - specs/12_testing/test_strategy.md
+  - contracts/schemas/provider-transaction.schema.json
+allowed_files:
+  - services/connector-ingestion.mjs
+  - services/connector-ingestion.test.mjs
+  - contracts/schemas/provider-transaction.schema.json
+  - tasks/recovery/RECOVERY-TASK-0005-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0005-CLOSURE-001.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/handoffs/TASK-0005.md
+  - specs/**
+  - workflows/**
+  - package.json
+  - package-lock.json
+  - accepted TASK-0001-TASK-0004 evidence and implementation
+  - TASK-0006+
+  - TASK-0112-TASK-0123
+acceptance_criteria:
+  - Valid signed provider webhook and page input yields deterministic tenant-scoped canonical transaction evidence.
+  - Provider drift and malformed page input fail closed while preserving signed page-level raw provenance.
+  - Partial sync quarantines failed items, preserves page evidence, and never promotes an incomplete page as complete.
+  - Authorization denial and cross-tenant attempts do not mutate evidence, canonical records, replay state, idempotency state, or audit.
+  - Idempotency, replay, and concurrent duplicate delivery produce at most one canonical effect.
+  - Audit records are tenant-scoped and redact transaction payload, category, description, and amount.
+  - Injected canonical failure preserves raw evidence and supports a separate corrected retry without validator weakening.
+  - Provider transaction contract and generated registry remain deterministic and drift-free.
+required_tests:
+  - node --test services/connector-ingestion.test.mjs
+  - node --test services/connector-ingestion.test.mjs services/evidence-intake.test.mjs services/transaction-registry.test.mjs services/registry-generator.test.mjs
+  - npm test
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run queue:check
+  - npm run traceability:check
+  - npm run lint
+  - npm audit --audit-level=high
+  - node scripts/generate-registry.mjs
+  - git diff --exit-code -- artifacts/schema-registry.json
+  - git fsck --full --strict
+security_requirements:
+  - Derive tenant and environment exclusively from the configured connector and verified actor authorization.
+  - Verify signatures before preserving provider bytes and use constant-time digest comparison.
+  - Fail closed without cross-tenant disclosure, payload leakage, or mutation on authorization denial.
+  - Preserve immutable raw provenance across partial sync and injected canonical failure.
+classification_limit: Proven reference implementation; no real provider, durable persistence, deployment, or production-operation claim.
+rollback: Preserve historical and rejected evidence; use a reviewed revert before release or a separate corrective-forward commit after integration; never weaken validation.
+handoff: docs/handoffs/RECOVERY-TASK-0005-CLOSURE-001.md

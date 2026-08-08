@@ -34,6 +34,7 @@ const make = (
     prompt_injection: "clear",
   }),
   provider = "synthetic",
+  overrides = {},
 ) => {
   const configuredProvider =
     typeof provider === "function" ? provider : () => provider;
@@ -49,13 +50,15 @@ const make = (
     scan: classify,
     now: () => now,
   });
-  const canonical = new CanonicalTransactionService({
-    deriveScope: (a) =>
-      a?.verified === true && a.subject === actor.subject
-        ? { authorized: true, tenantId, environmentId }
-        : null,
-    now: () => now,
-  });
+  const canonical =
+    overrides.canonical ??
+    new CanonicalTransactionService({
+      deriveScope: (a) =>
+        a?.verified === true && a.subject === actor.subject
+          ? { authorized: true, tenantId, environmentId }
+          : null,
+      now: () => now,
+    });
   const service = new ConnectorIngestionService({
     evidence,
     canonical,
@@ -99,6 +102,24 @@ const args = (_service, extra = {}) => {
     idempotencyKey: extra.idempotencyKey ?? "idempotency-012345",
     ...extra,
   };
+};
+const pageArgs = (service, extra = {}) => {
+  const page = extra.payload ?? {
+    page_id: "page-1",
+    cursor: "cursor-1",
+    next_cursor: null,
+    complete: true,
+    transactions: [
+      payload,
+      { ...payload, provider_transaction_id: "provider-tx-2" },
+    ],
+  };
+  return args(service, {
+    nonce: "page-nonce-0123456789",
+    idempotencyKey: "page-idempotency-012345",
+    ...extra,
+    payload: page,
+  });
 };
 
 test("maps signed provider payload through quarantined evidence into canonical transaction", async () => {
@@ -426,4 +447,154 @@ test("rejects configured provider before evidence or replay state and permits co
 
   const one = make(undefined, "é");
   assert.equal((await one.service.ingest(args(one.service))).status, 201);
+});
+
+test("canonicalizes a signed provider page deterministically and preserves page provenance", async () => {
+  const { service, evidence, canonical } = make();
+  const first = await service.ingestPage(pageArgs(service));
+  assert.equal(first.status, 201);
+  assert.equal(first.body.complete, true);
+  assert.equal(first.body.results.length, 2);
+  assert.equal(canonical.audit().length, 2);
+  const rawPage = await evidence.get({ actor, id: first.body.evidence_id });
+  assert.equal(rawPage.status, 200);
+  assert.equal(rawPage.body.provenance.source_record_id, "page-1");
+  assert.equal(rawPage.body.tenant_id, tenantId);
+  const replay = await service.ingestPage(
+    pageArgs(service, { nonce: "page-replay-01234567" }),
+  );
+  assert.deepEqual(replay, first);
+});
+
+test("quarantines malformed page and webhook drift with raw page evidence but no canonical mutation", async () => {
+  const { service, evidence, canonical } = make();
+  const malformed = {
+    page_id: "page-drift",
+    complete: true,
+    transactions: [payload],
+    unexpected_provider_field: "drift",
+  };
+  const result = await service.ingestPage(
+    pageArgs(service, {
+      nonce: "page-drift-012345678",
+      idempotencyKey: "page-drift-idempotency",
+      payload: malformed,
+    }),
+  );
+  assert.equal(result.status, 422);
+  assert.equal(result.body.code, "provider_page_quarantined");
+  assert.deepEqual(canonical.audit(), []);
+  const raw = await evidence.get({
+    actor,
+    id: result.body.details.evidence_id,
+  });
+  assert.equal(raw.status, 200);
+  assert.equal(raw.body.provenance.source_record_id, "page-drift");
+  assert.equal(JSON.parse(raw.body.content).unexpected_provider_field, "drift");
+});
+
+test("partial sync fails closed per item while retaining page evidence and redacted audit", async () => {
+  const { service, evidence, canonical } = make();
+  const page = {
+    page_id: "page-partial",
+    complete: true,
+    transactions: [payload, { ...payload, amount: "malformed-money" }],
+  };
+  const result = await service.ingestPage(
+    pageArgs(service, {
+      nonce: "page-partial-0123456",
+      idempotencyKey: "page-partial-idempotency",
+      payload: page,
+    }),
+  );
+  assert.equal(result.status, 207);
+  assert.equal(result.body.complete, false);
+  assert.deepEqual(
+    result.body.results.map(({ status }) => status),
+    [201, 400],
+  );
+  assert.equal(canonical.audit().length, 1);
+  assert.equal(
+    (await evidence.get({ actor, id: result.body.evidence_id })).status,
+    200,
+  );
+  const audit = JSON.stringify(service.audit());
+  assert.equal(audit.includes("malformed-money"), false);
+  assert.equal(audit.includes(payload.description), false);
+  assert.match(audit, /connector\.page\.partial_quarantine/);
+});
+
+test("page authorization denial is mutation-free and discloses no connector scope", async () => {
+  const { service, evidence, canonical } = make();
+  const denied = await service.ingestPage(
+    pageArgs(service, {
+      actor: { ...actor, subject: "cross-tenant-attacker" },
+      nonce: "page-denied-01234567",
+    }),
+  );
+  assert.deepEqual(denied, {
+    status: 403,
+    body: { code: "forbidden", retryable: false },
+  });
+  assert.deepEqual(evidence.audit(), []);
+  assert.deepEqual(canonical.audit(), []);
+  assert.deepEqual(service.audit(), []);
+  const corrected = await service.ingestPage(
+    pageArgs(service, { nonce: "page-denied-01234567" }),
+  );
+  assert.equal(corrected.status, 201);
+});
+
+test("serializes concurrent replay so only one canonical effect is committed", async () => {
+  const { service, canonical } = make();
+  const [one, two] = await Promise.all([
+    service.ingest(args(service)),
+    service.ingest(args(service)),
+  ]);
+  assert.deepEqual([one.status, two.status].sort(), [201, 409]);
+  assert.equal(canonical.audit().length, 1);
+});
+
+test("injected canonical failure preserves raw provenance and allows corrective-forward retry", async () => {
+  let fail = true;
+  const durableCanonical = new CanonicalTransactionService({
+    deriveScope: () => ({ authorized: true, tenantId, environmentId }),
+    now: () => now,
+  });
+  const canonical = {
+    upsert(input) {
+      if (fail) throw new Error("synthetic injected canonical outage");
+      return durableCanonical.upsert(input);
+    },
+    audit: () => durableCanonical.audit(),
+  };
+  const { service, evidence } = make(undefined, "synthetic", { canonical });
+  const page = {
+    page_id: "page-failure",
+    complete: true,
+    transactions: [payload],
+  };
+  const first = await service.ingestPage(
+    pageArgs(service, {
+      nonce: "page-failure-0123456",
+      idempotencyKey: "page-failure-idempotency",
+      payload: page,
+    }),
+  );
+  assert.equal(first.status, 207);
+  assert.equal(first.body.results[0].code, "provider_item_failed");
+  assert.equal(
+    (await evidence.get({ actor, id: first.body.evidence_id })).status,
+    200,
+  );
+  fail = false;
+  const corrected = await service.ingestPage(
+    pageArgs(service, {
+      nonce: "page-corrected-012345",
+      idempotencyKey: "page-corrected-idempotency",
+      payload: { ...page, page_id: "page-corrected" },
+    }),
+  );
+  assert.equal(corrected.status, 201);
+  assert.equal(durableCanonical.audit().length, 1);
 });
