@@ -22,10 +22,16 @@ export class TransactionProjectionService {
     this.authorize = authorize; this.now = now; this.requestId = requestId; this.indexDocument = indexDocument; this.promoteAlias = promoteAlias;
   }
 
-  consume({ actor, eventId, transaction, sourceVersion = transaction?.version ?? 1, occurredAt = this.now().toISOString() }) {
+  consume(input = {}) {
+    const parsed = safeInput(input, ['actor', 'eventId', 'transaction', 'sourceVersion', 'occurredAt']);
+    if (!parsed) return error(400, 'invalid_projection_event');
+    const { actor, eventId, transaction, occurredAt: suppliedOccurredAt } = parsed;
     if (!safeActor(actor)) return error(401, 'authentication_required');
-    if (!eventId || typeof eventId !== 'string' || !validTransaction(transaction)) return error(400, 'invalid_projection_event');
+    if (!safeBoundary(eventId) || !validTransaction(transaction)) return error(400, 'invalid_projection_event');
+    const sourceVersion = parsed.sourceVersion ?? transaction.version ?? 1;
     if (!Number.isInteger(sourceVersion) || sourceVersion < 1) return error(400, 'invalid_projection_version');
+    const occurredAt = suppliedOccurredAt === undefined ? safeNow(this.now) : safeTimestamp(suppliedOccurredAt);
+    if (!occurredAt) return suppliedOccurredAt === undefined ? error(503, 'projection_clock_unavailable', { retryable: true }) : error(400, 'invalid_projection_event');
     if (!authorized(this.authorize, actor, transaction.tenant_id)) return error(403, 'forbidden');
     const key = `${transaction.tenant_id}|${transaction.id}`;
     let eventHash;
@@ -58,39 +64,47 @@ export class TransactionProjectionService {
     return clone(result);
   }
 
-  reconcile({ actor, tenantId, canonicalTransactions = [], watermark = 0 }) {
+  reconcile(input = {}) {
+    const parsed = safeInput(input, ['actor', 'tenantId', 'canonicalTransactions', 'watermark']);
+    if (!parsed) return error(400, 'invalid_reconciliation_input');
+    const { actor, tenantId, canonicalTransactions = [], watermark = 0 } = parsed;
     if (!safeActor(actor)) return error(401, 'authentication_required');
-    if (!tenantId || !authorized(this.authorize, actor, tenantId)) return error(403, 'forbidden');
-    if (!Array.isArray(canonicalTransactions) || !validWatermark(watermark)) return error(400, 'invalid_reconciliation_input');
-    if (canonicalTransactions.some((tx) => !validTransaction(tx) || tx.tenant_id !== tenantId)) return error(400, 'invalid_reconciliation_input');
+    if (!safeBoundary(tenantId) || !authorized(this.authorize, actor, tenantId)) return error(403, 'forbidden');
+    if (!validCanonicalList(canonicalTransactions, tenantId) || !validWatermark(watermark)) return error(400, 'invalid_reconciliation_input');
+    const auditedAt = safeNow(this.now);
+    if (!auditedAt) return error(503, 'projection_clock_unavailable', { retryable: true });
     const expected = canonicalTransactions.map((tx) => ({ ...projectTransaction(tx, tx.version ?? 1), source_hash: hash(tx) })).sort((a, b) => a.id.localeCompare(b.id));
     if (watermark > (this.#watermarks.get(tenantId) ?? 0)) return error(409, 'watermark_unavailable');
     const actual = [...this.#documents.values()].filter((doc) => doc.tenant_id === tenantId).map(({ projected_at, ...doc }) => doc).sort((a, b) => a.id.localeCompare(b.id));
     const drift = hash(expected) !== hash(actual);
     const result = { status: 200, body: { tenant_id: tenantId, drift, expected_count: expected.length, actual_count: actual.length, watermark: this.#watermarks.get(tenantId) ?? 0, requested_watermark: watermark } };
-    this.#audit.push({ action: 'projection.reconcile', tenant_id: tenantId, actor: `${actor.issuer}|${actor.subject}`, drift, expected_count: expected.length, actual_count: actual.length, at: this.now().toISOString() });
+    this.#audit.push({ action: 'projection.reconcile', tenant_id: tenantId, actor: `${actor.issuer}|${actor.subject}`, drift, expected_count: expected.length, actual_count: actual.length, at: auditedAt });
     return result;
   }
 
-  rebuild({ actor, tenantId, canonicalTransactions = [], watermark = 0 }) {
+  rebuild(input = {}) {
+    const parsed = safeInput(input, ['actor', 'tenantId', 'canonicalTransactions', 'watermark']);
+    if (!parsed) return error(400, 'invalid_rebuild_input');
+    const { actor, tenantId, canonicalTransactions = [], watermark = 0 } = parsed;
     if (!safeActor(actor)) return error(401, 'authentication_required');
-    if (!tenantId || !authorized(this.authorize, actor, tenantId)) return error(403, 'forbidden');
-    if (!Array.isArray(canonicalTransactions) || !validWatermark(watermark)) return error(400, 'invalid_rebuild_input');
-    if (canonicalTransactions.some((tx) => !validTransaction(tx) || tx.tenant_id !== tenantId)) return error(400, 'invalid_rebuild_input');
+    if (!safeBoundary(tenantId) || !authorized(this.authorize, actor, tenantId)) return error(403, 'forbidden');
+    if (!validCanonicalList(canonicalTransactions, tenantId) || !validWatermark(watermark)) return error(400, 'invalid_rebuild_input');
     const records = canonicalTransactions;
     if (watermark < (this.#watermarks.get(tenantId) ?? 0) || watermark < maxVersion(records)) return error(409, 'invalid_rebuild_watermark');
+    const rebuiltAt = safeNow(this.now);
+    if (!rebuiltAt) return error(503, 'projection_clock_unavailable', { retryable: true });
     const staged = new Map();
     const nextGeneration = (this.#generations.get(tenantId) ?? 0) + 1;
     try {
       for (const tx of records) {
         const version = tx.version ?? 1;
-        const document = { ...projectTransaction(tx, version), source_hash: hash(tx), projected_at: this.now().toISOString() };
+        const document = { ...projectTransaction(tx, version), source_hash: hash(tx), projected_at: rebuiltAt };
         this.indexDocument(clone(document), { operation: 'rebuild', tenantId, generation: nextGeneration });
         staged.set(`${tenantId}|${tx.id}`, document);
       }
       this.promoteAlias({ tenantId, generation: nextGeneration, documentCount: staged.size });
     } catch {
-      this.#audit.push({ action: 'projection.rebuild_failed', tenant_id: tenantId, actor: `${actor.issuer}|${actor.subject}`, attempted_count: records.length, watermark, at: this.now().toISOString() });
+      this.#audit.push({ action: 'projection.rebuild_failed', tenant_id: tenantId, actor: `${actor.issuer}|${actor.subject}`, attempted_count: records.length, watermark, at: rebuiltAt });
       return error(503, 'projection_rebuild_failed', { retryable: true, alias_promoted: false });
     }
     for (const key of [...this.#documents.keys()]) if (key.startsWith(`${tenantId}|`)) this.#documents.delete(key);
@@ -98,13 +112,16 @@ export class TransactionProjectionService {
     this.#watermarks.set(tenantId, watermark);
     this.#generations.set(tenantId, nextGeneration);
     for (const [eventId, event] of this.#events) if (event.tenantId === tenantId) this.#events.delete(eventId);
-    this.#audit.push({ action: 'projection.rebuild', tenant_id: tenantId, actor: `${actor.issuer}|${actor.subject}`, count: canonicalTransactions.filter((item) => item?.tenant_id === tenantId).length, watermark, at: this.now().toISOString() });
+    this.#audit.push({ action: 'projection.rebuild', tenant_id: tenantId, actor: `${actor.issuer}|${actor.subject}`, count: canonicalTransactions.length, watermark, at: rebuiltAt });
     return { status: 200, body: { tenant_id: tenantId, rebuilt: true, count: canonicalTransactions.filter((item) => item?.tenant_id === tenantId).length, watermark } };
   }
 
-  search({ actor, tenantId, query = '', limit = 25, cursor = null }) {
+  search(input = {}) {
+    const parsed = safeInput(input, ['actor', 'tenantId', 'query', 'limit', 'cursor']);
+    if (!parsed) return error(400, 'invalid_query');
+    const { actor, tenantId, query = '', limit = 25, cursor = null } = parsed;
     if (!safeActor(actor)) return error(401, 'authentication_required');
-    if (!tenantId || !authorized(this.authorize, actor, tenantId)) return error(403, 'forbidden');
+    if (!safeBoundary(tenantId) || !authorized(this.authorize, actor, tenantId)) return error(403, 'forbidden');
     if (typeof query !== 'string' || query.trim().length < 1 || query.length > 500) return error(400, 'invalid_query');
     if (!Number.isInteger(limit) || limit < 1 || limit > 100) return error(400, 'invalid_limit');
     const queryHash = hash(query.trim().toLowerCase());
@@ -119,7 +136,9 @@ export class TransactionProjectionService {
     const nextOffset = offset + page.length;
     const cursorPayload = { tenantId, queryHash, generation, offset: nextOffset };
     const nextCursor = nextOffset < matches.length ? Buffer.from(JSON.stringify({ ...cursorPayload, mac: signMac(cursorPayload, this.#cursorKey) })).toString('base64url') : null;
-    return { status: 200, body: { request_id: this.requestId(), data: page, page: { limit, next_cursor: nextCursor }, consistency: 'eventually_consistent_projection', watermark: this.#watermarks.get(tenantId) ?? 0 } };
+    const requestId = safeRequestId(this.requestId);
+    if (!requestId) return error(503, 'projection_search_unavailable', { retryable: true });
+    return { status: 200, body: { request_id: requestId, data: page, page: { limit, next_cursor: nextCursor }, consistency: 'eventually_consistent_projection', watermark: this.#watermarks.get(tenantId) ?? 0 } };
   }
 
   documents() { return [...this.#documents.values()].map(clone); }
@@ -127,8 +146,36 @@ export class TransactionProjectionService {
 }
 
 function validWatermark(value) { return Number.isInteger(value) && value >= 0; }
+function validCanonicalList(value, tenantId) { return serializationSafe(value) && Array.isArray(value) && value.every((tx) => validTransaction(tx) && tx.tenant_id === tenantId); }
 function authorized(authorize, actor, tenantId) { try { return authorize(actor, tenantId) === true; } catch { return false; } }
-function validTransaction(tx) { return Boolean(tx && typeof tx === 'object' && safeBoundary(tx.id) && safeBoundary(tx.tenant_id) && safeBoundary(tx.account_id) && typeof tx.amount === 'string' && safeBoundary(tx.currency) && safeBoundary(tx.posted_at) && safeBoundary(tx.schema_version) && Array.isArray(tx.evidence_refs) && tx.evidence_refs.every(safeBoundary) && (tx.description === undefined || typeof tx.description === 'string')); }
+function safeNow(now) { try { const value = now(); return value instanceof Date && Number.isFinite(value.valueOf()) ? value.toISOString() : null; } catch { return null; } }
+function safeTimestamp(value) { if (!safeBoundary(value)) return null; const date = new Date(value); return Number.isFinite(date.valueOf()) && date.toISOString() === value ? value : null; }
+function safeRequestId(requestId) { try { const value = requestId(); return safeBoundary(value) ? value : null; } catch { return null; } }
+function safeInput(input, allowed) {
+  try {
+    if (!plainRecord(input)) return null;
+    const descriptors = Object.getOwnPropertyDescriptors(input);
+    if (Reflect.ownKeys(descriptors).some((key) => typeof key !== 'string' || !allowed.includes(key) || !('value' in descriptors[key]))) return null;
+    return Object.fromEntries(Object.entries(descriptors).map(([key, descriptor]) => [key, descriptor.value]));
+  } catch { return null; }
+}
+function plainRecord(value) { if (!value || typeof value !== 'object' || Array.isArray(value)) return false; const prototype = Object.getPrototypeOf(value); return prototype === Object.prototype || prototype === null; }
+function serializationSafe(value, seen = new Set()) {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return true;
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (typeof value !== 'object' || seen.has(value)) return false;
+  seen.add(value);
+  try {
+    if (Array.isArray(value)) return value.every((item) => serializationSafe(item, seen));
+    if (!plainRecord(value)) return false;
+    const descriptors = Object.getOwnPropertyDescriptors(value);
+    return Reflect.ownKeys(descriptors).every((key) => typeof key === 'string' && 'value' in descriptors[key] && descriptors[key].enumerable && serializationSafe(descriptors[key].value, seen));
+  } catch { return false; } finally { seen.delete(value); }
+}
+function validTransaction(tx) {
+  if (!serializationSafe(tx) || !plainRecord(tx)) return false;
+  return Boolean(safeBoundary(tx.id) && safeBoundary(tx.tenant_id) && safeBoundary(tx.account_id) && typeof tx.amount === 'string' && safeBoundary(tx.currency) && safeBoundary(tx.posted_at) && safeBoundary(tx.schema_version) && Array.isArray(tx.evidence_refs) && tx.evidence_refs.every(safeBoundary) && (tx.description === undefined || typeof tx.description === 'string') && (tx.version === undefined || (Number.isInteger(tx.version) && tx.version >= 1)) && (tx.source_version === undefined || (Number.isInteger(tx.source_version) && tx.source_version >= 1)));
+}
 function maxVersion(items) { return items.reduce((max, tx) => Math.max(max, tx?.source_version ?? tx?.version ?? 1), 0); }
 function signMac(payload, key) { return crypto.createHmac('sha256', key).update(JSON.stringify(payload)).digest('base64url'); }
 function safeMac(payload, mac, key) { const expected = signMac(payload, key); return mac.length === expected.length && crypto.timingSafeEqual(Buffer.from(mac), Buffer.from(expected)); }

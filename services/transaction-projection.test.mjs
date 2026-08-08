@@ -120,3 +120,69 @@ test('malformed actors, throwing authorization, and non-serializable payloads fa
   assert.equal(throwing.search({ actor, tenantId: 'tenant-a', query: 'USD' }).body.code, 'forbidden');
   assert.equal(throwing.audit().length, 0);
 });
+
+test('every public boundary rejects non-primitive tenant scope before authorization or state', () => {
+  let authorizationCalls = 0;
+  const p = new TransactionProjectionService({ authorize: () => { authorizationCalls += 1; return true; }, requestId: () => 'req-fixed', now: () => new Date('2026-01-05T00:00:00Z') });
+  const invalidScopes = [Symbol('tenant'), 1n, {}, [], () => 'tenant-a', ' tenant-a', 'tenant-a\u0000'];
+  for (const tenantId of invalidScopes) {
+    assert.equal(p.reconcile({ actor, tenantId, canonicalTransactions: [] }).body.code, 'forbidden');
+    assert.equal(p.rebuild({ actor, tenantId, canonicalTransactions: [] }).body.code, 'forbidden');
+    assert.equal(p.search({ actor, tenantId, query: 'USD' }).body.code, 'forbidden');
+  }
+  assert.equal(authorizationCalls, 0);
+  assert.equal(p.documents().length, 0);
+  assert.equal(p.audit().length, 0);
+});
+
+test('non-serializable canonical extras fail consistently without adapters or state mutation', () => {
+  const circular = { nested: {} }; circular.nested.self = circular;
+  const throwing = {}; Object.defineProperty(throwing, 'value', { enumerable: true, get: () => { throw new Error('getter'); } });
+  const malformedExtras = [1n, Symbol('value'), () => 'value', circular, throwing];
+  let indexCalls = 0; let aliasCalls = 0;
+  const p = new TransactionProjectionService({ authorize: (_actor, tenant) => tenant === 'tenant-a', requestId: () => 'req-fixed', now: () => new Date('2026-01-05T00:00:00Z'), indexDocument: () => { indexCalls += 1; }, promoteAlias: () => { aliasCalls += 1; } });
+  p.consume({ actor, eventId: 'seed', transaction: tx('seed') });
+  const original = p.documents(); const initialAuditCount = p.audit().length;
+  for (const [index, extra] of malformedExtras.entries()) {
+    const malformed = { ...tx(`bad-${index}`, 'tenant-a', 2), extra };
+    assert.equal(p.consume({ actor, eventId: `consume-${index}`, transaction: malformed }).body.code, 'invalid_projection_event');
+    assert.equal(p.reconcile({ actor, tenantId: 'tenant-a', canonicalTransactions: [malformed] }).body.code, 'invalid_reconciliation_input');
+    assert.equal(p.rebuild({ actor, tenantId: 'tenant-a', canonicalTransactions: [malformed], watermark: 2 }).body.code, 'invalid_rebuild_input');
+  }
+  assert.deepEqual(p.documents(), original);
+  assert.equal(p.audit().length, initialAuditCount);
+  assert.equal(indexCalls, 1);
+  assert.equal(aliasCalls, 0);
+  assert.equal(p.consume({ actor, eventId: 'corrected', transaction: tx('corrected', 'tenant-a', 2) }).body.applied, true);
+});
+
+test('throwing top-level accessors and service adapters return bounded envelopes', () => {
+  const getterInput = {}; Object.defineProperty(getterInput, 'actor', { enumerable: true, get: () => { throw new Error('getter'); } });
+  const p = service();
+  assert.equal(p.consume(getterInput).body.code, 'invalid_projection_event');
+  assert.equal(p.reconcile(getterInput).body.code, 'invalid_reconciliation_input');
+  assert.equal(p.rebuild(getterInput).body.code, 'invalid_rebuild_input');
+  assert.equal(p.search(getterInput).body.code, 'invalid_query');
+  assert.equal(p.documents().length, 0); assert.equal(p.audit().length, 0);
+
+  const clockFailure = new TransactionProjectionService({ authorize: () => true, now: () => { throw new Error('clock'); }, requestId: () => 'req-fixed' });
+  assert.equal(clockFailure.consume({ actor, eventId: 'clock', transaction: tx('clock') }).body.code, 'projection_clock_unavailable');
+  assert.equal(clockFailure.reconcile({ actor, tenantId: 'tenant-a', canonicalTransactions: [] }).body.code, 'projection_clock_unavailable');
+  assert.equal(clockFailure.rebuild({ actor, tenantId: 'tenant-a', canonicalTransactions: [] }).body.code, 'projection_clock_unavailable');
+  assert.equal(clockFailure.documents().length, 0); assert.equal(clockFailure.audit().length, 0);
+
+  const requestFailure = new TransactionProjectionService({ authorize: () => true, requestId: () => { throw new Error('request'); } });
+  assert.equal(requestFailure.search({ actor, tenantId: 'tenant-a', query: 'USD' }).body.code, 'projection_search_unavailable');
+  assert.equal(requestFailure.audit().length, 0);
+});
+
+test('canonical arrays with accessors and coercible version objects fail without mutation', () => {
+  const p = service();
+  const accessorList = []; Object.defineProperty(accessorList, 0, { enumerable: true, get: () => { throw new Error('getter'); } }); accessorList.length = 1;
+  assert.equal(p.reconcile({ actor, tenantId: 'tenant-a', canonicalTransactions: accessorList }).body.code, 'invalid_reconciliation_input');
+  assert.equal(p.rebuild({ actor, tenantId: 'tenant-a', canonicalTransactions: accessorList }).body.code, 'invalid_rebuild_input');
+  const coercible = { ...tx('bad'), version: {} };
+  assert.equal(p.consume({ actor, eventId: 'bad-version', transaction: coercible }).body.code, 'invalid_projection_event');
+  assert.equal(p.rebuild({ actor, tenantId: 'tenant-a', canonicalTransactions: [coercible], watermark: 1 }).body.code, 'invalid_rebuild_input');
+  assert.equal(p.documents().length, 0); assert.equal(p.audit().length, 0);
+});
