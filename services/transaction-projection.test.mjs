@@ -186,3 +186,49 @@ test('canonical arrays with accessors and coercible version objects fail without
   assert.equal(p.rebuild({ actor, tenantId: 'tenant-a', canonicalTransactions: [coercible], watermark: 1 }).body.code, 'invalid_rebuild_input');
   assert.equal(p.documents().length, 0); assert.equal(p.audit().length, 0);
 });
+
+test('actor boundary rejects accessors, proxies, custom shapes, and coercion hazards before adapters', () => {
+  const getterIssuer = { subject: 'user-1' }; Object.defineProperty(getterIssuer, 'issuer', { enumerable: true, get: () => { throw new Error('issuer getter'); } });
+  const getterSubject = { issuer: 'https://issuer.test' }; Object.defineProperty(getterSubject, 'subject', { enumerable: true, get: () => { throw new Error('subject getter'); } });
+  const symbolKey = { ...actor, [Symbol('extra')]: 'hidden' };
+  const nonEnumerable = { ...actor }; Object.defineProperty(nonEnumerable, 'extra', { value: 'hidden', enumerable: false });
+  const nullClaim = { issuer: 'https://issuer.test', subject: null };
+  const claimHazards = [
+    { issuer: Symbol('issuer'), subject: 'user-1' },
+    { issuer: 1n, subject: 'user-1' },
+    { issuer: { toString: () => 'https://issuer.test' }, subject: 'user-1' },
+    { issuer: 'https://issuer.test', subject: Symbol('subject') },
+    { issuer: 'https://issuer.test', subject: 1n },
+    { issuer: 'https://issuer.test', subject: {} },
+  ];
+  const customPrototype = Object.assign(Object.create({ inherited: true }), actor);
+  const transparentProxy = new Proxy({ ...actor }, {});
+  const throwingProxy = new Proxy({ ...actor }, { getPrototypeOf: () => { throw new Error('proxy'); } });
+  const malformedActors = [getterIssuer, getterSubject, symbolKey, nonEnumerable, { ...actor, extra: true }, nullClaim, customPrototype, transparentProxy, throwingProxy, ...claimHazards];
+
+  const operations = [
+    (p, malformedActor) => p.consume({ actor: malformedActor, eventId: 'event', transaction: tx('txn') }),
+    (p, malformedActor) => p.reconcile({ actor: malformedActor, tenantId: 'tenant-a', canonicalTransactions: [] }),
+    (p, malformedActor) => p.rebuild({ actor: malformedActor, tenantId: 'tenant-a', canonicalTransactions: [] }),
+    (p, malformedActor) => p.search({ actor: malformedActor, tenantId: 'tenant-a', query: 'USD' }),
+  ];
+  for (const operation of operations) {
+    for (const malformedActor of malformedActors) {
+      let authorizationCalls = 0; let indexCalls = 0; let aliasCalls = 0;
+      const p = new TransactionProjectionService({ authorize: () => { authorizationCalls += 1; return true; }, indexDocument: () => { indexCalls += 1; }, promoteAlias: () => { aliasCalls += 1; }, requestId: () => 'req-fixed', now: () => new Date('2026-01-05T00:00:00Z') });
+      assert.deepEqual(operation(p, malformedActor), { status: 401, body: { code: 'authentication_required' } });
+      assert.equal(authorizationCalls, 0); assert.equal(indexCalls, 0); assert.equal(aliasCalls, 0);
+      assert.equal(p.documents().length, 0); assert.equal(p.audit().length, 0);
+    }
+  }
+});
+
+test('accessor-free null-prototype actor remains valid and permits corrected retry', () => {
+  let authorizationCalls = 0;
+  const p = new TransactionProjectionService({ authorize: (verified, tenant) => { authorizationCalls += 1; assert.deepEqual(verified, actor); return tenant === 'tenant-a'; }, requestId: () => 'req-fixed', now: () => new Date('2026-01-05T00:00:00Z') });
+  const malformed = { subject: 'user-1' }; Object.defineProperty(malformed, 'issuer', { enumerable: true, get: () => { throw new Error('issuer getter'); } });
+  assert.equal(p.consume({ actor: malformed, eventId: 'same', transaction: tx('txn') }).body.code, 'authentication_required');
+  const corrected = Object.assign(Object.create(null), actor);
+  assert.equal(p.consume({ actor: corrected, eventId: 'same', transaction: tx('txn') }).body.applied, true);
+  assert.equal(authorizationCalls, 1); assert.equal(p.documents().length, 1); assert.equal(p.audit().length, 1);
+});
