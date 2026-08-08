@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "task_id": "TASK-0007",
+  "disposition": "ACCEPTED",
+  "historical": {
+    "classification": "Unsupported completion claim",
+    "artifact": "docs/handoffs/TASK-0007.md",
+    "artifact_sha256": "d5eede8f8112545a5b7b650a0893269963ae846288d4754c8889341decac6fce",
+    "artifact_commit": "9152e802e40019150c769f19ac0e84f1c20f7b48",
+    "evidence_excerpt": "# TASK-0007 handoff"
+  },
+  "remediation": {
+    "task": "tasks/recovery/RECOVERY-TASK-0007-CLOSURE-001.yaml",
+    "task_sha256": "82c6b44614436956d1ef2a1646b1f155b9ba595f221194dfe48b463a20a96864",
+    "handoff": "docs/handoffs/RECOVERY-TASK-0007-CLOSURE-001.md",
+    "handoff_sha256": "709735ea5890ba9058afce5190dbb51ef1fe6f8c06a187230bc739bf14b0ea19",
+    "implementation_commit": "5dc68c891eb2337f98b79f2f9a180663f3ef093d",
+    "candidate_commit": "fc6cec0bb6d4b2689b6a07df7e8ccaa169d800fd"
+  },
+  "independent_qa": {
+    "review": "docs/reviews/RECOVERY-TASK-0007-CLOSURE-001-R3-QA.md",
+    "review_sha256": "597357d694eb8b047e3401f62db8d58dc9f0e88b5c891d827f6092edb3dcf02f",
+    "review_commit": "ed83b582d161c3d9d2a13fc7098e56e776bb0f3e",
+    "reviewed_candidate": "fc6cec0bb6d4b2689b6a07df7e8ccaa169d800fd"
+  },
+  "rejected_reviews": [
+    {
+      "candidate_commit": "9a3b23f40bdd2a6bf75a8c74deba5011b6a30ab7",
+      "review": "docs/reviews/RECOVERY-TASK-0007-CLOSURE-001-QA.md",
+      "review_sha256": "5371687d6f88d6ebeced3a94966a8ce0423854dae2b80258cf7ad64bc732d0a0",
+      "review_commit": "2b830131e8d1d0915b0ceffde118ae8137133602"
+    }
+  ],
+  "protected_review": {
+    "mechanism": "independent-codex-qa-protected-flow",
+    "candidate_commit": "fc6cec0bb6d4b2689b6a07df7e8ccaa169d800fd",
+    "review_commit": "ed83b582d161c3d9d2a13fc7098e56e776bb0f3e",
+    "pr_head": "21213383ae3459d278a01e2d24753c1b2311b849",
+    "tree": "ececdaed82410ee5c6848c955553e8fc7a0615fe"
+  },
+  "hosted": {
+    "evidence_boundary": "immutable inspected snapshot; GitHub API facts are not revalidated offline",
+    "repository": "bfertich-vt/upfs-v1",
+    "pull_request": 33,
+    "base_sha": "54652c309b473ec7797b36cd6e9b7099306f3bfb",
+    "head_sha": "21213383ae3459d278a01e2d24753c1b2311b849",
+    "checks": [
+      {
+        "name": "repository-validation",
+        "run_id": 31256188592,
+        "job_id": 93099768679,
+        "head_sha": "21213383ae3459d278a01e2d24753c1b2311b849",
+        "conclusion": "success"
+      },
+      {
+        "name": "repository-security",
+        "run_id": 31256188573,
+        "job_id": 93099768627,
+        "head_sha": "21213383ae3459d278a01e2d24753c1b2311b849",
+        "conclusion": "success"
+      }
+    ],
+    "validation_artifact": {
+      "artifact_id": 9021478793,
+      "name": "validation-evidence",
+      "archive_digest": "sha256:ec7c919b73ee073bc521725474b04af2e20b7381aad3f8685baa2c12f17a9833",
+      "content_sha256": "3c41adce7e90fa853b946d69a81cdb5af0763a8d2c477cdc89911fddfed65bea",
+      "content_status": "passed"
+    },
+    "post_merge_checks": [
+      {
+        "name": "repository-validation",
+        "run_id": 31256343509,
+        "job_id": 93100130187,
+        "head_sha": "c0e0a065ecd019429ad4aa3a09c4ccf8859361fe",
+        "conclusion": "success"
+      },
+      {
+        "name": "repository-security",
+        "run_id": 31256343505,
+        "job_id": 93100129974,
+        "head_sha": "c0e0a065ecd019429ad4aa3a09c4ccf8859361fe",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "protected_merge": {
+    "commit": "c0e0a065ecd019429ad4aa3a09c4ccf8859361fe",
+    "base_parent": "54652c309b473ec7797b36cd6e9b7099306f3bfb",
+    "head_tree": "ececdaed82410ee5c6848c955553e8fc7a0615fe",
+    "merged_at": "2026-08-08T12:02:29Z",
+    "pull_request": 33
+  },
+  "acceptance_mapping": [
+    {
+      "criterion": "Historical task requires independent revalidation before promotion",
+      "evidence": [
+        {
+          "artifact": "docs/reviews/RECOVERY-TASK-0007-CLOSURE-001-R3-QA.md",
+          "artifact_sha256": "597357d694eb8b047e3401f62db8d58dc9f0e88b5c891d827f6092edb3dcf02f",
+          "commit": "ed83b582d161c3d9d2a13fc7098e56e776bb0f3e",
+          "excerpt": "**ACCEPT.** Exact candidate `fc6cec0bb6d4b2689b6a07df7e8ccaa169d800fd` satisfies the current structured acceptance criteria for historical `TASK-0007` at the stated **Proven reference implementation** ceiling."
+        }
+      ]
+    }
+  ],
+  "dependencies": ["TASK-0006"],
+  "limitations": [
+    "The accepted capability is a dependency-free synthetic-DOM/reference adapter, not a deployed customer console, browser E2E result, or assistive-technology certification.",
+    "A real API host, production OIDC/session, PostgreSQL/OpenSearch data-plane composition, managed runtime, deployment, load/SLO evidence, durable audit, and production operation remain unimplemented.",
+    "Hosted GitHub facts and the retained artifact are immutable inspected snapshots and are not re-queried by offline validation."
+  ]
+}
