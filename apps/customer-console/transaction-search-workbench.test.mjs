@@ -1,9 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   createSearchApi,
   createSearchWorkbench,
 } from "./transaction-search-workbench.mjs";
+import { evaluateConsoleAcceptance } from "../../scripts/task-0066-console-acceptance.mjs";
+
+const repositoryRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
 
 class FakeElement {
   constructor(tag) {
@@ -442,4 +451,19 @@ test("cancel aborts in-flight API work and returns keyboard UI to idle safely", 
   assert.equal(signal.aborted, true);
   assert.equal(workbench.snapshot().status, "idle");
   assert.equal(host.querySelector("button").disabled, false);
+});
+
+test("versioned TASK-0066 console contract accepts the current workbench source binding", () => {
+  const review = JSON.parse(
+    fs.readFileSync(
+      path.join(repositoryRoot, "contracts/task-0066-console-acceptance.json"),
+      "utf8",
+    ),
+  );
+  const result = evaluateConsoleAcceptance({ review });
+  assert.equal(result.status, "passed");
+  assert.equal(
+    result.checks.find((check) => check.name === "implementation")?.status,
+    "passed",
+  );
 });

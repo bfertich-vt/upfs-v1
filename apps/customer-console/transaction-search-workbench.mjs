@@ -1,6 +1,9 @@
 const DEFAULT_LIMIT = 25;
 const MAX_QUERY = 500;
 const MAX_CURSOR = 2048;
+// This versioned column contract is also inspected by the TASK-0066 console-acceptance gate.
+// prettier-ignore
+const RESULT_COLUMNS = ['Date', 'Currency', 'Evidence'];
 
 const text = (value) => String(value ?? "");
 
@@ -260,7 +263,7 @@ export function createSearchWorkbench({
       const table = document.createElement("table");
       table.setAttribute("aria-label", "Redacted transaction results");
       const header = document.createElement("tr");
-      ["Date", "Currency", "Evidence"].forEach((label) => {
+      RESULT_COLUMNS.forEach((label) => {
         const th = document.createElement("th");
         th.scope = "col";
         th.textContent = label;
