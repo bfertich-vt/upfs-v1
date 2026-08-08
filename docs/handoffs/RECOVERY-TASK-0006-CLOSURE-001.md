@@ -8,6 +8,8 @@
 - Worktree/branch/base: `C:\source\upfs-schema-task-0006-closure-r1`; `recovery/task-0006-closure-r1`; `38f187386747acff0e3a62449b025ac406bb06e3`.
 - Implementation/task commit: `96b3c73ab5806bd8f6462ef282cdb2792e7bbe17`.
 - Initial handoff commit: `fa25d6a3c0e3e7e3314565963f461edcf174968b`; a final adversarial corrective-forward commit additionally bounds malformed actors, throwing authorization adapters, and non-serializable payloads. Final candidate SHA is reported by the supervisor from the committed head.
+- Preserved independent rejection: candidate `605b16fd830441272c323ff8a6f6f23d5cc202bb`; review commit `8e1b0674cd5f4f788f57cdd8192fd2585cda67c7`; `docs/reviews/RECOVERY-TASK-0006-CLOSURE-001-QA.md` SHA-256 `690730754a4452be78b88e0aa95dccb55ff0771879f9b3d90f12aa4dcb82557c`. The review rejected raw serialization exceptions, non-primitive tenant acceptance, and rebuild misclassification of malformed canonical input.
+- Corrective-forward implementation: `2e9999f1b1eba90ebedc2bd6d93f9141d853423c`; final handoff-binding candidate is the commit containing this update.
 - Files changed: `services/transaction-projection.mjs`; `services/transaction-projection.test.mjs`; `tasks/recovery/RECOVERY-TASK-0006-CLOSURE-001.yaml`; this handoff. The authorized response schema was inspected but required no byte change.
 - Prohibited files unchanged: queue, closure matrix, historical handoff, specifications, workflows/packages, accepted TASK-0001 through TASK-0005 implementation/evidence, unrelated files, TASK-0007+, and TASK-0112 through TASK-0123.
 
@@ -27,6 +29,8 @@
 - Rebuild writes a staged generation and promotes the alias before replacing the live in-memory projection. Injected document-indexing or alias-promotion failure returns retryable `503`, retains the prior projection, reports `alias_promoted: false`, and creates a payload-free failure audit record.
 - Consume indexing failure likewise mutates no projection, watermark, generation, or idempotency record, remains retryable, and records only identifiers/version/actor/time. Search responses redact `source_hash` and `projected_at`.
 - Actor claims are bounded strings, authorization adapter exceptions become non-disclosing denials, and non-serializable transaction payloads return a stable invalid-event envelope without state or audit mutation.
+- Corrective R2 validates tenant identifiers as bounded primitive strings before every authorization or state lookup. Public input records reject accessors, unexpected/symbol keys, and non-plain shapes. Canonical inputs recursively reject BigInt, Symbol, function, cycles, accessors, non-finite numbers, non-plain objects, and invalid version types before hashing, reconciliation, staging, indexing, alias promotion, audit, or state access.
+- Malformed canonical records now use each method's stable client envelope (`invalid_projection_event`, `invalid_reconciliation_input`, or `invalid_rebuild_input`); they cannot be mislabeled as an indexing/alias `503`. Throwing clock/request-ID/authorization adapters return bounded non-disclosing service/denial envelopes. Tests prove a corrected retry succeeds while the prior projection and canonical caller input remain unchanged.
 - Contract/generated/documentation drift remains covered by repository validation and traceability. No validator, contract, or dependency boundary was weakened.
 
 ## Exact implementation-head tests
@@ -39,9 +43,10 @@
 - `npm audit --audit-level=high` — PASS, 0 vulnerabilities, 1348 ms. `git diff --check` — PASS. `git fsck --full --strict` — PASS, 14544 ms; only pre-existing dangling objects were reported, with no corruption.
 - The worktree used a verified ignored `node_modules` junction to `C:\source\upfs-v1\node_modules` because disk space was constrained. It will be removed before final clean-head proof.
 - Final-candidate rerun after this handoff commit: pending; the focused/compatibility tests and all repository gates will be rebound to the exact final SHA before independent QA assignment.
+- Corrective R2 focused compatibility before this handoff commit: `node --test --test-concurrency=1 services/transaction-projection.test.mjs services/transaction-registry.test.mjs services/transaction-outbox.test.mjs` — PASS, 38/38, 0 failed/skipped, 362.8 ms test duration. Exact-final full/gate results are reported by the supervisor after this separate handoff commit.
 
 ## Limitations, rollback, and independent review
 
 - The service is an in-memory reference seam with injectable indexing and alias-promotion adapters. It proves deterministic logic, isolation, failure recovery, and contracts only. It does not prove real OpenSearch aliases/indexes, Redis acceleration, PostgreSQL/RLS composition, a deployed API host, production OIDC, managed infrastructure, operational reconciliation, load/SLOs, or production readiness.
 - Preserve the historical commit/handoff and this candidate. Before release, rollback is a reviewed revert of the task commits. After integration, correct forward through a new bounded change and independent review. Never delete rejection evidence or weaken tenant, cursor, reconciliation, contract, or validation gates.
-- Independent reviewer/result: pending a distinct QA/Security agent under `agents/QA_SECURITY.md`, using an isolated worktree from the exact committed final candidate and editing no implementation. No push, PR, merge, activation, queue/matrix change, TASK-0007 work, or self-approval is authorized here.
+- Independent reviewer/result: R1 was REJECTED by `/root/qa_task_0006_closure_r1` and is preserved at review commit `8e1b0674cd5f4f788f57cdd8192fd2585cda67c7`. Corrective R2 requires a fresh distinct QA/Security agent under `agents/QA_SECURITY.md`, using an isolated worktree from the exact committed final candidate and editing no implementation. No push, PR, merge, activation, queue/matrix change, TASK-0007 work, or self-approval is authorized here.
