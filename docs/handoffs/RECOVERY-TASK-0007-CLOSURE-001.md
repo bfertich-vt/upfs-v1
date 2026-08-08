@@ -38,6 +38,13 @@
 - `npm run format:check` PASS: 48 pinned-Prettier files plus structural closure checks. `npm run lint`, `npm run queue:check`, and `npm run traceability:check` PASS.
 - `npm audit --audit-level=high` PASS: zero vulnerabilities. `git fsck --full --strict` PASS with only preserved pre-existing dangling objects and no corruption. `git diff --check` PASS.
 
+### Corrective-forward R2
+
+- Supervisor full-suite execution at exact `d34257bfe16d650618bb78ea7404e63844c3a6cf` completed in 1,170,654.2 ms: 1,012 total, 1,010 passed, 1 failed, and 1 pre-existing opt-in PostgreSQL skip. The exact failure was `scripts/task-0066-console-acceptance.test.mjs`, “versioned console contract passes”: expected `passed`, actual `failed`.
+- Root cause: Prettier normalized the literal versioned redacted-column source binding from `['Date', 'Currency', 'Evidence']` to double quotes. TASK-0066 deliberately binds the accepted console contract to that exact source marker. Corrective implementation `0d72d3059fc8dd3c2c6e44f35ed0b880e4805d54` restores the stable marker as the actual `RESULT_COLUMNS` constant under a narrow Prettier ignore and uses that constant for rendering; it does not weaken or modify TASK-0066, validators, or contracts.
+- Focused R2: `node --test --test-concurrency=1 apps/customer-console/transaction-search-workbench.test.mjs scripts/task-0066-console-acceptance.test.mjs` PASS, 24/24, 0 fail/skip, 161.3 ms. The added workbench regression evaluates the real versioned TASK-0066 contract and asserts its implementation binding passes. All prior 13 workbench cases also pass. `npm run accessibility:check` PASS.
+- Exact-final R2 full suite and repository gates remain required after the separate handoff commit.
+
 ## Limitations, rollback, independent review
 
 - This is a dependency-free synthetic-DOM/reference UI and contract adapter. It is not a deployed console, real API host, OpenSearch/PostgreSQL integration, production OIDC/session, browser E2E, assistive-technology certification, load/SLO evidence, or production operation.
