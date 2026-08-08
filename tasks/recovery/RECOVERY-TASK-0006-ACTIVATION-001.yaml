@@ -1,0 +1,75 @@
+task_id: RECOVERY-TASK-0006-ACTIVATION-001
+title: Activate independently accepted TASK-0006 reference implementation
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0006
+base_commit: 244e297777261382bff221e5d9eaa15c9b090ac7
+dependencies: [TASK-0005, RECOVERY-TASK-0006-CLOSURE-001]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/03_architecture/system_architecture.md
+  - specs/04_schema/canonical_model.md
+  - specs/05_apis/api_standards.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/10_security/threat_model.md
+  - specs/12_testing/test_strategy.md
+  - specs/13_docs/documentation_platform.md
+  - docs/MASTER_PLAN.md
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/recovery/RECOVERY-TASK-0006-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0006-CLOSURE-001.md
+  - docs/reviews/RECOVERY-TASK-0006-CLOSURE-001-QA.md
+  - docs/reviews/RECOVERY-TASK-0006-CLOSURE-001-R2-QA.md
+  - docs/reviews/RECOVERY-TASK-0006-CLOSURE-001-R3-QA.md
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+authorized_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0006.json
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0006-ACTIVATION-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0006-ACTIVATION-001.md
+prohibited_files:
+  - services/**
+  - apps/**
+  - contracts/**
+  - artifacts/**
+  - specs/**
+  - .github/**
+  - package files
+  - TASK-0001 through TASK-0005 closure records
+  - TASK-0007+
+  - TASK-0112 through TASK-0123
+  - prior TASK-0006 task, handoff, reviews, and implementation evidence
+acceptance:
+  - Bind the exact independently accepted TASK-0006 implementation, candidate, accepted review artifact digest, review commit, and both preserved rejection records.
+  - Bind exact protected PR 31 base/head, successful pre-merge checks, inspected retained artifact, protected merge topology/tree/time, and successful post-merge checks.
+  - Mark only TASK-0006 complete and ACCEPTED, classified exactly Proven reference implementation, while keeping TASK-0007 and TASK-0112 through TASK-0123 frozen.
+  - Disclose that real OpenSearch, Redis, durable PostgreSQL/RLS and outbox checkpoints, deployed API wiring, production OIDC, managed runtime, deployment, and production operation remain unimplemented.
+security:
+  - Wrong or missing commits, digests, rejected reviews, checks, jobs, artifact, merge/tree/time, status, classification, limitation, reviewer provenance, or later-task promotion fails closed.
+  - Queue or handoff existence alone cannot establish acceptance.
+  - No product, contract, specification, tenant, financial, credential, workflow, or deployment state changes.
+tests:
+  - node --test --test-concurrency=1 scripts/historical-closure-validator.test.mjs
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run lint
+  - npm run queue:check
+  - npm run traceability:check
+  - npm test -- --test-concurrency=1
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve historical, rejected, accepted, and protected evidence; before integration revert only activation commits, and after integration correct forward through a separately reviewed status record.
+independent_review: Fresh QA/Security distinct from implementation, remediation, activation, and prior reviewers reviews the exact activation candidate before push or promotion.
+handoff: docs/handoffs/RECOVERY-TASK-0006-ACTIVATION-001.md
