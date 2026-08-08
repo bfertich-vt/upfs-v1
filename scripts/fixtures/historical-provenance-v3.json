@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "purpose": "Complete immutable Git-object transport for 33 accepted handoff candidates, two exact Git-bound erratum sources, and two independently accepted QA review evidence commits for TASK-0002 and TASK-0007. The original 36 refs are retained exactly; the TASK-0007 QA evidence object is additionally required for a fresh hosted clone to validate the current TASK-0007 closure without local-history reliance. This transport is not a validation exception, source-availability bypass, current-task exemption, or production claim.",
+  "purpose": "Complete immutable Git-object transport for 34 accepted handoff candidates, two exact Git-bound erratum sources, and two independently accepted QA review evidence commits for TASK-0002 and TASK-0007. The original 37 refs are retained exactly; the TASK-0007 activation-hydration implementation candidate is additionally required for a fresh hosted clone to validate its current handoff without local-history reliance. This transport is not a validation exception, source-availability bypass, current-task exemption, or production claim.",
   "bundle": "scripts/fixtures/historical-provenance-v3.bundle",
-  "sha256": "0a1da0bb3d293fad4b5a88b2795720107fb1e33cff63dc58199094e03d9908a1",
+  "sha256": "c6ef8842be337c915e7520331e582d2ea5bad15f006adbafb0c0bc41a9bf4c10",
   "ref_prefix": "refs/bundle-build/traceability-v3/",
   "required_counts": {
-    "handoff-candidate": 33,
+    "handoff-candidate": 34,
     "erratum-source": 2,
     "qa-review-evidence": 2,
-    "total": 37
+    "total": 38
   },
   "refs": [
     {
@@ -80,6 +80,13 @@
       "object_sha256": "f6a11883a5ac836d7bd954bea2254349b2ebd7fc320920ab4e92fea823121d88",
       "derivation_handoff": "docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-001.md",
       "derivation_handoff_sha256": "f58631c1a865a382353446775ae8edc20e18a448c36f1af84f7324be6a2f20c8"
+    },
+    {
+      "commit": "336706811e68f8225db0bbacd54008f4e9f6a1bd",
+      "kind": "handoff-candidate",
+      "object_sha256": "57b99596d650bd0dae2c68b22af4d96a6312298653fdfec1271f980561dfca0b",
+      "derivation_handoff": "docs/handoffs/RECOVERY-TASK-0007-ACTIVATION-HYDRATION-001.md",
+      "derivation_handoff_sha256": "aa15fe17b60d8f05825b6b3a7ddde2f5798a1e30a697343e458c0e402b24e109"
     },
     {
       "commit": "37662e41e7753c7f63ee63bc21a2e109a2e98ea1",
