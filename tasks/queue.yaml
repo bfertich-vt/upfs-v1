@@ -59,7 +59,7 @@ tasks:
       evidence_excerpt: "# Handoff report"
   - id: TASK-0004
     title: Implement raw evidence intake and quarantine
-    status: blocked
+    status: complete
     dependencies: [TASK-0002, TASK-0003]
     inputs:
       - AGENTS.md

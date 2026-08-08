@@ -174,9 +174,96 @@ const TASK_0003_PROTECTED_EVIDENCE = Object.freeze({
     pull_request: 25,
   },
 });
+const TASK_0004_PROTECTED_EVIDENCE = Object.freeze({
+  rejected_candidates: [
+    "73e35437c5cad0224106fbe623aad5ea8c4d3641",
+    "461a06e6269fe48d6713ec2355bb1d4a97deb4f4",
+  ],
+  remediation: {
+    task: "tasks/recovery/RECOVERY-TASK-0004-CLOSURE-003.yaml",
+    task_sha256:
+      "c07f9469af9950f52cb1eb23d3645285a90e7ef39b71312ca1404813efd87656",
+    handoff: "docs/handoffs/RECOVERY-TASK-0004-CLOSURE-003.md",
+    handoff_sha256:
+      "e560b7871ca403e9e79d12e92f6b4aeceb483eaa5224f877f86a8ce290700fcf",
+    implementation_commit: "286ee507a0fd855fd37b0d768ed04033dfc64de6",
+    candidate_commit: "5781d099adc515e4cd8618b79588379fe4d3dcae",
+  },
+  independent_qa: {
+    review: "docs/reviews/RECOVERY-TASK-0004-CLOSURE-003-QA.md",
+    review_sha256:
+      "0c68e42dc53a09f92fe427637e8b4bcb71e570523a0451bc6ad3c92c207d56c0",
+    review_commit: "6f75a6a8c77d29ae8b97626a18d89813b7daddb6",
+    reviewed_candidate: "5781d099adc515e4cd8618b79588379fe4d3dcae",
+  },
+  protected_review: {
+    mechanism: "independent-codex-qa-protected-flow",
+    candidate_commit: "5781d099adc515e4cd8618b79588379fe4d3dcae",
+    review_commit: "6f75a6a8c77d29ae8b97626a18d89813b7daddb6",
+    pr_head: "6f75a6a8c77d29ae8b97626a18d89813b7daddb6",
+    tree: "0b6eda9127477751227fe2b3755d5904c73ae744",
+  },
+  hosted: {
+    evidence_boundary:
+      "immutable inspected snapshot; GitHub API facts are not revalidated offline",
+    repository: "bfertich-vt/upfs-v1",
+    pull_request: 27,
+    base_sha: "29dd908b8f777f4d61ecc887cbf4fba8aef44ee8",
+    head_sha: "6f75a6a8c77d29ae8b97626a18d89813b7daddb6",
+    checks: [
+      {
+        name: "repository-validation",
+        run_id: 31229576739,
+        job_id: 93030559904,
+        head_sha: "6f75a6a8c77d29ae8b97626a18d89813b7daddb6",
+        conclusion: "success",
+      },
+      {
+        name: "repository-security",
+        run_id: 31229576740,
+        job_id: 93030559948,
+        head_sha: "6f75a6a8c77d29ae8b97626a18d89813b7daddb6",
+        conclusion: "success",
+      },
+    ],
+    validation_artifact: {
+      artifact_id: 9013304570,
+      name: "validation-evidence",
+      archive_digest:
+        "sha256:c3e286798a48c52ccf6119f69e60e1b3343d58723f79982c4d1f67185f39423e",
+      content_sha256:
+        "5762284a3a882a11a2847346cef20e897b1d2b333a447bf44831f8312316e7b1",
+      content_status: "passed",
+    },
+    post_merge_checks: [
+      {
+        name: "repository-validation",
+        run_id: 31229685860,
+        job_id: 93030884677,
+        head_sha: "9b2e2a72e35dafa82342d0655f788721eb2bbf48",
+        conclusion: "success",
+      },
+      {
+        name: "repository-security",
+        run_id: 31229685916,
+        job_id: 93030884834,
+        head_sha: "9b2e2a72e35dafa82342d0655f788721eb2bbf48",
+        conclusion: "success",
+      },
+    ],
+  },
+  protected_merge: {
+    commit: "9b2e2a72e35dafa82342d0655f788721eb2bbf48",
+    base_parent: "29dd908b8f777f4d61ecc887cbf4fba8aef44ee8",
+    head_tree: "0b6eda9127477751227fe2b3755d5904c73ae744",
+    merged_at: "2026-08-08T00:17:38Z",
+    pull_request: 27,
+  },
+});
 const PROTECTED_EVIDENCE = Object.freeze({
   "TASK-0002": TASK_0002_PROTECTED_EVIDENCE,
   "TASK-0003": TASK_0003_PROTECTED_EVIDENCE,
+  "TASK-0004": TASK_0004_PROTECTED_EVIDENCE,
 });
 const DISPOSITION_SOURCE_COMMIT = "420403fc09962d35d19af0cd735b056cb2a9a1ba";
 const DISPOSITION_SOURCE_SHA256 =
@@ -612,7 +699,9 @@ function validateAccepted(root, task, tasks, row, errors) {
         "historical",
         "remediation",
         "independent_qa",
-        ...(task.id === "TASK-0003" ? ["rejected_candidates"] : []),
+        ...(["TASK-0003", "TASK-0004"].includes(task.id)
+          ? ["rejected_candidates"]
+          : []),
         protectedReviewMode ? "protected_review" : "stage_a",
         "hosted",
         "protected_merge",
@@ -762,7 +851,9 @@ function validateAccepted(root, task, tasks, row, errors) {
       errors.push(`${rel}.protected_review is not authorized for this task.`);
     else
       for (const key of [
-        ...(task.id === "TASK-0003" ? ["rejected_candidates"] : []),
+        ...(["TASK-0003", "TASK-0004"].includes(task.id)
+          ? ["rejected_candidates"]
+          : []),
         "remediation",
         "independent_qa",
         "protected_review",
@@ -776,7 +867,7 @@ function validateAccepted(root, task, tasks, row, errors) {
           errors.push(
             `${rel}.${key} does not match exact ${task.id} protected evidence.`,
           );
-    if (task.id === "TASK-0003")
+    if (["TASK-0003", "TASK-0004"].includes(task.id))
       for (const rejected of record.rejected_candidates || [])
         ancestor(
           root,
@@ -1259,7 +1350,7 @@ function validateAccepted(root, task, tasks, row, errors) {
     )
   )
     errors.push(`${rel}.limitations must disclose remaining boundaries.`);
-  if (["TASK-0002", "TASK-0003"].includes(task.id)) {
+  if (["TASK-0002", "TASK-0003", "TASK-0004"].includes(task.id)) {
     const limitations = (record.limitations || []).join(" ").toLowerCase();
     if (row?.[8] !== "Proven reference implementation")
       errors.push(
