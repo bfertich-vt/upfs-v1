@@ -854,6 +854,7 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
           "| TASK-0003 |",
           "| TASK-0004 |",
           "| TASK-0005 |",
+          "| TASK-0006 |",
         ].some((prefix) => line.startsWith(prefix))
       )
         return line;
