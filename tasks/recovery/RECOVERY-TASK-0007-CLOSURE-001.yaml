@@ -1,0 +1,72 @@
+task_id: RECOVERY-TASK-0007-CLOSURE-001
+title: Revalidate customer console transaction search workbench
+type: historical-capability-closure
+status: in_progress
+assigned_role: Frontend
+historical_task: TASK-0007
+dependencies:
+  - TASK-0006
+inputs:
+  - AGENTS.md
+  - agents/FRONTEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/queue.yaml
+  - docs/handoffs/TASK-0007.md
+  - specs/02_ui/console_experience.md
+  - specs/02_ui/page_template.md
+  - specs/04_schema/canonical_model.md
+  - specs/04_schema/identity_tenant_model.md
+  - specs/05_apis/api_standards.md
+  - specs/10_security/security_baseline.md
+  - specs/10_security/threat_model.md
+  - specs/12_testing/test_strategy.md
+  - specs/14_admin_control_plane/admin_control_plane.md
+  - contracts/schemas/transaction-search-response.schema.json
+allowed_files:
+  - apps/customer-console/transaction-search-workbench.mjs
+  - apps/customer-console/transaction-search-workbench.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0007-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0007-CLOSURE-001.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/handoffs/TASK-0007.md
+  - specs/**
+  - contracts/**
+  - workflows/**
+  - package.json
+  - package-lock.json
+  - accepted TASK-0001-TASK-0006 evidence and implementation
+  - TASK-0008+
+  - TASK-0112-TASK-0123
+acceptance_criteria:
+  - The workbench uses only the authenticated versioned transaction-search API and never sends tenant scope or accesses storage, providers, models, or privileged APIs directly.
+  - Query, limit, and cursor inputs are bounded before network access; continuation retry preserves the exact cursor.
+  - Loading, empty, results, more-results, unavailable, forbidden, stale-projection, cancellation, retry, and malformed-response states are deterministic and accessible.
+  - Superseded and cancelled requests cannot overwrite current state.
+  - Projection or reconciliation mismatch is surfaced without changing or claiming to change PostgreSQL source truth.
+  - Observable UI state strips tenant, account, amount, description, and server error payloads to prevent cross-tenant or financial-data leakage.
+  - Native keyboard controls, labelled form/table, live status announcements, and visible focus compatibility remain intact.
+required_tests:
+  - node --test --test-concurrency=1 apps/customer-console/transaction-search-workbench.test.mjs
+  - npm run accessibility:check
+  - npm test -- --test-concurrency=1
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run lint
+  - npm run queue:check
+  - npm run traceability:check
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+security_requirements:
+  - Tenant and environment scope remain derived by the authenticated API; no client-supplied scope field is permitted.
+  - Forbidden, malformed, stale, and unavailable responses expose only stable generic UI messages.
+  - Cancellation and stale-response suppression prevent older data from replacing current authorized results.
+  - Rendering and snapshots retain only the minimum safe result fields required by this reference workbench.
+classification_limit: Proven reference implementation; no deployed customer console, real API host, OpenSearch, PostgreSQL, production identity, runtime, accessibility certification, or production-operation claim.
+rollback: Preserve historical and rejected evidence; use a reviewed revert before integration or a separate corrective-forward commit afterward; never weaken API-only, tenant, leakage, accessibility, or validation controls.
+handoff: docs/handoffs/RECOVERY-TASK-0007-CLOSURE-001.md
