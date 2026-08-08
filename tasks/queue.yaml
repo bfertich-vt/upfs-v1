@@ -93,7 +93,7 @@ tasks:
       evidence_excerpt: "# TASK-0005 handoff"
   - id: TASK-0006
     title: Implement OpenSearch projection, reconciliation, and search API
-    status: blocked
+    status: complete
     dependencies: [TASK-0005]
     inputs:
       - AGENTS.md
