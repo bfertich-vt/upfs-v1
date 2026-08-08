@@ -39,6 +39,7 @@ export class ConnectorIngestionService {
   #nonces = new Map();
   #idempotency = new Map();
   #audit = [];
+  #tail = Promise.resolve();
   constructor({
     connectors = [],
     evidence = new RawEvidenceIntakeService(),
@@ -60,6 +61,180 @@ export class ConnectorIngestionService {
       );
   }
   async ingest({
+    actor,
+    connectorId,
+    timestamp,
+    nonce,
+    payload,
+    signature,
+    idempotencyKey,
+  }) {
+    return this.#serialize(() =>
+      this.#ingest({
+        actor,
+        connectorId,
+        timestamp,
+        nonce,
+        payload,
+        signature,
+        idempotencyKey,
+      }),
+    );
+  }
+  async ingestPage({
+    actor,
+    connectorId,
+    timestamp,
+    nonce,
+    payload,
+    signature,
+    idempotencyKey,
+  }) {
+    return this.#serialize(async () => {
+      const canonicalActor = normalizeVerifiedActor(actor);
+      if (!canonicalActor) return error(401, "authentication_required");
+      const connector = this.#connectors.get(connectorId);
+      if (!connector) return error(404, "connector_not_found");
+      if (!isCanonicalMetadataString(connector.provider, 100))
+        return error(400, "invalid_provider_category");
+      if (
+        !Number.isInteger(timestamp) ||
+        Math.abs(this.now().getTime() / 1000 - timestamp) >
+          this.replayWindowSeconds
+      )
+        return error(401, "signature_timestamp_out_of_window");
+      if (typeof nonce !== "string" || nonce.length < 16 || nonce.length > 160)
+        return error(401, "invalid_nonce");
+      if (
+        !this.#verifySignature(connector, timestamp, nonce, payload, signature)
+      )
+        return error(401, "invalid_signature");
+      if (
+        !connector.authorize?.(
+          canonicalActor,
+          connector.tenantId,
+          connector.environmentId,
+        )
+      )
+        return error(403, "forbidden");
+      if (typeof idempotencyKey !== "string" || idempotencyKey.length < 16)
+        return error(400, "idempotency_key_required");
+      const replayKey = `${connector.id}|page|${nonce}`;
+      if (this.#nonces.has(replayKey)) return error(409, "replay_detected");
+      const key = `${canonicalActor.issuer}|${canonicalActor.subject}|${connector.id}|page|${idempotencyKey}`;
+      const payloadHash = digest(payload);
+      const prior = this.#idempotency.get(key);
+      if (prior)
+        return prior.payload_hash === payloadHash
+          ? clone(prior.result)
+          : error(409, "idempotency_conflict");
+
+      const pageId =
+        payload &&
+        typeof payload === "object" &&
+        !Array.isArray(payload) &&
+        isCanonicalMetadataString(payload.page_id, 300)
+          ? payload.page_id
+          : `invalid-${digest(payload).slice(0, 32)}`;
+      const evidenceId = deterministicUuid(`page|${connector.id}|${pageId}`);
+      const rawContent = bodyBytes(payload);
+      const observedAt = new Date(timestamp * 1000).toISOString();
+      const pageEvidence = await this.evidence.intake({
+        actor: canonicalActor,
+        evidence: {
+          id: evidenceId,
+          organization_id: connector.organizationId,
+          tenant_id: connector.tenantId,
+          environment_id: connector.environmentId,
+          correlation_id: deterministicUuid(
+            `page-correlation|${connector.id}|${timestamp}|${nonce}`,
+          ),
+          source: `connector:${connector.provider}:${connector.id}:page`,
+          media_type: "application/json",
+          content: rawContent,
+          content_size: Buffer.byteLength(rawContent, "utf8"),
+          content_hash: digest(rawContent),
+          observed_at: observedAt,
+          provenance: {
+            source_system: `connector:${connector.provider}`,
+            source_record_id: pageId,
+            captured_at: observedAt,
+          },
+        },
+        idempotencyKey: `page-evidence-${idempotencyKey}`,
+        ifNoneMatch: "*",
+      });
+      this.#nonces.set(replayKey, true);
+      if (pageEvidence.status !== 201)
+        return this.#remember(key, payloadHash, pageEvidence);
+      if (!isProviderPage(payload)) {
+        const invalid = error(422, "provider_page_quarantined", false, {
+          evidence_id: evidenceId,
+        });
+        this.#audit.push({
+          action: "connector.page.quarantined",
+          connector_id: connector.id,
+          tenant_id: connector.tenantId,
+          environment_id: connector.environmentId,
+          resource_id: evidenceId,
+          actor: `${canonicalActor.issuer}|${canonicalActor.subject}`,
+          content_hash: digest(rawContent),
+        });
+        return this.#remember(key, payloadHash, invalid);
+      }
+
+      const results = [];
+      for (const [index, transaction] of payload.transactions.entries()) {
+        const itemNonce = `${nonce}:${index}`;
+        let item;
+        try {
+          item = await this.#ingest({
+            actor: canonicalActor,
+            connectorId,
+            timestamp,
+            nonce: itemNonce,
+            payload: transaction,
+            signature: signProviderPayload({
+              secret: connector.secret,
+              timestamp,
+              nonce: itemNonce,
+              payload: transaction,
+            }),
+            idempotencyKey: `${idempotencyKey}:${index}`,
+          });
+        } catch {
+          item = error(503, "provider_item_failed", true);
+        }
+        results.push({ index, status: item.status, code: item.body?.code });
+      }
+      const complete =
+        payload.complete === true && results.every((item) => item.status < 400);
+      const result = {
+        status: complete ? 201 : 207,
+        body: {
+          page_id: payload.page_id,
+          evidence_id: evidenceId,
+          complete,
+          next_cursor: payload.next_cursor ?? null,
+          results,
+        },
+      };
+      this.#audit.push({
+        action: complete
+          ? "connector.page.canonicalized"
+          : "connector.page.partial_quarantine",
+        connector_id: connector.id,
+        tenant_id: connector.tenantId,
+        environment_id: connector.environmentId,
+        resource_id: evidenceId,
+        actor: `${canonicalActor.issuer}|${canonicalActor.subject}`,
+        item_count: results.length,
+        failed_count: results.filter((item) => item.status >= 400).length,
+      });
+      return this.#remember(key, payloadHash, result);
+    });
+  }
+  async #ingest({
     actor,
     connectorId,
     timestamp,
@@ -130,13 +305,26 @@ export class ConnectorIngestionService {
         captured_at: new Date(timestamp * 1000).toISOString(),
       },
     };
-    const evidenceResult = await this.evidence.intake({
+    let evidenceResult = await this.evidence.intake({
       actor: canonicalActor,
       evidence: raw,
       idempotencyKey: `evidence-${idempotencyKey}`,
       ifNoneMatch: "*",
     });
     this.#nonces.set(replayKey, true);
+    if (evidenceResult.status === 409) {
+      const existing = await this.evidence.get({
+        actor: canonicalActor,
+        id: evidenceId,
+      });
+      if (
+        existing.status === 200 &&
+        existing.body.content_hash === raw.content_hash &&
+        existing.body.tenant_id === connector.tenantId &&
+        existing.body.environment_id === connector.environmentId
+      )
+        evidenceResult = { status: 201, body: existing.body };
+    }
     if (evidenceResult.status !== 201)
       return this.#remember(key, payloadHash, evidenceResult);
     const classification = evidenceResult.body.scan;
@@ -230,6 +418,14 @@ export class ConnectorIngestionService {
   audit() {
     return clone(this.#audit);
   }
+  #serialize(operation) {
+    const current = this.#tail.then(operation, operation);
+    this.#tail = current.then(
+      () => undefined,
+      () => undefined,
+    );
+    return current;
+  }
   #remember(key, payloadHash, result) {
     const safe = clone(result);
     this.#idempotency.set(key, { payload_hash: payloadHash, result: safe });
@@ -247,6 +443,36 @@ export class ConnectorIngestionService {
       crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
     );
   }
+}
+
+function isProviderPage(payload) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload))
+    return false;
+  const allowed = new Set([
+    "page_id",
+    "cursor",
+    "next_cursor",
+    "complete",
+    "transactions",
+  ]);
+  if (
+    Reflect.ownKeys(payload).some(
+      (key) => typeof key !== "string" || !allowed.has(key),
+    )
+  )
+    return false;
+  if (!isCanonicalMetadataString(payload.page_id, 300)) return false;
+  if (typeof payload.complete !== "boolean") return false;
+  if (!Array.isArray(payload.transactions) || payload.transactions.length > 500)
+    return false;
+  for (const key of ["cursor", "next_cursor"])
+    if (
+      payload[key] !== undefined &&
+      payload[key] !== null &&
+      !isCanonicalMetadataString(payload[key], 2048)
+    )
+      return false;
+  return true;
 }
 
 function normalizeVerifiedActor(actor) {
