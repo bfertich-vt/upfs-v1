@@ -7,7 +7,7 @@
 - Agent thread ID: `/root/schema_task_0006_closure_r1` (the runtime provides no native UPFS role field; the initial assignment bound this role and file/digest proof was reported before editing).
 - Worktree/branch/base: `C:\source\upfs-schema-task-0006-closure-r1`; `recovery/task-0006-closure-r1`; `38f187386747acff0e3a62449b025ac406bb06e3`.
 - Implementation/task commit: `96b3c73ab5806bd8f6462ef282cdb2792e7bbe17`.
-- Final candidate/handoff commit: pending this separate handoff-binding commit.
+- Initial handoff commit: `fa25d6a3c0e3e7e3314565963f461edcf174968b`; a final adversarial corrective-forward commit additionally bounds malformed actors, throwing authorization adapters, and non-serializable payloads. Final candidate SHA is reported by the supervisor from the committed head.
 - Files changed: `services/transaction-projection.mjs`; `services/transaction-projection.test.mjs`; `tasks/recovery/RECOVERY-TASK-0006-CLOSURE-001.yaml`; this handoff. The authorized response schema was inspected but required no byte change.
 - Prohibited files unchanged: queue, closure matrix, historical handoff, specifications, workflows/packages, accepted TASK-0001 through TASK-0005 implementation/evidence, unrelated files, TASK-0007+, and TASK-0112 through TASK-0123.
 
@@ -26,6 +26,7 @@
 - Reconciliation compares a rebuildable projection with caller-supplied canonical truth and never changes canonical input. Drift and stale/unavailable watermarks are surfaced.
 - Rebuild writes a staged generation and promotes the alias before replacing the live in-memory projection. Injected document-indexing or alias-promotion failure returns retryable `503`, retains the prior projection, reports `alias_promoted: false`, and creates a payload-free failure audit record.
 - Consume indexing failure likewise mutates no projection, watermark, generation, or idempotency record, remains retryable, and records only identifiers/version/actor/time. Search responses redact `source_hash` and `projected_at`.
+- Actor claims are bounded strings, authorization adapter exceptions become non-disclosing denials, and non-serializable transaction payloads return a stable invalid-event envelope without state or audit mutation.
 - Contract/generated/documentation drift remains covered by repository validation and traceability. No validator, contract, or dependency boundary was weakened.
 
 ## Exact implementation-head tests
