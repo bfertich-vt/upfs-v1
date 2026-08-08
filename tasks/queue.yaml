@@ -76,7 +76,7 @@ tasks:
       evidence_excerpt: "# TASK-0004 handoff"
   - id: TASK-0005
     title: Implement connector-to-canonical transaction vertical slice
-    status: blocked
+    status: complete
     dependencies: [TASK-0004]
     inputs:
       - AGENTS.md
