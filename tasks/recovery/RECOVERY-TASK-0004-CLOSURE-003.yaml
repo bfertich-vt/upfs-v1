@@ -1,0 +1,70 @@
+task_id: RECOVERY-TASK-0004-CLOSURE-003
+title: Correct TASK-0004 complete own-key scope validation
+type: corrective-forward
+status: in_progress
+assigned_role: Backend
+historical_task: TASK-0004
+dependencies:
+  - RECOVERY-TASK-0004-CLOSURE-002
+rejection_source:
+  review_commit: 461a06e6269fe48d6713ec2355bb1d4a97deb4f4
+  candidate_commit: 7db97a36bbd3f028cb4795b91f15915b723d3f22
+  finding: QA-0004-003
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - specs/04_schema/canonical_model.md
+  - specs/04_schema/identity_tenant_model.md
+  - specs/05_apis/api_standards.md
+  - specs/10_security/security_baseline.md
+  - specs/10_security/threat_model.md
+  - specs/12_testing/test_strategy.md
+  - tasks/recovery/RECOVERY-TASK-0004-CLOSURE-001.yaml
+  - tasks/recovery/RECOVERY-TASK-0004-CLOSURE-002.yaml
+  - tasks/recovery/RECOVERY-TASK-0004-REGISTRY-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0004-CLOSURE-001.md
+  - docs/handoffs/RECOVERY-TASK-0004-CLOSURE-002.md
+  - docs/handoffs/RECOVERY-TASK-0004-REGISTRY-001.md
+  - docs/reviews/RECOVERY-TASK-0004-CLOSURE-001-QA.md
+  - docs/reviews/RECOVERY-TASK-0004-CLOSURE-002-QA.md
+allowed_files:
+  - services/evidence-intake.mjs
+  - services/evidence-intake.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0004-CLOSURE-003.yaml
+  - docs/handoffs/RECOVERY-TASK-0004-CLOSURE-003.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - contracts/**
+  - artifacts/**
+  - specs/**
+  - services/connector-ingestion.mjs
+  - services/connector-ingestion.test.mjs
+  - TASK-0005+
+  - TASK-0112+
+acceptance_criteria:
+  - Derived scope is accepted only when its complete own-key set is exactly organization_id, tenant_id, and environment_id as enumerable own data properties on a plain or null-prototype object.
+  - Local, global, and well-known Symbol keys; non-enumerable extras; accessors; unexpected string keys; custom prototypes; and throwing or invariant-violating proxy traps fail closed with bounded, non-disclosing responses.
+  - Malformed scope is rejected before scanner, record, idempotency, or audit mutation for intake and before record lookup for get.
+  - Rejection retains no state and permits a corrected retry using a valid plain or null-prototype scope.
+  - Existing authorization, tenant isolation, idempotency, replay, audit, failure, rollback, connector, and registry behavior remains green.
+required_tests:
+  - node --test services/evidence-intake.test.mjs services/connector-ingestion.test.mjs services/transaction-registry.test.mjs services/registry-generator.test.mjs
+  - npm test
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run queue:check
+  - npm run traceability:check
+  - npm run lint
+  - npm audit --audit-level=high
+  - node scripts/generate-registry.mjs
+security_requirements:
+  - Deny malformed authorization-derived scope without revealing tenant or attacker-controlled values.
+  - No scanner, record, idempotency, or audit mutation may occur on denial.
+  - Preserve tenant isolation and deny-by-default behavior.
+rollback: Preserve R1 and R2 rejection history; use a reviewed revert or a separate corrective-forward change without weakening validation.
+handoff: docs/handoffs/RECOVERY-TASK-0004-CLOSURE-003.md

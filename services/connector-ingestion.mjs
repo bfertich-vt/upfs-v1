@@ -105,28 +105,41 @@ export class ConnectorIngestionService {
         : error(409, "idempotency_conflict");
     const normalized = normalizeProviderTransaction(payload);
     if (normalized.error) return error(400, normalized.error);
-    const evidenceId = `ev-connector-${digest(`${connector.id}|${normalized.value.provider_transaction_id}`).slice(0, 48)}`;
+    const evidenceId = deterministicUuid(
+      `evidence|${connector.id}|${normalized.value.provider_transaction_id}`,
+    );
+    const correlationId = deterministicUuid(
+      `correlation|${connector.id}|${timestamp}|${nonce}`,
+    );
+    const rawContent = bodyBytes(payload);
     const raw = {
       id: evidenceId,
+      organization_id: connector.organizationId,
       tenant_id: connector.tenantId,
       environment_id: connector.environmentId,
+      correlation_id: correlationId,
       source: `connector:${connector.provider}:${connector.id}`,
       media_type: "application/json",
-      content: bodyBytes(payload),
-      content_hash: digest(bodyBytes(payload)),
+      content: rawContent,
+      content_size: Buffer.byteLength(rawContent, "utf8"),
+      content_hash: digest(rawContent),
       observed_at: new Date(timestamp * 1000).toISOString(),
+      provenance: {
+        source_system: `connector:${connector.provider}`,
+        source_record_id: normalized.value.provider_transaction_id,
+        captured_at: new Date(timestamp * 1000).toISOString(),
+      },
     };
     const evidenceResult = await this.evidence.intake({
       actor: canonicalActor,
-      tenantId: connector.tenantId,
-      environmentId: connector.environmentId,
       evidence: raw,
       idempotencyKey: `evidence-${idempotencyKey}`,
+      ifNoneMatch: "*",
     });
     this.#nonces.set(replayKey, true);
     if (evidenceResult.status !== 201)
       return this.#remember(key, payloadHash, evidenceResult);
-    const classification = evidenceResult.body.classification;
+    const classification = evidenceResult.body.scan;
     if (
       classification.malware !== "clear" ||
       classification.prompt_injection !== "clear" ||

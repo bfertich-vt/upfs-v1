@@ -1,0 +1,70 @@
+task_id: RECOVERY-TASK-0004-REGISTRY-001
+title: Publish deterministic TASK-0004 raw-evidence registry update
+status: candidate
+role: Schema/Search/AI
+role_file: agents/SCHEMA_SEARCH_AI.md
+historical_task: TASK-0004
+base_commit: cbaaa19f7f231e03a0618e4bca01635da2571435
+dependencies: [RECOVERY-TASK-0004-CLOSURE-001, TASK-0003]
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - specs/04_schema/canonical_model.md
+  - specs/04_schema/identity_tenant_model.md
+  - specs/05_apis/api_standards.md
+  - specs/10_security/security_baseline.md
+  - specs/10_security/threat_model.md
+  - specs/12_testing/test_strategy.md
+  - contracts/schemas/raw-evidence.schema.json
+  - services/transaction-registry.mjs
+  - services/transaction-registry.test.mjs
+  - scripts/generate-registry.mjs
+  - artifacts/schema-registry.json
+  - tasks/recovery/RECOVERY-TASK-0004-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0004-CLOSURE-001.md
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+authorized_files:
+  - artifacts/schema-registry.json
+  - tasks/recovery/RECOVERY-TASK-0004-REGISTRY-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0004-REGISTRY-001.md
+prohibited_files:
+  - services/**
+  - contracts/**
+  - scripts/**
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/handoffs/RECOVERY-TASK-0004-CLOSURE-001.md
+  - package and workflow files
+  - specs/**
+  - TASK-0001 through TASK-0003 files
+  - TASK-0005 and later task files
+  - unrelated files
+acceptance:
+  - The committed registry is generated deterministically by the accepted generator from committed schemas.
+  - Only the raw-evidence entry changes from its accepted prior identity, version, and digest; every other registry entry remains byte and semantically stable.
+  - Raw-evidence registry identity and version match the 1.1.0 contract and its SHA-256 equals the exact committed contract bytes.
+  - Existing atomic publication and failed-publication rollback behavior remains green without bypass or validator weakening.
+  - The combined Backend and registry candidate passes focused and full repository gates before independent review.
+security:
+  - Registry publication must not introduce untrusted paths, mutable external input, tenant data, credentials, or raw evidence content.
+  - Digest binding must use exact committed schema bytes and fail closed on drift.
+  - This artifact correction does not alter authorization or tenant isolation behavior in the Backend candidate.
+tests:
+  - node scripts/generate-registry.mjs
+  - node --test services/transaction-registry.test.mjs services/evidence-intake.test.mjs services/connector-ingestion.test.mjs
+  - npm test
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run queue:check
+  - npm run traceability:check
+  - npm run lint
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve the Backend candidate and rejection evidence; revert only this bounded artifact/task/handoff stream before integration or correct forward in a separate reviewed commit.
+independent_review: A fresh QA/Security agent must review the exact combined committed candidate from an isolated worktree without editing implementation.
