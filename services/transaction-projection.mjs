@@ -2,7 +2,8 @@ import crypto from 'node:crypto';
 
 const clone = (value) => value === null || typeof value !== 'object' ? value : Array.isArray(value) ? value.map(clone) : Object.fromEntries(Object.entries(value).map(([key, item]) => [key, clone(item)]));
 const hash = (value) => crypto.createHash('sha256').update(JSON.stringify(value), 'utf8').digest('hex');
-const safeActor = (actor) => actor?.issuer && actor?.subject;
+const safeBoundary = (value) => typeof value === 'string' && value.trim() === value && value.length > 0 && value.length <= 512 && !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
+const safeActor = (actor) => Boolean(actor && typeof actor === 'object' && safeBoundary(actor.issuer) && safeBoundary(actor.subject));
 const error = (status, code, details) => ({ status, body: { code, ...(details ? { details } : {}) } });
 
 /** Rebuildable, in-memory reference for an OpenSearch transaction projection.
@@ -25,9 +26,10 @@ export class TransactionProjectionService {
     if (!safeActor(actor)) return error(401, 'authentication_required');
     if (!eventId || typeof eventId !== 'string' || !validTransaction(transaction)) return error(400, 'invalid_projection_event');
     if (!Number.isInteger(sourceVersion) || sourceVersion < 1) return error(400, 'invalid_projection_version');
-    if (!this.authorize(actor, transaction.tenant_id)) return error(403, 'forbidden');
+    if (!authorized(this.authorize, actor, transaction.tenant_id)) return error(403, 'forbidden');
     const key = `${transaction.tenant_id}|${transaction.id}`;
-    const eventHash = hash({ eventId, transaction, sourceVersion });
+    let eventHash;
+    try { eventHash = hash({ eventId, transaction, sourceVersion }); } catch { return error(400, 'invalid_projection_event'); }
     const priorEvent = this.#events.get(eventId);
     if (priorEvent) return priorEvent.hash === eventHash ? clone(priorEvent.result) : error(409, 'projection_event_conflict');
     const prior = this.#documents.get(key);
@@ -58,7 +60,7 @@ export class TransactionProjectionService {
 
   reconcile({ actor, tenantId, canonicalTransactions = [], watermark = 0 }) {
     if (!safeActor(actor)) return error(401, 'authentication_required');
-    if (!tenantId || !this.authorize(actor, tenantId)) return error(403, 'forbidden');
+    if (!tenantId || !authorized(this.authorize, actor, tenantId)) return error(403, 'forbidden');
     if (!Array.isArray(canonicalTransactions) || !validWatermark(watermark)) return error(400, 'invalid_reconciliation_input');
     if (canonicalTransactions.some((tx) => !validTransaction(tx) || tx.tenant_id !== tenantId)) return error(400, 'invalid_reconciliation_input');
     const expected = canonicalTransactions.map((tx) => ({ ...projectTransaction(tx, tx.version ?? 1), source_hash: hash(tx) })).sort((a, b) => a.id.localeCompare(b.id));
@@ -72,7 +74,7 @@ export class TransactionProjectionService {
 
   rebuild({ actor, tenantId, canonicalTransactions = [], watermark = 0 }) {
     if (!safeActor(actor)) return error(401, 'authentication_required');
-    if (!tenantId || !this.authorize(actor, tenantId)) return error(403, 'forbidden');
+    if (!tenantId || !authorized(this.authorize, actor, tenantId)) return error(403, 'forbidden');
     if (!Array.isArray(canonicalTransactions) || !validWatermark(watermark)) return error(400, 'invalid_rebuild_input');
     if (canonicalTransactions.some((tx) => !validTransaction(tx) || tx.tenant_id !== tenantId)) return error(400, 'invalid_rebuild_input');
     const records = canonicalTransactions;
@@ -102,7 +104,7 @@ export class TransactionProjectionService {
 
   search({ actor, tenantId, query = '', limit = 25, cursor = null }) {
     if (!safeActor(actor)) return error(401, 'authentication_required');
-    if (!tenantId || !this.authorize(actor, tenantId)) return error(403, 'forbidden');
+    if (!tenantId || !authorized(this.authorize, actor, tenantId)) return error(403, 'forbidden');
     if (typeof query !== 'string' || query.trim().length < 1 || query.length > 500) return error(400, 'invalid_query');
     if (!Number.isInteger(limit) || limit < 1 || limit > 100) return error(400, 'invalid_limit');
     const queryHash = hash(query.trim().toLowerCase());
@@ -125,7 +127,8 @@ export class TransactionProjectionService {
 }
 
 function validWatermark(value) { return Number.isInteger(value) && value >= 0; }
-function validTransaction(tx) { return Boolean(tx && typeof tx === 'object' && typeof tx.id === 'string' && tx.id.length > 0 && typeof tx.tenant_id === 'string' && tx.tenant_id.length > 0 && typeof tx.account_id === 'string' && tx.account_id.length > 0 && typeof tx.amount === 'string' && typeof tx.currency === 'string' && typeof tx.posted_at === 'string' && typeof tx.schema_version === 'string' && Array.isArray(tx.evidence_refs)); }
+function authorized(authorize, actor, tenantId) { try { return authorize(actor, tenantId) === true; } catch { return false; } }
+function validTransaction(tx) { return Boolean(tx && typeof tx === 'object' && safeBoundary(tx.id) && safeBoundary(tx.tenant_id) && safeBoundary(tx.account_id) && typeof tx.amount === 'string' && safeBoundary(tx.currency) && safeBoundary(tx.posted_at) && safeBoundary(tx.schema_version) && Array.isArray(tx.evidence_refs) && tx.evidence_refs.every(safeBoundary) && (tx.description === undefined || typeof tx.description === 'string')); }
 function maxVersion(items) { return items.reduce((max, tx) => Math.max(max, tx?.source_version ?? tx?.version ?? 1), 0); }
 function signMac(payload, key) { return crypto.createHmac('sha256', key).update(JSON.stringify(payload)).digest('base64url'); }
 function safeMac(payload, mac, key) { const expected = signMac(payload, key); return mac.length === expected.length && crypto.timingSafeEqual(Buffer.from(mac), Buffer.from(expected)); }

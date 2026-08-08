@@ -110,3 +110,13 @@ test('reconciliation and rebuild reject malformed or cross-tenant canonical inpu
   assert.equal(p.rebuild({ actor, tenantId: 'tenant-a', canonicalTransactions: [{ id: 'malformed', tenant_id: 'tenant-a' }], watermark: 1 }).body.code, 'invalid_rebuild_input');
   assert.deepEqual(p.documents().map((document) => document.id), ['seed']);
 });
+
+test('malformed actors, throwing authorization, and non-serializable payloads fail closed', () => {
+  const p = service();
+  assert.equal(p.consume({ actor: { issuer: Symbol('issuer'), subject: 'subject' }, eventId: 'bad-actor', transaction: tx('a') }).body.code, 'authentication_required');
+  assert.equal(p.consume({ actor, eventId: 'bad-payload', transaction: { ...tx('a'), unexpected: 1n } }).body.code, 'invalid_projection_event');
+  assert.equal(p.documents().length, 0);
+  const throwing = new TransactionProjectionService({ authorize: () => { throw new Error('injected'); } });
+  assert.equal(throwing.search({ actor, tenantId: 'tenant-a', query: 'USD' }).body.code, 'forbidden');
+  assert.equal(throwing.audit().length, 0);
+});
