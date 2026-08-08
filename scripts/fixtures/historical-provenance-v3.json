@@ -1,46 +1,274 @@
 {
   "schema_version": 2,
-  "purpose": "Complete immutable Git-object transport for 33 accepted handoff candidates, two exact Git-bound erratum sources, and one independently accepted TASK-0002 QA review evidence commit. The original 35 refs are retained byte-identically; the QA evidence object is additionally required for a fresh hosted clone to validate the current TASK-0002 closure without local-history reliance. This transport is not a validation exception, source-availability bypass, current-task exemption, or production claim.",
+  "purpose": "Complete immutable Git-object transport for 33 accepted handoff candidates, two exact Git-bound erratum sources, and two independently accepted QA review evidence commits for TASK-0002 and TASK-0007. The original 36 refs are retained exactly; the TASK-0007 QA evidence object is additionally required for a fresh hosted clone to validate the current TASK-0007 closure without local-history reliance. This transport is not a validation exception, source-availability bypass, current-task exemption, or production claim.",
   "bundle": "scripts/fixtures/historical-provenance-v3.bundle",
-  "sha256": "a518ba7ce8d513d062978f93196882d02573b2b9fa65bc3a65132aaa606708ff",
+  "sha256": "0a1da0bb3d293fad4b5a88b2795720107fb1e33cff63dc58199094e03d9908a1",
   "ref_prefix": "refs/bundle-build/traceability-v3/",
-  "required_counts": { "handoff-candidate": 33, "erratum-source": 2, "qa-review-evidence": 1, "total": 36 },
+  "required_counts": {
+    "handoff-candidate": 33,
+    "erratum-source": 2,
+    "qa-review-evidence": 2,
+    "total": 37
+  },
   "refs": [
-    { "commit": "4ae7e95f0af88e21dde526be44443846a8d8d9a6", "kind": "erratum-source", "object_sha256": "9a3553b08b05f05ff2a9002588193a17d5596443c259d9b57dc9ca9cc125cdc5", "derivation_handoff": "docs/handoffs/RECOVERY-CI-GATES-001.md", "derivation_handoff_sha256": "281932b7f4fd3790f1178082107f97db0f66838d9331b1ab6e87074e823915ff" },
-    { "commit": "e7c81bf1a38726e0ac8ebf84c969219c21758aea", "kind": "erratum-source", "object_sha256": "38549e79ede06671d378295f27086d68bc3bb8fd0393d6376fa574ebaa7733de", "derivation_handoff": "docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md", "derivation_handoff_sha256": "47e35dbcb64512e2793f421fb8619617a913df7c3d45fb670ac554ec2919352e" },
-    { "commit": "01f3808f892598c72e43b97f494f9dc2442fe5c6", "kind": "handoff-candidate", "object_sha256": "b4475e60a67f46eaa67f124dd5a6d3cd224004cb0aa6ca3d996ce53e87981abf", "derivation_handoff": "docs/handoffs/RECOVERY-NPM-VALIDATE-002.md", "derivation_handoff_sha256": "8b91de7a63768d6ca3b977e564856d2231ea0e250fe0544e284c0acd09101b06" },
-    { "commit": "06b00c5942f094ff8b22c7b33061503bc0fef445", "kind": "handoff-candidate", "object_sha256": "d0c511d3699e8116d6d6ca59c9c629fb629859d14ad67e6c863dc4c04b507ff8", "derivation_handoff": "docs/handoffs/RECOVERY-CI-LINUX-COMPAT-010.md", "derivation_handoff_sha256": "18d26907b145c2090c41a5584bfd34a4ea92e3069ccad6bafdaa06e177503210" },
-    { "commit": "22d48450768e6fac0bc692178dc59e724037ce6d", "kind": "handoff-candidate", "object_sha256": "db46cdfe4464c927bb2a552dfbc42c4bfd3f4c9bb56d6312c8431a2f52726eca", "derivation_handoff": "docs/handoffs/TASK-0111.md", "derivation_handoff_sha256": "ba7c59a6968c941e1c34c5fecf2ff1e0d035ecab7b26fc7869412591c7cff51e" },
-    { "commit": "25945425853b4082c3fd78acc487f64caa4f75e1", "kind": "handoff-candidate", "object_sha256": "c1ca520c0c4faedb1b35775521b69b5fbce215f055c6cb9f75aaf6aa31b56b31", "derivation_handoff": "docs/handoffs/RECOVERY-CI-PG-NODE-RANGE-022.md", "derivation_handoff_sha256": "13eb1561d5308f1c0ef4ab735491666dd46eb168fe82f23658403b43b0235c96" },
-    { "commit": "286cbc59a54bf28e4a802e345bb295db9f98aaa4", "kind": "handoff-candidate", "object_sha256": "b917f0237a730c8cd2cc0b299397d1ec1f6135b147c73f81670d1715a14177a3", "derivation_handoff": "docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-002.md", "derivation_handoff_sha256": "61d92a78842757f4c5216a6ed7a2a8ecabe2748992d01516f442d9f9d547558a" },
-    { "commit": "287b3894147080cb067ad2254869a2cabf998fce", "kind": "handoff-candidate", "object_sha256": "40b096a66004211ef00bb0bd95e85255cc186818051fc034b7868b510ccf8bd5", "derivation_handoff": "docs/handoffs/RECOVERY-CODEOWNERS-ROUTING-035.md", "derivation_handoff_sha256": "4c0d7e8d51a43e70e9eccb46b09af18841bd19af67b1143871f4536dec4afd90" },
-    { "commit": "2ec8213fe000a0b78c68c588eb10768a39116be3", "kind": "handoff-candidate", "object_sha256": "d5927c1663f7b6102aa76d3b7995660c60a49a2177465bd9a25450b33080213c", "derivation_handoff": "docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md", "derivation_handoff_sha256": "47e35dbcb64512e2793f421fb8619617a913df7c3d45fb670ac554ec2919352e" },
-    { "commit": "2f597c85c568c08679df48fe55afc109006225df", "kind": "handoff-candidate", "object_sha256": "f6a11883a5ac836d7bd954bea2254349b2ebd7fc320920ab4e92fea823121d88", "derivation_handoff": "docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-001.md", "derivation_handoff_sha256": "f58631c1a865a382353446775ae8edc20e18a448c36f1af84f7324be6a2f20c8" },
-    { "commit": "37662e41e7753c7f63ee63bc21a2e109a2e98ea1", "kind": "handoff-candidate", "object_sha256": "0be801a0c73db9d7aeb693837162ff9e52a511431467e88a524cc8cb9ef4dc2d", "derivation_handoff": "docs/handoffs/RECOVERY-WORKFLOW-NODE-PIN-002.md", "derivation_handoff_sha256": "d896637cc21b6748718c4efe23182aade399e4972d9d4dee4d63864efebfd73b" },
-    { "commit": "3aaf39cc167dce07cbdf013601830670532566ac", "kind": "handoff-candidate", "object_sha256": "8f7e603b8828ba2f018b5e38425f709776396a06778cfca6fcce752dfe668fd2", "derivation_handoff": "docs/handoffs/RECOVERY-TRACEABILITY-VALIDATOR-008.md", "derivation_handoff_sha256": "da30b10ff8a88f83e9fcfb8bd0ab511314f63a98845f7b8ea2061f05c539457a" },
-    { "commit": "3e112eb12605b653832be597888091833c18c652", "kind": "handoff-candidate", "object_sha256": "1c185674d418d77700ece3a2b88cfef46ad40e278d06002c920b34eb03a340cc", "derivation_handoff": "docs/handoffs/RECOVERY-HISTORICAL-ERRATA-VALIDATOR-008.md", "derivation_handoff_sha256": "3d537cf77a3771bf6476a9cf5934d745e8fe2f9951884bc2428347d5dc266434" },
-    { "commit": "405763503fc1c9bbdd3d89ee27f70d451412f80b", "kind": "handoff-candidate", "object_sha256": "20a6d34c0bac20d1be06b0c24b99a849f144ae377ebe66f54cfcd7bae900a560", "derivation_handoff": "docs/handoffs/RECOVERY-TRACEABILITY-BUNDLE-TOPOLOGY-031.md", "derivation_handoff_sha256": "9ed8f14d0d05d048ce07ef6e4a8c089e0ff8e2db3ac566b0272a948034e10f83" },
-    { "commit": "4ca3494dd2b19050646061ca5ce44f28e2cfca15", "kind": "handoff-candidate", "object_sha256": "f0ad2257a799b0e992b9872494b7c25664b4151151da21a24594c25be6ce3aab", "derivation_handoff": "docs/handoffs/RECOVERY-MASTER-TRACEABILITY-002.md", "derivation_handoff_sha256": "2b09f6b9b00c283060d901b22b246f01d4ac89bbe4fe7be4b070042b77f347e7" },
-    { "commit": "5e6990cf403d74fc630499f57d0d9252c0fc46be", "kind": "handoff-candidate", "object_sha256": "fc4b02c6991c30068cb3e999c3b950e62bb0aa703456481a9fcefa576ff92fb1", "derivation_handoff": "docs/handoffs/PRODUCTION-ROADMAP-001.md", "derivation_handoff_sha256": "21935f7035154b53a16ac0b13d1bdfc0859f3d31668737f3ab493acbd95ac6e3" },
-    { "commit": "64782c157a50e02146cdad45049b8333033979c6", "kind": "qa-review-evidence", "object_sha256": "89ac5e56fc43ee3ddea7c857547373bbe7f3aedc2b092f462264e342bfee22ac", "derivation_handoff": "docs/reviews/RECOVERY-TASK-0002-CLOSURE-002-QA.md", "derivation_handoff_sha256": "1f5c249334fd8638084da8790168f422e24ab4009351bcdd2921e90bbbebc00e" },
-    { "commit": "73e84f6b11080c281beeef02146385879fafeda5", "kind": "handoff-candidate", "object_sha256": "271278a7b006f101b810762b0fd3f765b7dfae16c55adaea249bf07dd644212a", "derivation_handoff": "docs/handoffs/RECOVERY-PUBLIC-GOVERNANCE-002.md", "derivation_handoff_sha256": "2c8f5845ee271a718098372e670215b87069da999b057d8570d4bf46af35e655" },
-    { "commit": "78e0de564d9f4dd5e3ba43ba81001b486dcc63f4", "kind": "handoff-candidate", "object_sha256": "c468342da34d1e8fe375775857d4fa0ae7e7a854ec0b261a6897a6fd6d42701a", "derivation_handoff": "docs/handoffs/RECOVERY-QUEUE-FREEZE-008.md", "derivation_handoff_sha256": "64023965e27754b6f9245e5937af1b71f4bc8694e91d10932b7edf49dd43e964" },
-    { "commit": "79de8cbc179c235a62db126f0c091b6cfa8687ae", "kind": "handoff-candidate", "object_sha256": "d8d7155d0186e7c47039570cfd7751a5e33e660aaa1b7d9b88cb4b2731869e33", "derivation_handoff": "docs/handoffs/RECOVERY-WORKFLOW-TRIVY-PIN-002.md", "derivation_handoff_sha256": "59d678f9c062d08e4d29664b1fd2a204d681e467e726dd8dffc61d5630320cec" },
-    { "commit": "7a1ea6483ee6ba09dd5ed857e868987446184f7d", "kind": "handoff-candidate", "object_sha256": "bd9b35b6bbfb4bf91c576937e31bab8524c0fdb54bcb239ee3b0953fba90590a", "derivation_handoff": "docs/handoffs/RECOVERY-MASTER-TRACEABILITY-003.md", "derivation_handoff_sha256": "688fe364001fe84523c9d98404887855a741f03f7735ee1101a569aee6693ee9" },
-    { "commit": "8c17dbf33d5507a506885805b984d303d9d3793a", "kind": "handoff-candidate", "object_sha256": "45179df466446c19f7333eda242c952197c4d3b3f85359c97f57cf09f2cea29c", "derivation_handoff": "docs/handoffs/RECOVERY-QUEUE-PRODUCTION-BOUNDARY-001.md", "derivation_handoff_sha256": "fcfb690be7f2e31afab09307c88040d7d5960b559bc9ac67e8213185ace45c0e" },
-    { "commit": "90208c69504893c7a01cbcd51a8eb35caf21f5e3", "kind": "handoff-candidate", "object_sha256": "b82786655c237bdd6ed8fad7d2e543b6de8846a0d96f53898194211c97e26407", "derivation_handoff": "docs/handoffs/RECOVERY-CI-GATES-001.md", "derivation_handoff_sha256": "281932b7f4fd3790f1178082107f97db0f66838d9331b1ab6e87074e823915ff" },
-    { "commit": "9fc2d266dfbb5e291ec4c0fc25dc7c1e9d2ae722", "kind": "handoff-candidate", "object_sha256": "af0f02d5d86e295c6a3892ca1fb5c95d1e64f5661817954b9c122ca0ebc816f6", "derivation_handoff": "docs/handoffs/RECOVERY-QUEUE-RECLASSIFICATION-007.md", "derivation_handoff_sha256": "9a2cfc55767a13ae5439d00d8ef19f02d9862692dc4616a47a830da2eff5e4ca" },
-    { "commit": "adc80e1c6e783258afccaaf0758e8e6e96f4ea60", "kind": "handoff-candidate", "object_sha256": "63e5bfc1dc64da43a5909f65131e27656e094262bc925333a4f2fb63f806b791", "derivation_handoff": "docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-003.md", "derivation_handoff_sha256": "7330f5b146edefdef1bac6bfa0cad5c87bc8179be22cdeb9e095858807322f54" },
-    { "commit": "af692c1864cba2291ec3386ca18c0066305b5c00", "kind": "handoff-candidate", "object_sha256": "51e6a26f4b160d597bacefa0a6bf0136c53ed8d51a102166d0c957d37ef3cfef", "derivation_handoff": "docs/handoffs/RECOVERY-QUEUE-PRODUCTION-BOUNDARY-HANDOFF-002.md", "derivation_handoff_sha256": "dc1b15db094d0aa2788b5b6311ff9eed51aa45518ad92ead29dad9d9fa2fb455" },
-    { "commit": "b1bec9e38589a93842f0078e000c03c3e9684490", "kind": "handoff-candidate", "object_sha256": "9b17289e19f15347f716b5520b5d7b044b6351adf1848b432dc9d83a450d116c", "derivation_handoff": "docs/handoffs/TASK-0123.md", "derivation_handoff_sha256": "3723f3d5135eb1cf64300243f0bcf83e9f32344e6ac1584f0035aa0f16120a6b" },
-    { "commit": "b6b541b594c84c5c3f7ef5082d58d8656a7f9945", "kind": "handoff-candidate", "object_sha256": "1a5c8de0647e02ee18a701837042f2996a7ee387fbecb751df63199a70f69db5", "derivation_handoff": "docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-005.md", "derivation_handoff_sha256": "0baed64f5f9bfde5031b45fb0dacc05a96a7a1ad5fd7f0d5a4cda3492e7078f0" },
-    { "commit": "ba67ccd8274002badb47d00a0ec8b288b1595570", "kind": "handoff-candidate", "object_sha256": "cf9212595edb4f701b15ab9b7dfee3c3ec02ba5b5e96f07f7a77e9a88878ad8c", "derivation_handoff": "docs/handoffs/RECOVERY-CI-HISTORY-FIXTURE-011.md", "derivation_handoff_sha256": "16757bcbbd7f04e0a4d6e380120992944ea2b783be6e0eeb0a261f77fe90246a" },
-    { "commit": "c3776d718da1e175c379e0ffa881e7597662bc10", "kind": "handoff-candidate", "object_sha256": "a4b8a3f47a15a0e53d777ab18e0b9d279b16daa931508166cd17096be232ea45", "derivation_handoff": "docs/handoffs/RECOVERY-TRACEABILITY-HISTORY-TOPOLOGY-029.md", "derivation_handoff_sha256": "72e0a59d4399667a82cd3d4a6a50f19f661889f61bb6f4e8833c7dc996e26259" },
-    { "commit": "c6afa07e4f5bbc4fa85fde1172e6944ac07374dd", "kind": "handoff-candidate", "object_sha256": "8138f72a066cf627e9cec7a9d671b51cfc53662d7f0ae00fd7c4dcebd6d264d0", "derivation_handoff": "docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-002.md", "derivation_handoff_sha256": "eede641544a016bd617943388fa1d0da119af35c810556567e7f530dbcf4349a" },
-    { "commit": "d2e6ddb4591a2d32b12abdc080aff679036edf10", "kind": "handoff-candidate", "object_sha256": "fb93749118a9cadadce0f13b03d19f55ef8e3725d0a6b11ec5253b7fb443f08b", "derivation_handoff": "docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-004.md", "derivation_handoff_sha256": "32cbb49b1516361d246be39b7c038603d95cf728cfbd7f3ab26312a8c6a4ef6a" },
-    { "commit": "dc3e202cb0043d46da919a449c6115e718268d2c", "kind": "handoff-candidate", "object_sha256": "cf65968a6564f5ebb78988a4b51da33345759ea27adb2447ff89f9fe7f6a5e68", "derivation_handoff": "docs/handoffs/RECOVERY-MASTER-TRACEABILITY-004-QA.md", "derivation_handoff_sha256": "cfcccf1867252af3f834776b043eb51340947d14065e3dc020a67d0e6722fb06" },
-    { "commit": "dbfd2ffad3da6e9cfc4c2be75f987eefb27744f0", "kind": "handoff-candidate", "object_sha256": "2cb9f5ed8235e97674bae1ce8c55d64313c51016bf7d79784f5caaf9eb5b489f", "derivation_handoff": "docs/handoffs/RECOVERY-FORMAT-DRIFT-033.md", "derivation_handoff_sha256": "c4c7096674cae24aeadd6668dc188828981ef55a4f98e2f5afdfe692c2d164e5" },
-    { "commit": "ea36f0c5e99d36b38225ff976245d06a753f9ed9", "kind": "handoff-candidate", "object_sha256": "fb0d76b078dac4d97b00546a7f1e44d6f31353948cc4c63a4129831cac260fe8", "derivation_handoff": "docs/handoffs/RECOVERY-MASTER-TRACEABILITY-004.md", "derivation_handoff_sha256": "d3d8049586b3b7e075bb22cacf284a746686c04f49bac0406a0da0f04a77c33f" },
-    { "commit": "eb1fd64c4c62842cbc28c9cfc13622c0b151ee2b", "kind": "handoff-candidate", "object_sha256": "76b82493c1d55fbcd7a666321323f41ae2cc74f3d7c09521cc78967db7ceb5ef", "derivation_handoff": "docs/handoffs/RECOVERY-CI-POSTGRES-RUNTIME-012.md", "derivation_handoff_sha256": "a84f958ca5fef2c39ccb3a6fe4a37c5c68769946228028c3409ed7b896264d07" }
+    {
+      "commit": "4ae7e95f0af88e21dde526be44443846a8d8d9a6",
+      "kind": "erratum-source",
+      "object_sha256": "9a3553b08b05f05ff2a9002588193a17d5596443c259d9b57dc9ca9cc125cdc5",
+      "derivation_handoff": "docs/handoffs/RECOVERY-CI-GATES-001.md",
+      "derivation_handoff_sha256": "281932b7f4fd3790f1178082107f97db0f66838d9331b1ab6e87074e823915ff"
+    },
+    {
+      "commit": "e7c81bf1a38726e0ac8ebf84c969219c21758aea",
+      "kind": "erratum-source",
+      "object_sha256": "38549e79ede06671d378295f27086d68bc3bb8fd0393d6376fa574ebaa7733de",
+      "derivation_handoff": "docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md",
+      "derivation_handoff_sha256": "47e35dbcb64512e2793f421fb8619617a913df7c3d45fb670ac554ec2919352e"
+    },
+    {
+      "commit": "01f3808f892598c72e43b97f494f9dc2442fe5c6",
+      "kind": "handoff-candidate",
+      "object_sha256": "b4475e60a67f46eaa67f124dd5a6d3cd224004cb0aa6ca3d996ce53e87981abf",
+      "derivation_handoff": "docs/handoffs/RECOVERY-NPM-VALIDATE-002.md",
+      "derivation_handoff_sha256": "8b91de7a63768d6ca3b977e564856d2231ea0e250fe0544e284c0acd09101b06"
+    },
+    {
+      "commit": "06b00c5942f094ff8b22c7b33061503bc0fef445",
+      "kind": "handoff-candidate",
+      "object_sha256": "d0c511d3699e8116d6d6ca59c9c629fb629859d14ad67e6c863dc4c04b507ff8",
+      "derivation_handoff": "docs/handoffs/RECOVERY-CI-LINUX-COMPAT-010.md",
+      "derivation_handoff_sha256": "18d26907b145c2090c41a5584bfd34a4ea92e3069ccad6bafdaa06e177503210"
+    },
+    {
+      "commit": "22d48450768e6fac0bc692178dc59e724037ce6d",
+      "kind": "handoff-candidate",
+      "object_sha256": "db46cdfe4464c927bb2a552dfbc42c4bfd3f4c9bb56d6312c8431a2f52726eca",
+      "derivation_handoff": "docs/handoffs/TASK-0111.md",
+      "derivation_handoff_sha256": "ba7c59a6968c941e1c34c5fecf2ff1e0d035ecab7b26fc7869412591c7cff51e"
+    },
+    {
+      "commit": "25945425853b4082c3fd78acc487f64caa4f75e1",
+      "kind": "handoff-candidate",
+      "object_sha256": "c1ca520c0c4faedb1b35775521b69b5fbce215f055c6cb9f75aaf6aa31b56b31",
+      "derivation_handoff": "docs/handoffs/RECOVERY-CI-PG-NODE-RANGE-022.md",
+      "derivation_handoff_sha256": "13eb1561d5308f1c0ef4ab735491666dd46eb168fe82f23658403b43b0235c96"
+    },
+    {
+      "commit": "286cbc59a54bf28e4a802e345bb295db9f98aaa4",
+      "kind": "handoff-candidate",
+      "object_sha256": "b917f0237a730c8cd2cc0b299397d1ec1f6135b147c73f81670d1715a14177a3",
+      "derivation_handoff": "docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-002.md",
+      "derivation_handoff_sha256": "61d92a78842757f4c5216a6ed7a2a8ecabe2748992d01516f442d9f9d547558a"
+    },
+    {
+      "commit": "287b3894147080cb067ad2254869a2cabf998fce",
+      "kind": "handoff-candidate",
+      "object_sha256": "40b096a66004211ef00bb0bd95e85255cc186818051fc034b7868b510ccf8bd5",
+      "derivation_handoff": "docs/handoffs/RECOVERY-CODEOWNERS-ROUTING-035.md",
+      "derivation_handoff_sha256": "4c0d7e8d51a43e70e9eccb46b09af18841bd19af67b1143871f4536dec4afd90"
+    },
+    {
+      "commit": "2ec8213fe000a0b78c68c588eb10768a39116be3",
+      "kind": "handoff-candidate",
+      "object_sha256": "d5927c1663f7b6102aa76d3b7995660c60a49a2177465bd9a25450b33080213c",
+      "derivation_handoff": "docs/handoffs/RECOVERY-QUEUE-VALIDATION-001.md",
+      "derivation_handoff_sha256": "47e35dbcb64512e2793f421fb8619617a913df7c3d45fb670ac554ec2919352e"
+    },
+    {
+      "commit": "2f597c85c568c08679df48fe55afc109006225df",
+      "kind": "handoff-candidate",
+      "object_sha256": "f6a11883a5ac836d7bd954bea2254349b2ebd7fc320920ab4e92fea823121d88",
+      "derivation_handoff": "docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-001.md",
+      "derivation_handoff_sha256": "f58631c1a865a382353446775ae8edc20e18a448c36f1af84f7324be6a2f20c8"
+    },
+    {
+      "commit": "37662e41e7753c7f63ee63bc21a2e109a2e98ea1",
+      "kind": "handoff-candidate",
+      "object_sha256": "0be801a0c73db9d7aeb693837162ff9e52a511431467e88a524cc8cb9ef4dc2d",
+      "derivation_handoff": "docs/handoffs/RECOVERY-WORKFLOW-NODE-PIN-002.md",
+      "derivation_handoff_sha256": "d896637cc21b6748718c4efe23182aade399e4972d9d4dee4d63864efebfd73b"
+    },
+    {
+      "commit": "3aaf39cc167dce07cbdf013601830670532566ac",
+      "kind": "handoff-candidate",
+      "object_sha256": "8f7e603b8828ba2f018b5e38425f709776396a06778cfca6fcce752dfe668fd2",
+      "derivation_handoff": "docs/handoffs/RECOVERY-TRACEABILITY-VALIDATOR-008.md",
+      "derivation_handoff_sha256": "da30b10ff8a88f83e9fcfb8bd0ab511314f63a98845f7b8ea2061f05c539457a"
+    },
+    {
+      "commit": "3e112eb12605b653832be597888091833c18c652",
+      "kind": "handoff-candidate",
+      "object_sha256": "1c185674d418d77700ece3a2b88cfef46ad40e278d06002c920b34eb03a340cc",
+      "derivation_handoff": "docs/handoffs/RECOVERY-HISTORICAL-ERRATA-VALIDATOR-008.md",
+      "derivation_handoff_sha256": "3d537cf77a3771bf6476a9cf5934d745e8fe2f9951884bc2428347d5dc266434"
+    },
+    {
+      "commit": "405763503fc1c9bbdd3d89ee27f70d451412f80b",
+      "kind": "handoff-candidate",
+      "object_sha256": "20a6d34c0bac20d1be06b0c24b99a849f144ae377ebe66f54cfcd7bae900a560",
+      "derivation_handoff": "docs/handoffs/RECOVERY-TRACEABILITY-BUNDLE-TOPOLOGY-031.md",
+      "derivation_handoff_sha256": "9ed8f14d0d05d048ce07ef6e4a8c089e0ff8e2db3ac566b0272a948034e10f83"
+    },
+    {
+      "commit": "4ca3494dd2b19050646061ca5ce44f28e2cfca15",
+      "kind": "handoff-candidate",
+      "object_sha256": "f0ad2257a799b0e992b9872494b7c25664b4151151da21a24594c25be6ce3aab",
+      "derivation_handoff": "docs/handoffs/RECOVERY-MASTER-TRACEABILITY-002.md",
+      "derivation_handoff_sha256": "2b09f6b9b00c283060d901b22b246f01d4ac89bbe4fe7be4b070042b77f347e7"
+    },
+    {
+      "commit": "5e6990cf403d74fc630499f57d0d9252c0fc46be",
+      "kind": "handoff-candidate",
+      "object_sha256": "fc4b02c6991c30068cb3e999c3b950e62bb0aa703456481a9fcefa576ff92fb1",
+      "derivation_handoff": "docs/handoffs/PRODUCTION-ROADMAP-001.md",
+      "derivation_handoff_sha256": "21935f7035154b53a16ac0b13d1bdfc0859f3d31668737f3ab493acbd95ac6e3"
+    },
+    {
+      "commit": "64782c157a50e02146cdad45049b8333033979c6",
+      "kind": "qa-review-evidence",
+      "object_sha256": "89ac5e56fc43ee3ddea7c857547373bbe7f3aedc2b092f462264e342bfee22ac",
+      "derivation_handoff": "docs/reviews/RECOVERY-TASK-0002-CLOSURE-002-QA.md",
+      "derivation_handoff_sha256": "1f5c249334fd8638084da8790168f422e24ab4009351bcdd2921e90bbbebc00e"
+    },
+    {
+      "commit": "73e84f6b11080c281beeef02146385879fafeda5",
+      "kind": "handoff-candidate",
+      "object_sha256": "271278a7b006f101b810762b0fd3f765b7dfae16c55adaea249bf07dd644212a",
+      "derivation_handoff": "docs/handoffs/RECOVERY-PUBLIC-GOVERNANCE-002.md",
+      "derivation_handoff_sha256": "2c8f5845ee271a718098372e670215b87069da999b057d8570d4bf46af35e655"
+    },
+    {
+      "commit": "78e0de564d9f4dd5e3ba43ba81001b486dcc63f4",
+      "kind": "handoff-candidate",
+      "object_sha256": "c468342da34d1e8fe375775857d4fa0ae7e7a854ec0b261a6897a6fd6d42701a",
+      "derivation_handoff": "docs/handoffs/RECOVERY-QUEUE-FREEZE-008.md",
+      "derivation_handoff_sha256": "64023965e27754b6f9245e5937af1b71f4bc8694e91d10932b7edf49dd43e964"
+    },
+    {
+      "commit": "79de8cbc179c235a62db126f0c091b6cfa8687ae",
+      "kind": "handoff-candidate",
+      "object_sha256": "d8d7155d0186e7c47039570cfd7751a5e33e660aaa1b7d9b88cb4b2731869e33",
+      "derivation_handoff": "docs/handoffs/RECOVERY-WORKFLOW-TRIVY-PIN-002.md",
+      "derivation_handoff_sha256": "59d678f9c062d08e4d29664b1fd2a204d681e467e726dd8dffc61d5630320cec"
+    },
+    {
+      "commit": "7a1ea6483ee6ba09dd5ed857e868987446184f7d",
+      "kind": "handoff-candidate",
+      "object_sha256": "bd9b35b6bbfb4bf91c576937e31bab8524c0fdb54bcb239ee3b0953fba90590a",
+      "derivation_handoff": "docs/handoffs/RECOVERY-MASTER-TRACEABILITY-003.md",
+      "derivation_handoff_sha256": "688fe364001fe84523c9d98404887855a741f03f7735ee1101a569aee6693ee9"
+    },
+    {
+      "commit": "8c17dbf33d5507a506885805b984d303d9d3793a",
+      "kind": "handoff-candidate",
+      "object_sha256": "45179df466446c19f7333eda242c952197c4d3b3f85359c97f57cf09f2cea29c",
+      "derivation_handoff": "docs/handoffs/RECOVERY-QUEUE-PRODUCTION-BOUNDARY-001.md",
+      "derivation_handoff_sha256": "fcfb690be7f2e31afab09307c88040d7d5960b559bc9ac67e8213185ace45c0e"
+    },
+    {
+      "commit": "90208c69504893c7a01cbcd51a8eb35caf21f5e3",
+      "kind": "handoff-candidate",
+      "object_sha256": "b82786655c237bdd6ed8fad7d2e543b6de8846a0d96f53898194211c97e26407",
+      "derivation_handoff": "docs/handoffs/RECOVERY-CI-GATES-001.md",
+      "derivation_handoff_sha256": "281932b7f4fd3790f1178082107f97db0f66838d9331b1ab6e87074e823915ff"
+    },
+    {
+      "commit": "9fc2d266dfbb5e291ec4c0fc25dc7c1e9d2ae722",
+      "kind": "handoff-candidate",
+      "object_sha256": "af0f02d5d86e295c6a3892ca1fb5c95d1e64f5661817954b9c122ca0ebc816f6",
+      "derivation_handoff": "docs/handoffs/RECOVERY-QUEUE-RECLASSIFICATION-007.md",
+      "derivation_handoff_sha256": "9a2cfc55767a13ae5439d00d8ef19f02d9862692dc4616a47a830da2eff5e4ca"
+    },
+    {
+      "commit": "adc80e1c6e783258afccaaf0758e8e6e96f4ea60",
+      "kind": "handoff-candidate",
+      "object_sha256": "63e5bfc1dc64da43a5909f65131e27656e094262bc925333a4f2fb63f806b791",
+      "derivation_handoff": "docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-003.md",
+      "derivation_handoff_sha256": "7330f5b146edefdef1bac6bfa0cad5c87bc8179be22cdeb9e095858807322f54"
+    },
+    {
+      "commit": "af692c1864cba2291ec3386ca18c0066305b5c00",
+      "kind": "handoff-candidate",
+      "object_sha256": "51e6a26f4b160d597bacefa0a6bf0136c53ed8d51a102166d0c957d37ef3cfef",
+      "derivation_handoff": "docs/handoffs/RECOVERY-QUEUE-PRODUCTION-BOUNDARY-HANDOFF-002.md",
+      "derivation_handoff_sha256": "dc1b15db094d0aa2788b5b6311ff9eed51aa45518ad92ead29dad9d9fa2fb455"
+    },
+    {
+      "commit": "b1bec9e38589a93842f0078e000c03c3e9684490",
+      "kind": "handoff-candidate",
+      "object_sha256": "9b17289e19f15347f716b5520b5d7b044b6351adf1848b432dc9d83a450d116c",
+      "derivation_handoff": "docs/handoffs/TASK-0123.md",
+      "derivation_handoff_sha256": "3723f3d5135eb1cf64300243f0bcf83e9f32344e6ac1584f0035aa0f16120a6b"
+    },
+    {
+      "commit": "b6b541b594c84c5c3f7ef5082d58d8656a7f9945",
+      "kind": "handoff-candidate",
+      "object_sha256": "1a5c8de0647e02ee18a701837042f2996a7ee387fbecb751df63199a70f69db5",
+      "derivation_handoff": "docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-005.md",
+      "derivation_handoff_sha256": "0baed64f5f9bfde5031b45fb0dacc05a96a7a1ad5fd7f0d5a4cda3492e7078f0"
+    },
+    {
+      "commit": "ba67ccd8274002badb47d00a0ec8b288b1595570",
+      "kind": "handoff-candidate",
+      "object_sha256": "cf9212595edb4f701b15ab9b7dfee3c3ec02ba5b5e96f07f7a77e9a88878ad8c",
+      "derivation_handoff": "docs/handoffs/RECOVERY-CI-HISTORY-FIXTURE-011.md",
+      "derivation_handoff_sha256": "16757bcbbd7f04e0a4d6e380120992944ea2b783be6e0eeb0a261f77fe90246a"
+    },
+    {
+      "commit": "c3776d718da1e175c379e0ffa881e7597662bc10",
+      "kind": "handoff-candidate",
+      "object_sha256": "a4b8a3f47a15a0e53d777ab18e0b9d279b16daa931508166cd17096be232ea45",
+      "derivation_handoff": "docs/handoffs/RECOVERY-TRACEABILITY-HISTORY-TOPOLOGY-029.md",
+      "derivation_handoff_sha256": "72e0a59d4399667a82cd3d4a6a50f19f661889f61bb6f4e8833c7dc996e26259"
+    },
+    {
+      "commit": "c6afa07e4f5bbc4fa85fde1172e6944ac07374dd",
+      "kind": "handoff-candidate",
+      "object_sha256": "8138f72a066cf627e9cec7a9d671b51cfc53662d7f0ae00fd7c4dcebd6d264d0",
+      "derivation_handoff": "docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-002.md",
+      "derivation_handoff_sha256": "eede641544a016bd617943388fa1d0da119af35c810556567e7f530dbcf4349a"
+    },
+    {
+      "commit": "d2e6ddb4591a2d32b12abdc080aff679036edf10",
+      "kind": "handoff-candidate",
+      "object_sha256": "fb93749118a9cadadce0f13b03d19f55ef8e3725d0a6b11ec5253b7fb443f08b",
+      "derivation_handoff": "docs/handoffs/RECOVERY-HISTORICAL-TRACEABILITY-ERRATA-PARSER-004.md",
+      "derivation_handoff_sha256": "32cbb49b1516361d246be39b7c038603d95cf728cfbd7f3ab26312a8c6a4ef6a"
+    },
+    {
+      "commit": "dc3e202cb0043d46da919a449c6115e718268d2c",
+      "kind": "handoff-candidate",
+      "object_sha256": "cf65968a6564f5ebb78988a4b51da33345759ea27adb2447ff89f9fe7f6a5e68",
+      "derivation_handoff": "docs/handoffs/RECOVERY-MASTER-TRACEABILITY-004-QA.md",
+      "derivation_handoff_sha256": "cfcccf1867252af3f834776b043eb51340947d14065e3dc020a67d0e6722fb06"
+    },
+    {
+      "commit": "dbfd2ffad3da6e9cfc4c2be75f987eefb27744f0",
+      "kind": "handoff-candidate",
+      "object_sha256": "2cb9f5ed8235e97674bae1ce8c55d64313c51016bf7d79784f5caaf9eb5b489f",
+      "derivation_handoff": "docs/handoffs/RECOVERY-FORMAT-DRIFT-033.md",
+      "derivation_handoff_sha256": "c4c7096674cae24aeadd6668dc188828981ef55a4f98e2f5afdfe692c2d164e5"
+    },
+    {
+      "commit": "ed83b582d161c3d9d2a13fc7098e56e776bb0f3e",
+      "kind": "qa-review-evidence",
+      "object_sha256": "ef42a9237d3b45bc27dd88d7846e84a4fd89864fcb887c413ca22eddb5f2d3d1",
+      "derivation_handoff": "docs/reviews/RECOVERY-TASK-0007-CLOSURE-001-R3-QA.md",
+      "derivation_handoff_sha256": "597357d694eb8b047e3401f62db8d58dc9f0e88b5c891d827f6092edb3dcf02f"
+    },
+    {
+      "commit": "ea36f0c5e99d36b38225ff976245d06a753f9ed9",
+      "kind": "handoff-candidate",
+      "object_sha256": "fb0d76b078dac4d97b00546a7f1e44d6f31353948cc4c63a4129831cac260fe8",
+      "derivation_handoff": "docs/handoffs/RECOVERY-MASTER-TRACEABILITY-004.md",
+      "derivation_handoff_sha256": "d3d8049586b3b7e075bb22cacf284a746686c04f49bac0406a0da0f04a77c33f"
+    },
+    {
+      "commit": "eb1fd64c4c62842cbc28c9cfc13622c0b151ee2b",
+      "kind": "handoff-candidate",
+      "object_sha256": "76b82493c1d55fbcd7a666321323f41ae2cc74f3d7c09521cc78967db7ceb5ef",
+      "derivation_handoff": "docs/handoffs/RECOVERY-CI-POSTGRES-RUNTIME-012.md",
+      "derivation_handoff_sha256": "a84f958ca5fef2c39ccb3a6fe4a37c5c68769946228028c3409ed7b896264d07"
+    }
   ]
 }
