@@ -48,6 +48,14 @@
 - At the same candidate, validation PASS (360 Markdown, 65 JSON, 5 YAML); format PASS (48 pinned-Prettier files plus structural closure checks); lint, queue, traceability, and audit (zero vulnerabilities) PASS; strict fsck PASS with preserved dangling objects only; diff check PASS.
 - The final result-binding handoff-only commit is the QA candidate. Focused, TASK-0066, accessibility, validation, format, diff/scope, and clean-head checks are rerun at that exact final SHA; the complete full-suite result remains bound to its immediate handoff-containing parent, with this sole-file descendant recording the result and changing no executable behavior.
 
+### Preserved independent R2 rejection and corrective-forward R3
+
+- Fresh independent QA/Security rejected R2 candidate `9a3b23f40bdd2a6bf75a8c74deba5011b6a30ab7`; preserved review `docs/reviews/RECOVERY-TASK-0007-CLOSURE-001-QA.md` has SHA-256 `5371687d6f88d6ebeced3a94966a8ce0423854dae2b80258cf7ad64bc732d0a0`. It proved `data: [{}]` was incorrectly accepted as an empty fabricated result and C0/C1 control input reached fetch. The rejection remains unchanged at this candidate.
+- Corrective implementation `5dc68c891eb2337f98b79f2f9a180663f3ef093d` validates request strings before fetch: bounded well-formed Unicode, no C0/C1 or bidi controls, and base64url-only bounded cursors. Invalid query/cursor input makes zero network calls.
+- Response validation is descriptor-based, accessor-free, proxy-safe, symbol-free, closed-shape, and atomic. It validates the complete top-level/page/item schema, canonical UTC date, uppercase currency, decimal amount, versions, bounded identifiers/descriptions/evidence arrays, exact page limit, and every item before replacing or appending state. Missing, wrong, extra, accessor, proxy, Symbol, BigInt, sparse, circular, oversized, control-bearing, or mixed-validity values produce one generic unavailable state. Required values are never fabricated; only a fully valid item is projected to the approved ID/date/currency/evidence presentation fields.
+- A failed continuation preserves existing rows, cursor, and retry cursor; malformed first-page responses publish no partial data; corrected retry succeeds. Existing stale-response suppression, AbortController cancellation, forbidden/stale generic messages, raw-value redaction, and TASK-0066 source binding remain intact.
+- R3 focused before this handoff commit: workbench plus TASK-0066 PASS, 28/28, 0 fail/skip, 185.7 ms. Accessibility capability PASS. Exact handoff-containing full suite and remaining gates are pending.
+
 ## Limitations, rollback, independent review
 
 - This is a dependency-free synthetic-DOM/reference UI and contract adapter. It is not a deployed console, real API host, OpenSearch/PostgreSQL integration, production OIDC/session, browser E2E, assistive-technology certification, load/SLO evidence, or production operation.
