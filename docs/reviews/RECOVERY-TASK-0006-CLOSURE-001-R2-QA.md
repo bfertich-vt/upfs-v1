@@ -1,0 +1,40 @@
+# Independent QA/Security Review: RECOVERY-TASK-0006-CLOSURE-001 R2
+
+## Verdict
+
+**REJECT** exact candidate `6a8a50d88120ee9d18372d2d4a9561cb14f7a1fc`. R2 fixes the preserved R1 BigInt/circular serialization, malformed tenant-scope, and misleading rebuild-envelope defects, but every public method still throws a raw caller-controlled exception when an actor claim is exposed through a throwing nested getter. This violates the required bounded authentication denial and fail-closed API boundary. The reviewer changed no implementation, test, task, handoff, queue, matrix, contract, or specification.
+
+## Reviewer independence and provenance
+
+- Role: Independent QA/Security under `agents/QA_SECURITY.md`.
+- Reviewer thread: `/root/qa_task_0006_closure_r2`; worktree `C:\source\upfs-qa-task-0006-closure-r2`; branch `qa/task-0006-closure-r2`.
+- Candidate `6a8a50d88120ee9d18372d2d4a9561cb14f7a1fc`; tree `e121d2b0995a630a39f2ea325e453299cc415a8a`; parent/corrective implementation `2e9999f1b1eba90ebedc2bd6d93f9141d853423c`.
+- Preserved rejected candidate `605b16fd830441272c323ff8a6f6f23d5cc202bb`; R1 review commit `8e1b0674cd5f4f788f57cdd8192fd2585cda67c7`; unchanged R1 artifact digest `690730754a4452be78b88e0aa95dccb55ff0771879f9b3d90f12aa4dcb82557c`.
+- This reviewer did not author or remediate R1 or R2 and began from the exact committed candidate in a distinct, initially clean worktree. The R2 diff from the preserved rejection contains only `services/transaction-projection.mjs`, `services/transaction-projection.test.mjs`, and `docs/handoffs/RECOVERY-TASK-0006-CLOSURE-001.md`.
+
+## Governing inputs loaded before review
+
+- `AGENTS.md` `9d8465020d6f658294fba5a20462e62fdf2d67cf6e7d74fd665f7d753f86bac1`; `agents/QA_SECURITY.md` `6cd277c714ad66f82e46f57cefc769ae6d6fbb3b082b77a8c8b3d9a9b3d00cc0`; `agents/SCHEMA_SEARCH_AI.md` `8b05d11c936e7d0eac9ea63cf5b34cc594b620205292054bfcd6e01046050d9d`.
+- Constitution `e2225f3b041925d19dca4370cf0a8cdfaf677f0b18793ad31199be3b2e454f73`; worktree rules `f96d64f56121b250069da37cf1c93eb6b05d91622f5e09e1f907629a6d7d72d1`; handoff template `4768090523a85bc8528d6604c01cfc43ce4567bc361a7075551d6521e28a9de4`.
+- Recovery task `b709cd8cfe3641e960bedac8879bc2c13cecb1d0f6c4838e6a1c422a3c7cc5c4`; candidate handoff `52400931591b6e0f4b8fa4c1a1ed488a3604838b674507cfbfde4e721f1e4580`; historical handoff `56fb6a2997cf04c285ffd6d5b2e53aaec978714859e7cb7e5da2b99a0fc2bed0`.
+- Master plan `2c04b5d43422ede9fd1900ada5005062dfe71a8a91829625ac1d9701c108fdec`; queue `7cd5264f889857ecb628154de09e97db677825daaaa43ccdfe120d06275ddefc`; closure matrix `b9c016fec8e8a4fde1b8932879646de7b365ddbebd339e404ce1e030e394761d`.
+- Architecture `4cf1bb34221ef40bab4410426d6e0cda9871e953fe39d0ac2f56d238af08fdc6`; canonical model `5c874d646cae8693a48a5f42de75249c5007c1a7bd296da7fd29bd1875cf8ed0`; identity/tenant model `c47f97669c5cfb5d1ad984139b2fb85dd4f503fb750a657d4585c5b47f1b2adf`; API standards `23f6694cc82942cdb59ba9f9238dc8496000855e2d8bf5c583550c24760da16b`.
+- CI/CD `f2e59231f95785d2990cabc64d1030f7d312bf86ae96917eb81d86c663501cfb`; security baseline `53699772fd569cabb0b0ab31c21b59e10fdb538fde1a38952ce07b2305220add`; threat model `716160eddf02484faa73c778138fdbd2ac8614ed2cde63e20665a68b7e4eeb9f`; testing `349b29981df7101760a2a63cfc5d05732e3d8afa0d47e3c3b123d1305bb04172`; documentation platform `79097cb4fb008f43a58eda063a5cee2536a87b31d52cf7626283fda698e9921d`.
+- Projection OpenAPI `a72153d9ab4956288f07693d27e6d2ee9ba31eb8897742db67b80fb5518603f7`; response schema `b3098605e8809aa5757282d65ffedc7f80031644e61a132d23f5510bf55589dd`; R2 service `b1b71b066ad78f48803ac0c6244e6ea0874eb8b4aef31caebcb6a0aa7a6881f7`; R2 tests `c8e95565cf1828815580db2d34c7a5785d4edda63b6ea4874fe3a49dd40cfdd2`.
+- Registry/service tests `79c29171f8422d975be57cd05f4a8f9fbc2c934c039c5b0072ff82a5e93e886d` / `6851df781d4f69324f98c4d5298a08a5c995efc83931bd6cdb83d925d09c7a54`; outbox/service tests `9831d498e05a0b9597abc7f11c50e41e9ee1a2a3d38c2e1801fafb55bdcd636c` / `2e8b2baec66c55336203177eb35396b38041558d1e3d6e16407e7105f23567c9`.
+
+## Independent tests and findings
+
+- R1 reproduction against `605b16f`: an inline Node probe independently reproduced raw `TypeError` from BigInt and circular reconciliation extras; successful HTTP-style `200` search results for Symbol, BigInt, and object tenant IDs with an always-true authorization adapter; and malformed BigInt rebuild misclassified as `503 projection_rebuild_failed`.
+- R2 focused compatibility: `node --test --test-concurrency=1 services/transaction-projection.test.mjs services/transaction-registry.test.mjs services/transaction-outbox.test.mjs` — **PASS**, 38/38, 0 failed/skipped, 314.7 ms test duration and approximately 0.6 seconds command duration. This covers the committed BigInt, Symbol, function, circular, transaction getter, accessor-array, malformed tenant, authorization, clock/request-ID, retry, mutation, cursor, replay, reconciliation, rebuild/alias rollback, audit redaction, registry, outbox, and canonical compatibility cases.
+- New independent R2 negative probe: construct an actor with a data `subject` and enumerable accessor `issuer` whose getter throws `Error('nested actor getter')`. Invoke `consume`, `reconcile`, `rebuild`, and `search` separately. **All four throw the raw Error** rather than returning the method's bounded authentication or invalid-input envelope. Authorization calls remain zero and documents/audit remain empty, so state is preserved, but API availability and non-disclosing boundary behavior fail.
+- Root cause: `safeInput()` validates only descriptors of the top-level request. `safeActor()` then directly evaluates `actor.issuer` and `actor.subject` outside a try/catch and without requiring a plain, accessor-free actor record. The committed throwing-getter test covers only a getter on the top-level request object and therefore misses this nested claim boundary.
+- `git diff --check` passed and the candidate was clean before this review. Full `npm test`, validation, format/lint/queue/traceability/audit/fsck, and final clean-head gates were not rerun after the deterministic acceptance-blocking reproduction; passing broad gates cannot override a directly reproduced authentication-boundary defect.
+
+## Security disposition, limitations, and corrective-forward
+
+- Severity: **High** availability and API-boundary defect. Caller-controlled actor shapes can escape a raw exception consistently across all public operations before authorization. It does not mutate projection/audit state in the reproduced case, but it violates deny-by-default structured errors and can crash an unguarded API request path.
+- Other R2 controls appear effective under the focused suite: malformed tenant values are denied before authorization/state, serialization hazards return operation-specific `400` envelopes, corrected retries work, canonical truth remains unchanged, cursor/replay/concurrency/failure/rollback behavior remains bounded, and payload-free audit/redaction rules remain covered.
+- Classification remains reference-only. No real OpenSearch, Redis, PostgreSQL/RLS, deployed API, production OIDC, managed infrastructure, load/SLO, or production-operation evidence exists.
+- Required corrective-forward: in a separate Schema/Search/AI commit, make actor validation exception-safe and require an accessor-free plain record with bounded primitive string claims before authorization or state access. Add nested actor accessor/proxy/non-plain/symbol-key probes across all four public methods and prove stable non-disclosing envelopes, zero authorization/adapters/state/audit mutation, and corrected retry. Preserve both rejection artifacts, rerun focused and full required gates, and assign a fresh QA/Security reviewer to the new exact committed candidate.
+- Rollback: preserve R1/R2 history and reviews. Do not push, promote, activate TASK-0006, or begin TASK-0007 from this rejected candidate. Use only a separate corrective-forward candidate and fresh independent review; never weaken validation or tenant boundaries.

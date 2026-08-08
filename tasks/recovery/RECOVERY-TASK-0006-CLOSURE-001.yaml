@@ -1,0 +1,74 @@
+task_id: RECOVERY-TASK-0006-CLOSURE-001
+title: Revalidate OpenSearch projection, reconciliation, and search API reference slice
+type: historical-capability-closure
+status: in_progress
+assigned_role: Schema/Search/AI
+historical_task: TASK-0006
+dependencies:
+  - TASK-0005
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/queue.yaml
+  - docs/handoffs/TASK-0006.md
+  - specs/03_architecture/system_architecture.md
+  - specs/04_schema/canonical_model.md
+  - specs/05_apis/api_standards.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/10_security/threat_model.md
+  - specs/12_testing/test_strategy.md
+  - specs/13_docs/documentation_platform.md
+  - contracts/openapi/projection-search-api.yaml
+  - contracts/schemas/transaction-search-response.schema.json
+allowed_files:
+  - services/transaction-projection.mjs
+  - services/transaction-projection.test.mjs
+  - contracts/schemas/transaction-search-response.schema.json
+  - tasks/recovery/RECOVERY-TASK-0006-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0006-CLOSURE-001.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/handoffs/TASK-0006.md
+  - specs/**
+  - workflows/**
+  - package.json
+  - package-lock.json
+  - accepted TASK-0001-TASK-0005 evidence and implementation
+  - TASK-0007+
+  - TASK-0112-TASK-0123
+acceptance_criteria:
+  - Deterministic projection and search are tenant-scoped and preserve canonical/provider truth as immutable input.
+  - Authentication denial and cross-tenant attempts disclose no documents and mutate no projection state.
+  - Event replay, out-of-order delivery, same-version mutation, and stale cursors fail closed or are safely idempotent.
+  - Reconciliation surfaces drift without changing canonical truth.
+  - Rebuild stages a replacement projection and promotes its alias atomically; indexing or alias failure leaves the prior projection available and creates an audit record.
+  - Cursors are signed, query- and tenant-bound, bounded, and invalidated after projection mutation.
+  - Search results redact internal hashes and projection timing metadata.
+  - Contract, generated artifact, and documentation drift remain fail-closed.
+required_tests:
+  - node --test --test-concurrency=1 services/transaction-projection.test.mjs
+  - node --test --test-concurrency=1 services/transaction-projection.test.mjs services/transaction-registry.test.mjs services/transaction-outbox.test.mjs
+  - npm test
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run queue:check
+  - npm run traceability:check
+  - npm run lint
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+security_requirements:
+  - Derive tenant scope only from verified actor authorization and the requested tenant boundary.
+  - Reject mixed-tenant canonical inputs instead of filtering or disclosing them.
+  - Bind cursor integrity to tenant, query, projection generation, and offset.
+  - Keep canonical PostgreSQL truth conceptually authoritative; projection reconciliation and rebuild cannot mutate it.
+  - Audit injected indexing and alias-promotion failures without recording financial payload content.
+classification_limit: Proven reference implementation; no real OpenSearch, Redis, PostgreSQL, deployed API, managed infrastructure, or production-operation claim.
+rollback: Preserve historical and rejected evidence; use a reviewed revert before release or a separate corrective-forward commit after integration; never weaken validation.
+handoff: docs/handoffs/RECOVERY-TASK-0006-CLOSURE-001.md
