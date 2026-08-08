@@ -77,6 +77,26 @@ class FakeElement {
 }
 globalThis.document = { createElement: (tag) => new FakeElement(tag) };
 const root = () => new FakeElement("main");
+const transaction = (id, overrides = {}) => ({
+  id,
+  tenant_id: "tenant-authorized",
+  account_id: "account-redacted",
+  amount: "1.00",
+  currency: "USD",
+  posted_at: "2026-01-01T00:00:00Z",
+  schema_version: "1.0.0",
+  evidence_refs: ["evidence-safe"],
+  source_version: 1,
+  projection_version: "1.0.0",
+  ...overrides,
+});
+const response = (data = [], nextCursor = null) => ({
+  request_id: "request-safe",
+  data,
+  page: { limit: 25, next_cursor: nextCursor },
+  consistency: "eventually_consistent_projection",
+  watermark: 4,
+});
 
 test("search API uses the supported endpoint, bounded request, and no tenant shortcut", async () => {
   let request;
@@ -87,12 +107,7 @@ test("search API uses the supported endpoint, bounded request, and no tenant sho
       return {
         ok: true,
         status: 200,
-        json: async () => ({
-          data: [],
-          page: { next_cursor: null },
-          consistency: "eventually_consistent_projection",
-          watermark: 4,
-        }),
+        json: async () => response(),
       };
     },
   });
@@ -172,7 +187,7 @@ test("workbench renders loading, empty, and safe text states with keyboard contr
   input.value = "coffee";
   host.querySelector("form").listeners.submit({ preventDefault() {} });
   assert.equal(host.querySelector("button").disabled, true);
-  resolve({ data: [], page: { next_cursor: null } });
+  resolve(response());
   await Promise.resolve();
   await Promise.resolve();
   assert.equal(
@@ -187,19 +202,7 @@ test("workbench renders loading, empty, and safe text states with keyboard contr
 test("load-more failure preserves existing rows and retries the same cursor", async () => {
   const calls = [];
   const responses = [
-    {
-      data: [
-        {
-          id: "1",
-          posted_at: "2026-01-01",
-          amount: "1",
-          currency: "USD",
-          account_id: "a",
-          evidence_refs: ["<safe>"],
-        },
-      ],
-      page: { next_cursor: "next" },
-    },
+    response([transaction("1", { evidence_refs: ["<safe>"] })], "next"),
   ];
   const api = {
     search: async (args) => {
@@ -210,19 +213,12 @@ test("load-more failure preserves existing rows and retries the same cursor", as
           status: 503,
           code: "unavailable",
         });
-      return {
-        data: [
-          {
-            id: "2",
-            posted_at: "2026-01-02",
-            amount: "2",
-            currency: "USD",
-            account_id: "a",
-            evidence_refs: ["ev-2"],
-          },
-        ],
-        page: { next_cursor: null },
-      };
+      return response([
+        transaction("2", {
+          posted_at: "2026-01-02T00:00:00Z",
+          evidence_refs: ["ev-2"],
+        }),
+      ]);
     },
   };
   const host = root();
@@ -258,7 +254,7 @@ test("forbidden and cancellation do not allow stale responses to mutate state", 
       await new Promise((r) => {
         resolve = r;
       });
-      return { data: [{ id: "stale" }], page: { next_cursor: null } };
+      return response([transaction("stale")]);
     },
   };
   const host = root();
@@ -306,24 +302,15 @@ test("workbench strips tenant, account, amount, and description fields from obse
   const workbench = createSearchWorkbench({
     root: host,
     api: {
-      search: async () => ({
-        request_id: "request-safe",
-        consistency: "eventually_consistent_projection",
-        watermark: 3,
-        data: [
-          {
-            id: "tx-1",
+      search: async () =>
+        response([
+          transaction("tx-1", {
             tenant_id: "other-tenant-secret",
             account_id: "account-secret",
             amount: "999.99",
             description: "private description",
-            posted_at: "2026-01-01T00:00:00Z",
-            currency: "USD",
-            evidence_refs: ["evidence-safe"],
-          },
-        ],
-        page: { next_cursor: null },
-      }),
+          }),
+        ]),
     },
   });
   await workbench.search("coffee");
@@ -355,6 +342,134 @@ test("malformed response fails closed without rendering server or financial payl
   );
 });
 
+test("complete response validation rejects malformed items atomically and corrected retry succeeds", async () => {
+  const malformed = [
+    {},
+    transaction("missing", { posted_at: undefined }),
+    transaction("date", { posted_at: "2026-02-30T00:00:00Z" }),
+    transaction("currency", { currency: "usd" }),
+    transaction("amount", { amount: 1n }),
+    transaction("extra", { provider_secret: "must-not-leak" }),
+    transaction("evidence", { evidence_refs: ["x".repeat(2049)] }),
+  ];
+  for (const item of malformed) {
+    const calls = [];
+    const workbench = createSearchWorkbench({
+      root: root(),
+      api: {
+        search: async () => {
+          calls.push(true);
+          return response([transaction("valid"), item]);
+        },
+      },
+    });
+    await workbench.search("coffee");
+    assert.equal(workbench.snapshot().status, "error");
+    assert.deepEqual(workbench.snapshot().data, []);
+    assert.equal(
+      workbench.snapshot().error.message,
+      "Search failed. Try again.",
+    );
+    assert.equal(calls.length, 1);
+  }
+  let call = 0;
+  const workbench = createSearchWorkbench({
+    root: root(),
+    api: {
+      search: async () =>
+        ++call === 1 ? response([{}]) : response([transaction("corrected")]),
+    },
+  });
+  await workbench.search("coffee");
+  await workbench.search("coffee");
+  assert.equal(workbench.snapshot().data[0].id, "corrected");
+});
+
+test("accessors, proxies, symbols, sparse arrays, and circular values fail closed without leakage", async () => {
+  const getter = transaction("getter");
+  Object.defineProperty(getter, "id", {
+    enumerable: true,
+    get() {
+      throw new Error("tenant-secret");
+    },
+  });
+  const throwingProxy = new Proxy(transaction("proxy"), {
+    ownKeys() {
+      throw new Error("account-secret");
+    },
+  });
+  const symbol = transaction("symbol");
+  symbol[Symbol("hidden")] = "financial-secret";
+  const sparse = response([transaction("valid")]);
+  sparse.data.length = 2;
+  const circular = transaction("circular");
+  circular.description = circular;
+  for (const payload of [
+    response([getter]),
+    response([throwingProxy]),
+    response([symbol]),
+    sparse,
+    response([circular]),
+  ]) {
+    const host = root();
+    const workbench = createSearchWorkbench({
+      root: host,
+      api: { search: async () => payload },
+    });
+    await workbench.search("coffee");
+    assert.equal(workbench.snapshot().status, "error");
+    assert.doesNotMatch(
+      JSON.stringify(workbench.snapshot()),
+      /tenant-secret|account-secret|financial-secret/,
+    );
+  }
+});
+
+test("request controls and unsafe Unicode are rejected before fetch", async () => {
+  let fetches = 0;
+  const api = createSearchApi({
+    fetchImpl: async () => {
+      fetches += 1;
+      return { ok: true, json: async () => response() };
+    },
+  });
+  for (const query of [
+    "coffee\u0000secret",
+    "coffee\u0085secret",
+    "coffee\u202esecret",
+    "coffee\ud800",
+  ])
+    await assert.rejects(api.search({ query }), TypeError);
+  for (const cursor of [
+    "next\nline",
+    "next\u009f",
+    "next+unsafe",
+    "next\udfff",
+  ])
+    await assert.rejects(api.search({ query: "coffee", cursor }), TypeError);
+  assert.equal(fetches, 0);
+});
+
+test("failed continuation preserves prior rows and cursor without partial append", async () => {
+  let call = 0;
+  const api = {
+    search: async () =>
+      ++call === 1
+        ? response([transaction("first")], "next")
+        : response([transaction("second"), {}]),
+  };
+  const workbench = createSearchWorkbench({ root: root(), api });
+  await workbench.search("coffee");
+  await workbench.search("coffee", "next");
+  assert.equal(workbench.snapshot().status, "error");
+  assert.deepEqual(
+    workbench.snapshot().data.map((item) => item.id),
+    ["first"],
+  );
+  assert.equal(workbench.snapshot().nextCursor, "next");
+  assert.equal(workbench.snapshot().retryCursor, "next");
+});
+
 test("projection reconciliation mismatch is surfaced and retry preserves source-neutral query", async () => {
   const calls = [];
   const host = root();
@@ -368,12 +483,7 @@ test("projection reconciliation mismatch is surfaced and retry preserves source-
             status: 409,
             code: "projection_reconciliation_required",
           });
-        return {
-          data: [],
-          page: { next_cursor: null },
-          consistency: "eventually_consistent_projection",
-          watermark: 7,
-        };
+        return { ...response(), watermark: 7 };
       },
     },
   });
@@ -403,33 +513,20 @@ test("new search aborts prior request and late resolution cannot overwrite fresh
             firstResolve = resolve;
             firstSignal = signal;
           })
-        : Promise.resolve({
-            data: [
-              {
-                id: "fresh",
-                posted_at: "2026-02-01",
-                currency: "USD",
+        : Promise.resolve(
+            response([
+              transaction("fresh", {
+                posted_at: "2026-02-01T00:00:00Z",
                 evidence_refs: [],
-              },
-            ],
-            page: { next_cursor: null },
-          }),
+              }),
+            ]),
+          ),
   };
   const workbench = createSearchWorkbench({ root: root(), api });
   const first = workbench.search("first");
   await workbench.search("second");
   assert.equal(firstSignal.aborted, true);
-  firstResolve({
-    data: [
-      {
-        id: "stale",
-        posted_at: "2026-01-01",
-        currency: "USD",
-        evidence_refs: [],
-      },
-    ],
-    page: { next_cursor: null },
-  });
+  firstResolve(response([transaction("stale", { evidence_refs: [] })]));
   await first;
   assert.equal(workbench.snapshot().data[0].id, "fresh");
 });

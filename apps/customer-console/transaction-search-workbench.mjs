@@ -1,11 +1,181 @@
 const DEFAULT_LIMIT = 25;
 const MAX_QUERY = 500;
 const MAX_CURSOR = 2048;
+const MAX_RESULTS = 100;
+const UNSAFE_TEXT = /[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/u;
+const LONE_SURROGATE =
+  /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/u;
+const CURSOR = /^[A-Za-z0-9_-]+$/u;
 // This versioned column contract is also inspected by the TASK-0066 console-acceptance gate.
 // prettier-ignore
 const RESULT_COLUMNS = ['Date', 'Currency', 'Evidence'];
 
-const text = (value) => String(value ?? "");
+const safeString = (value, maximum, allowEmpty = false) =>
+  typeof value === "string" &&
+  (allowEmpty || value.length > 0) &&
+  value.length <= maximum &&
+  !UNSAFE_TEXT.test(value) &&
+  !LONE_SURROGATE.test(value);
+
+const readRecord = (value, required, optional = []) => {
+  try {
+    if (value === null || typeof value !== "object") return null;
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null) return null;
+    const keys = Reflect.ownKeys(value);
+    const allowed = new Set([...required, ...optional]);
+    if (
+      keys.some((key) => typeof key !== "string") ||
+      required.some((key) => !keys.includes(key)) ||
+      keys.some((key) => !allowed.has(key))
+    )
+      return null;
+    const output = {};
+    for (const key of keys) {
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      if (
+        !descriptor ||
+        !("value" in descriptor) ||
+        descriptor.enumerable !== true
+      )
+        return null;
+      output[key] = descriptor.value;
+    }
+    return output;
+  } catch {
+    return null;
+  }
+};
+
+const readArray = (value, maximum) => {
+  try {
+    if (!Array.isArray(value) || value.length > maximum) return null;
+    const keys = Reflect.ownKeys(value);
+    if (
+      keys.length !== value.length + 1 ||
+      keys.some(
+        (key) =>
+          typeof key !== "string" ||
+          (key !== "length" && !/^(0|[1-9]\d*)$/u.test(key)),
+      )
+    )
+      return null;
+    const output = [];
+    for (let index = 0; index < value.length; index += 1) {
+      const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+      if (
+        !descriptor ||
+        !("value" in descriptor) ||
+        descriptor.enumerable !== true
+      )
+        return null;
+      output.push(descriptor.value);
+    }
+    return output;
+  } catch {
+    return null;
+  }
+};
+
+const canonicalUtc = (value) => {
+  if (
+    !safeString(value, 32) ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/u.test(value)
+  )
+    return false;
+  try {
+    const canonical = new Date(value).toISOString();
+    return canonical === value || canonical.replace(".000Z", "Z") === value;
+  } catch {
+    return false;
+  }
+};
+
+const parseResult = (value) => {
+  const response = readRecord(value, [
+    "request_id",
+    "data",
+    "page",
+    "consistency",
+    "watermark",
+  ]);
+  if (
+    !response ||
+    !safeString(response.request_id, 256) ||
+    response.consistency !== "eventually_consistent_projection" ||
+    !Number.isSafeInteger(response.watermark) ||
+    response.watermark < 0
+  )
+    return null;
+  const page = readRecord(response.page, ["limit", "next_cursor"]);
+  if (
+    !page ||
+    !Number.isSafeInteger(page.limit) ||
+    page.limit < 1 ||
+    page.limit > 100 ||
+    !(
+      page.next_cursor === null ||
+      (safeString(page.next_cursor, MAX_CURSOR) &&
+        CURSOR.test(page.next_cursor))
+    )
+  )
+    return null;
+  const items = readArray(response.data, MAX_RESULTS);
+  if (!items) return null;
+  const data = [];
+  for (const candidate of items) {
+    const item = readRecord(
+      candidate,
+      [
+        "id",
+        "tenant_id",
+        "account_id",
+        "amount",
+        "currency",
+        "posted_at",
+        "schema_version",
+        "evidence_refs",
+        "source_version",
+        "projection_version",
+      ],
+      ["description"],
+    );
+    if (
+      !item ||
+      !safeString(item.id, 256) ||
+      !safeString(item.tenant_id, 256) ||
+      !safeString(item.account_id, 256) ||
+      typeof item.amount !== "string" ||
+      !/^-?(?:0|[1-9]\d*)(?:\.\d+)?$/u.test(item.amount) ||
+      !/^[A-Z]{3}$/u.test(item.currency) ||
+      !canonicalUtc(item.posted_at) ||
+      !safeString(item.schema_version, 64) ||
+      !Number.isSafeInteger(item.source_version) ||
+      item.source_version < 1 ||
+      item.projection_version !== "1.0.0" ||
+      (item.description !== undefined &&
+        !safeString(item.description, 2048, true))
+    )
+      return null;
+    const evidence = readArray(item.evidence_refs, MAX_RESULTS);
+    if (!evidence || evidence.some((reference) => !safeString(reference, 2048)))
+      return null;
+    data.push({
+      id: item.id,
+      posted_at: item.posted_at,
+      currency: item.currency,
+      evidence_refs: [...evidence],
+    });
+  }
+  return {
+    requestId: response.request_id,
+    data,
+    pageLimit: page.limit,
+    nextCursor: page.next_cursor,
+    watermark: response.watermark,
+    consistency: response.consistency,
+  };
+};
 
 export function createSearchApi({
   fetchImpl = globalThis.fetch,
@@ -15,17 +185,13 @@ export function createSearchApi({
     throw new TypeError("fetch implementation is required");
   return {
     async search({ query, limit = DEFAULT_LIMIT, cursor = null, signal } = {}) {
-      if (
-        typeof query !== "string" ||
-        !query.trim() ||
-        query.trim().length > MAX_QUERY
-      )
+      if (!safeString(query, MAX_QUERY) || !query.trim())
         throw new TypeError("query must contain 1-500 characters");
       if (!Number.isInteger(limit) || limit < 1 || limit > 100)
         throw new TypeError("limit must be an integer from 1-100");
       if (
         cursor !== null &&
-        (typeof cursor !== "string" || !cursor || cursor.length > MAX_CURSOR)
+        (!safeString(cursor, MAX_CURSOR) || !CURSOR.test(cursor))
       )
         throw new TypeError("cursor must be a bounded non-empty string");
       const response = await fetchImpl(`${baseUrl}/v1/transactions/search`, {
@@ -100,29 +266,9 @@ export function createSearchWorkbench({
     render();
   };
   const setState = (patch) => Object.assign(state, patch);
-  const safeTransaction = (item) => ({
-    id: text(item?.id),
-    posted_at: text(item?.posted_at),
-    currency: text(item?.currency),
-    evidence_refs: Array.isArray(item?.evidence_refs)
-      ? item.evidence_refs.slice(0, 100).map(text)
-      : [],
-  });
-  const validResult = (result) =>
-    result &&
-    Array.isArray(result.data) &&
-    result.page &&
-    (result.page.next_cursor == null ||
-      (typeof result.page.next_cursor === "string" &&
-        result.page.next_cursor.length <= MAX_CURSOR)) &&
-    (result.consistency === undefined ||
-      result.consistency === "eventually_consistent_projection") &&
-    (result.watermark === undefined ||
-      (Number.isInteger(result.watermark) && result.watermark >= 0));
-
   const search = async (query = state.query, cursor = null) => {
     const normalized = typeof query === "string" ? query.trim() : "";
-    if (!normalized || normalized.length > MAX_QUERY) {
+    if (!safeString(query, MAX_QUERY) || !normalized) {
       setState({
         status: "error",
         error: {
@@ -136,7 +282,7 @@ export function createSearchWorkbench({
     }
     if (
       cursor !== null &&
-      (typeof cursor !== "string" || !cursor || cursor.length > MAX_CURSOR)
+      (!safeString(cursor, MAX_CURSOR) || !CURSOR.test(cursor))
     ) {
       setState({
         status: "error",
@@ -169,11 +315,12 @@ export function createSearchWorkbench({
         signal: activeController?.signal,
       });
       if (serial !== requestSerial) return;
-      if (!validResult(result))
+      const parsed = parseResult(result);
+      if (!parsed || parsed.pageLimit !== limit || parsed.data.length > limit)
         throw Object.assign(new Error("invalid response"), {
           code: "invalid_response",
         });
-      const safeData = result.data.map(safeTransaction);
+      const safeData = parsed.data;
       setState({
         status: safeData.length
           ? "success"
@@ -182,11 +329,10 @@ export function createSearchWorkbench({
             : "empty",
         loadingMore: false,
         data: cursor ? [...state.data, ...safeData] : safeData,
-        nextCursor: result.page.next_cursor ?? null,
-        requestId:
-          typeof result.request_id === "string" ? result.request_id : null,
-        watermark: result.watermark ?? 0,
-        consistency: result.consistency ?? null,
+        nextCursor: parsed.nextCursor,
+        requestId: parsed.requestId,
+        watermark: parsed.watermark,
+        consistency: parsed.consistency,
         error: null,
         retryCursor: null,
       });
