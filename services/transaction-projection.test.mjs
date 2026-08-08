@@ -69,3 +69,44 @@ test('cursor tampering and invalid watermarks are rejected; rebuild clears stale
   assert.equal(p.rebuild({ actor, tenantId: 'tenant-a', canonicalTransactions: records, watermark: 1 }).body.code, 'invalid_rebuild_watermark');
   assert.equal(p.consume({ actor, eventId: 'old', transaction: tx('a', 'tenant-a', 2), sourceVersion: 2 }).body.applied, true);
 });
+
+test('cursor fails closed when the tenant projection changes between pages', () => {
+  const p = service();
+  p.consume({ actor, eventId: 'a', transaction: tx('a') });
+  p.consume({ actor, eventId: 'b', transaction: tx('b') });
+  const first = p.search({ actor, tenantId: 'tenant-a', query: 'USD', limit: 1 });
+  p.consume({ actor, eventId: 'c', transaction: tx('c') });
+  assert.equal(p.search({ actor, tenantId: 'tenant-a', query: 'USD', limit: 1, cursor: first.body.page.next_cursor }).body.code, 'invalid_cursor');
+});
+
+test('consume indexing failure is auditable and leaves projection truth unchanged for retry', () => {
+  const p = new TransactionProjectionService({ authorize: (_actor, tenant) => tenant === 'tenant-a', now: () => new Date('2026-01-05T00:00:00Z'), indexDocument: () => { throw new Error('injected'); } });
+  const failed = p.consume({ actor, eventId: 'failed', transaction: tx('a') });
+  assert.deepEqual(failed, { status: 503, body: { code: 'projection_index_unavailable', details: { retryable: true } } });
+  assert.equal(p.documents().length, 0);
+  assert.equal(p.audit()[0].action, 'projection.consume_failed');
+});
+
+test('rebuild stages documents and rolls back when indexing or alias promotion fails', () => {
+  let fail = false;
+  const p = new TransactionProjectionService({ authorize: (_actor, tenant) => tenant === 'tenant-a', now: () => new Date('2026-01-05T00:00:00Z'), indexDocument: (_document, context) => { if (fail && context.operation === 'rebuild') throw new Error('injected'); } });
+  p.consume({ actor, eventId: 'seed', transaction: tx('seed') });
+  fail = true;
+  const failed = p.rebuild({ actor, tenantId: 'tenant-a', canonicalTransactions: [tx('replacement', 'tenant-a', 2)], watermark: 2 });
+  assert.equal(failed.body.code, 'projection_rebuild_failed');
+  assert.deepEqual(p.documents().map((document) => document.id), ['seed']);
+  assert.equal(p.audit().at(-1).action, 'projection.rebuild_failed');
+
+  const aliasFailure = new TransactionProjectionService({ authorize: (_actor, tenant) => tenant === 'tenant-a', now: () => new Date('2026-01-05T00:00:00Z'), promoteAlias: () => { throw new Error('injected'); } });
+  aliasFailure.consume({ actor, eventId: 'seed', transaction: tx('seed') });
+  assert.equal(aliasFailure.rebuild({ actor, tenantId: 'tenant-a', canonicalTransactions: [tx('replacement', 'tenant-a', 2)], watermark: 2 }).body.details.alias_promoted, false);
+  assert.deepEqual(aliasFailure.documents().map((document) => document.id), ['seed']);
+});
+
+test('reconciliation and rebuild reject malformed or cross-tenant canonical inputs without disclosure', () => {
+  const p = service();
+  p.consume({ actor, eventId: 'seed', transaction: tx('seed') });
+  assert.equal(p.reconcile({ actor, tenantId: 'tenant-a', canonicalTransactions: [tx('foreign', 'tenant-b')] }).body.code, 'invalid_reconciliation_input');
+  assert.equal(p.rebuild({ actor, tenantId: 'tenant-a', canonicalTransactions: [{ id: 'malformed', tenant_id: 'tenant-a' }], watermark: 1 }).body.code, 'invalid_rebuild_input');
+  assert.deepEqual(p.documents().map((document) => document.id), ['seed']);
+});
