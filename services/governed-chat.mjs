@@ -232,6 +232,7 @@ export class GovernedChatService {
   #calls = new Map();
   #replays = new Map();
   #generations = new Map();
+  #policyVersion;
 
   constructor({
     retrieve,
@@ -248,8 +249,11 @@ export class GovernedChatService {
     rateLimit = 30,
     windowMs = 60000,
     timeoutMs = 5000,
-    policyVersion = "governed-chat-v2",
+    policyVersion,
   } = {}) {
+    if (typeof policyVersion !== "string" || !ID.test(policyVersion))
+      throw new TypeError("A valid policyVersion is required");
+    this.#policyVersion = policyVersion;
     this.retrieve = retrieve;
     this.deriveScope = deriveScope;
     this.policy = policy;
@@ -280,7 +284,7 @@ export class GovernedChatService {
     const safe = Object.freeze({
       ...event,
       at: this.now().toISOString(),
-      policy_version: this.policyVersion,
+      policy_version: this.#policyVersion,
     });
     this.auditSink(safe);
     this.#audit.push(safe);
@@ -295,6 +299,8 @@ export class GovernedChatService {
         tenant_hash: state.tenantHash ?? null,
         environment_hash: state.environmentHash ?? null,
         correlation_hash: state.correlationHash ?? null,
+        policy_id: state.policy?.policy_id ?? null,
+        policy_decision_version: state.policy?.version ?? null,
         decision,
         outcome: code,
       });
@@ -472,6 +478,8 @@ export class GovernedChatService {
             tenant_hash: state.tenantHash,
             environment_hash: state.environmentHash,
             correlation_hash: state.correlationHash,
+            policy_id: state.policy.policy_id,
+            policy_decision_version: state.policy.version,
             decision: "allow",
             outcome: "replay",
             context_count: prior.response.body.citations?.length ?? 0,
@@ -493,6 +501,8 @@ export class GovernedChatService {
         tenant_hash: state.tenantHash,
         environment_hash: state.environmentHash,
         correlation_hash: state.correlationHash,
+        policy_id: state.policy.policy_id,
+        policy_decision_version: state.policy.version,
         decision: "allow",
         outcome,
         context_count: response.body.citations?.length ?? 0,

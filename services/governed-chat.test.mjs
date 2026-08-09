@@ -37,12 +37,125 @@ const make = (extra = {}) =>
       version: "v1",
     }),
     model: syntheticModel,
+    policyVersion: "governed-chat-v2",
     requestId: (() => {
       let n = 0;
       return () => `req-${++n}`;
     })(),
     ...extra,
   });
+
+test("requires a bounded safe immutable configured policy version", () => {
+  const invalid = [
+    undefined,
+    null,
+    "",
+    "x".repeat(201),
+    "configured\u0000v9",
+    "configured v9",
+    { toString: () => "configured-v9" },
+    new Proxy(
+      {},
+      {
+        get: () => {
+          throw Error("trap");
+        },
+      },
+    ),
+  ];
+  for (const policyVersion of invalid)
+    assert.throws(
+      () => new GovernedChatService({ policyVersion }),
+      /valid policyVersion/,
+    );
+  const accessorConfig = {};
+  Object.defineProperty(accessorConfig, "policyVersion", {
+    get: () => {
+      throw Error("accessor trap");
+    },
+  });
+  assert.throws(() => new GovernedChatService(accessorConfig), /accessor trap/);
+  assert.throws(
+    () =>
+      new GovernedChatService(
+        new Proxy(
+          {},
+          {
+            get: () => {
+              throw Error("proxy trap");
+            },
+          },
+        ),
+      ),
+    /proxy trap/,
+  );
+
+  const events = [];
+  const service = make({
+    policyVersion: "configured-v9",
+    auditSink: (event) => events.push(event),
+  });
+  service.policyVersion = "request-override";
+  assert.equal(service.chat(input()).status, 200);
+  assert.equal(events[0].policy_version, "configured-v9");
+  assert.equal(events[0].policy_id, "chat-read");
+  assert.equal(events[0].policy_decision_version, "v1");
+});
+
+test("every audited attempt and outcome carries non-overridable policy provenance", async () => {
+  const events = [];
+  const configured = "configured-v9";
+  const capture = (extra = {}) =>
+    make({
+      policyVersion: configured,
+      auditSink: (event) => events.push(event),
+      ...extra,
+    });
+
+  capture().chat(input({ extra: "request-override" }));
+  capture({ deriveScope: () => null }).chat(input());
+  capture({
+    policy: () => {
+      throw Error("down");
+    },
+  }).chat(input());
+  capture({ retrieve: () => [{ ...row, policy_version: "retrieval-v0" }] }).chat(
+    input(),
+  );
+  capture({
+    model: {
+      complete: ({ context }) => ({
+        ...output(context),
+        policy_version: "model-v0",
+      }),
+    },
+  }).chat(input());
+  capture({ retrieve: () => [] }).chat(input());
+  const replay = capture();
+  replay.chat(input({ replay_key: "same" }));
+  replay.chat(input({ replay_key: "same" }));
+  await capture({
+    timeoutMs: 5,
+    retrieve: () => new Promise(() => {}),
+  }).chatAsync(input());
+  await capture({
+    timeoutMs: 5,
+    model: { complete: () => new Promise(() => {}) },
+  }).chatAsync(input());
+
+  assert.ok(events.length >= 9);
+  assert.deepEqual(
+    new Set(events.map((event) => event.policy_version)),
+    new Set([configured]),
+  );
+  for (const event of events) {
+    assert.equal(Object.hasOwn(event, "policy_version"), true);
+    if (event.policy_id !== null) {
+      assert.equal(event.policy_id, "chat-read");
+      assert.equal(event.policy_decision_version, "v1");
+    }
+  }
+});
 
 const citationFor = (context, overrides = {}) => ({
   record_id: context[0].record_id,
@@ -460,13 +573,19 @@ test("audit failure rolls back answer release and audit stays metadata-only", ()
     "IGNORE SYSTEM",
   ])
     assert.equal(serialized.includes(secret), false);
+  let failedEvent;
   const failed = make({
-    auditSink: () => {
+    policyVersion: "configured-v9",
+    auditSink: (event) => {
+      failedEvent = event;
       throw Error("audit down");
     },
   }).chat(input());
   assert.equal(failed.status, 503);
   assert.equal(failed.body.code, "audit_unavailable");
+  assert.equal(failedEvent.policy_version, "configured-v9");
+  assert.equal(failedEvent.policy_id, "chat-read");
+  assert.equal(failedEvent.policy_decision_version, "v1");
 });
 
 test("empty approved context produces deterministic refusal without model access", () => {
