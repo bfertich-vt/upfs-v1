@@ -1,0 +1,78 @@
+task_id: RECOVERY-TASK-0008-CLOSURE-001
+title: Revalidate governed context and cited read-only chat
+type: historical-capability-closure
+status: in_progress
+assigned_role: Schema/Search/AI
+historical_task: TASK-0008
+dependencies:
+  - TASK-0006
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/queue.yaml
+  - docs/handoffs/TASK-0008.md
+  - specs/03_architecture/system_architecture.md
+  - specs/04_schema/canonical_model.md
+  - specs/04_schema/identity_tenant_model.md
+  - specs/05_apis/api_standards.md
+  - specs/06_ai/ai_runtime.md
+  - specs/07_workflows/workflow_runtime.md
+  - specs/08_policies/policy_system.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/10_security/threat_model.md
+  - specs/12_testing/test_strategy.md
+  - specs/13_docs/documentation_platform.md
+  - contracts/openapi/governed-chat-api.yaml
+  - docs/generated/api-reference.md
+  - packages/sdk-generated/index.ts
+allowed_files:
+  - services/governed-chat.mjs
+  - services/governed-chat.test.mjs
+  - contracts/openapi/governed-chat-api.yaml
+  - tasks/recovery/RECOVERY-TASK-0008-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0008-CLOSURE-001.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/handoffs/TASK-0008.md
+  - specs/**
+  - .github/**
+  - package.json
+  - package-lock.json
+  - accepted TASK-0001-TASK-0007 files and evidence
+  - unrelated apps, services, and contracts
+  - TASK-0009+
+  - TASK-0112-TASK-0123
+acceptance_criteria:
+  - Actor, tenant, and environment scope is derived from verified identity and never accepted from request context.
+  - Retrieval is bounded, read-only, and limited to approved canonical or projection records.
+  - Retrieved text is untrusted data and cannot modify system rules or enable tools, writes, or actions.
+  - Request, context, retrieval, model output, citation, and response shapes are closed and bounded before dependent calls or release.
+  - Every factual financial claim is bound to exact authorized record evidence; absent, foreign, duplicate, or mismatched citations deterministically refuse.
+  - Retrieval, model, policy, audit, timeout, malformed-data, injection, cancellation, supersession, and rate-limit failures fail closed.
+  - Audit is metadata-only, correlation-bound, and contains no prompt, record, answer, evidence payload, or financial value.
+  - Deterministic replay of an identical scoped request cannot produce a conflicting accepted answer.
+required_tests:
+  - node --test --test-concurrency=1 services/governed-chat.test.mjs
+  - npm test -- --test-concurrency=1
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run lint
+  - npm run queue:check
+  - npm run traceability:check
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+security_requirements:
+  - Scope is server-derived, deny-by-default, and cross-tenant records reject the complete retrieval result without disclosure.
+  - Prompt injection remains labelled untrusted content with no tool or action capability.
+  - Citation verification is deterministic and independent of the model.
+  - Audit and errors contain stable metadata only; no customer, prompt, record, answer, or financial payload leaks.
+classification_limit: Proven reference implementation; synthetic injected retrieval/model/policy/audit only, with no real model, RAG, registry, Redis, production identity, API host, deployment, or production-operation claim.
+rollback: Preserve historical and rejected evidence; use a reviewed revert before integration or separate corrective-forward change afterward; never weaken scope derivation, closed schemas, citation verification, no-tool/no-write, audit, or validation controls.
+handoff: docs/handoffs/RECOVERY-TASK-0008-CLOSURE-001.md

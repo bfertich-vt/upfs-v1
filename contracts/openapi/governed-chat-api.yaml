@@ -1,62 +1,212 @@
 openapi: 3.1.0
 info:
   title: UPFS Governed Read-only Chat API
-  version: 1.1.0
-  x-upfs-documentation-defaults: {authentication: oauth2, classification: derived-citations, rate_limits: bounded, request_response_schemas: true, errors: structured-envelope, audit_events: required, idempotency: not-applicable-read-only, consistency: read-after-write, sdk_behavior: generated}
-  description: Tenant-scoped, evidence-cited read path. This operation has no tools, writes, or action side effects.
-servers: [{url: https://api.example.invalid}
-]
+  version: 1.2.0
+  description: >-
+    Tenant/environment scope is derived from verified OAuth identity. This bounded reference
+    operation retrieves approved read-only records and releases only independently verified,
+    evidence-cited answers. It exposes no tool, memory, write, workflow, or action capability.
+  x-upfs-documentation-defaults:
+    authentication: oauth2
+    classification: derived-citations
+    rate_limits: bounded
+    request_response_schemas: true
+    errors: structured-envelope
+    audit_events: metadata-only-required
+    idempotency: deterministic-replay-key
+    consistency: authorized-projection-read
+    sdk_behavior: generated
+servers:
+  - url: https://api.example.invalid
 paths:
-  /chat:
+  /v1/chat:
     post:
       operationId: governedReadOnlyChat
-      summary: Answer a tenant-scoped question from approved cited records
-      security: [{oauth2: [chat.read]}]
+      summary: Answer from authorized records with exact evidence citations
+      security:
+        - oauth2: [chat.read]
       parameters:
-        - {$ref: '#/components/parameters/RequestId'}
+        - $ref: "#/components/parameters/CorrelationId"
+        - $ref: "#/components/parameters/ReplayKey"
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/ChatRequest'}
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
       responses:
-        '200': {description: Cited answer or deterministic refusal, content: {application/json: {schema: {$ref: '#/components/schemas/ChatResponse'}}}}
-        '400': {description: Invalid request, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-        '401': {description: Authentication required, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-        '403': {description: Tenant authorization denied, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-        '429': {description: Rate limit exceeded, headers: {Retry-After: {schema: {type: integer}}}, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-        '500': {description: Async-only dependency used through synchronous adapter, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-        '502': {description: Model unavailable or invalid output, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-        '503': {description: Retrieval unavailable, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-        '504': {description: Retrieval or model timeout, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        "200":
+          description: Verified cited answer or deterministic refusal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/AsyncAdapterRequired" }
+        "502": { $ref: "#/components/responses/InvalidDependencyOutput" }
+        "503": { $ref: "#/components/responses/DependencyUnavailable" }
+        "504": { $ref: "#/components/responses/DependencyTimeout" }
 components:
   parameters:
-    RequestId: {name: X-Request-Id, in: header, required: false, schema: {type: string, maxLength: 128}}
-  securitySchemes: {oauth2: {type: oauth2, flows: {clientCredentials: {tokenUrl: https://auth.example.invalid/oauth/token, scopes: {chat.read: Read-only governed chat}}}}}
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 128 }
+    ReplayKey:
+      name: X-Replay-Key
+      in: header
+      required: false
+      schema: { type: string, pattern: "^[A-Za-z0-9._:-]{1,200}$" }
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.invalid/oauth/token
+          scopes:
+            chat.read: Read-only governed chat
   schemas:
     ChatRequest:
       type: object
       required: [question]
       additionalProperties: false
       properties:
-        question: {type: string, minLength: 1, maxLength: 2000}
-        limit: {type: integer, minimum: 1, maximum: 20, default: 20}
+        question: { type: string, minLength: 1, maxLength: 2000 }
+        limit: { type: integer, minimum: 1, maximum: 20, default: 20 }
     Citation:
       type: object
-      required: [record_id, evidence_ref]
+      required: [record_id, evidence_ref, content_digest]
       additionalProperties: false
-      properties: {record_id: {type: string}, evidence_ref: {type: string}}
+      properties:
+        record_id: { type: string, pattern: "^[A-Za-z0-9._:-]{1,200}$" }
+        evidence_ref: { type: string, pattern: "^[A-Za-z0-9._:/-]{1,500}$" }
+        content_digest: { type: string, pattern: "^[a-f0-9]{64}$" }
     ChatResponse:
       type: object
       required: [request_id, answer, citations, refusal]
       additionalProperties: false
       properties:
-        request_id: {type: string}
-        answer: {type: string}
-        citations: {type: array, items: {$ref: '#/components/schemas/Citation'}}
-        refusal: {type: [string, 'null'], enum: [insufficient_cited_evidence, citation_required, null]}
+        request_id: { type: string }
+        answer: { type: string, maxLength: 4000 }
+        citations:
+          type: array
+          maxItems: 200
+          items:
+            $ref: "#/components/schemas/Citation"
+        refusal:
+          type: [string, "null"]
+          enum:
+            [insufficient_cited_evidence, citation_verification_failed, null]
     Error:
       type: object
-      required: [code]
+      required: [request_id, code]
       additionalProperties: false
-      properties: {code: {type: string, enum: [invalid_question, invalid_context_limit, authentication_required, forbidden, rate_limited, async_dependency_requires_chatAsync, model_unavailable, invalid_model_output, retrieval_unavailable, retrieval_timeout, model_timeout]}}
+      properties:
+        request_id: { type: string }
+        code:
+          type: string
+          enum:
+            - invalid_request
+            - authentication_required
+            - forbidden
+            - policy_unavailable
+            - rate_limited
+            - replay_conflict
+            - cancelled
+            - superseded
+            - async_dependency_requires_chatAsync
+            - retrieval_unavailable
+            - invalid_retrieval_output
+            - retrieval_timeout
+            - model_unavailable
+            - model_timeout
+            - audit_unavailable
+  responses:
+    BadRequest:
+      {
+        description: Closed request validation failed,
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/Error" } },
+          },
+      }
+    AuthenticationRequired:
+      {
+        description: Verified identity required,
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/Error" } },
+          },
+      }
+    Forbidden:
+      {
+        description: Derived scope or policy denied without resource disclosure,
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/Error" } },
+          },
+      }
+    Conflict:
+      {
+        description: Cancelled,
+        superseded,
+        or conflicting replay,
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/Error" } },
+          },
+      }
+    RateLimited:
+      {
+        description: Scoped rate limit exceeded,
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/Error" } },
+          },
+      }
+    AsyncAdapterRequired:
+      {
+        description: Async dependency used through synchronous adapter,
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/Error" } },
+          },
+      }
+    InvalidDependencyOutput:
+      {
+        description: Retrieval output was invalid or model unavailable,
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/Error" } },
+          },
+      }
+    DependencyUnavailable:
+      {
+        description: Retrieval or mandatory audit unavailable,
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/Error" } },
+          },
+      }
+    DependencyTimeout:
+      {
+        description: Retrieval or model timeout,
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/Error" } },
+          },
+      }

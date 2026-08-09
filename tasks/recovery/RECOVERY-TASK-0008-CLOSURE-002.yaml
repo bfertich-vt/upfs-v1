@@ -1,0 +1,88 @@
+task_id: RECOVERY-TASK-0008-CLOSURE-002
+title: Correct governed-chat policy provenance
+type: historical-capability-corrective-forward
+status: in_progress
+assigned_role: Schema/Search/AI
+historical_task: TASK-0008
+dependencies:
+  - RECOVERY-TASK-0008-CLOSURE-001
+preserved_rejection: docs/reviews/RECOVERY-TASK-0008-CLOSURE-001-QA.md
+inputs:
+  - AGENTS.md
+  - agents/SCHEMA_SEARCH_AI.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/queue.yaml
+  - docs/handoffs/TASK-0008.md
+  - tasks/recovery/RECOVERY-TASK-0008-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0008-CLOSURE-001.md
+  - docs/reviews/RECOVERY-TASK-0008-CLOSURE-001-QA.md
+  - specs/03_architecture/system_architecture.md
+  - specs/04_schema/canonical_model.md
+  - specs/04_schema/identity_tenant_model.md
+  - specs/05_apis/api_standards.md
+  - specs/06_ai/ai_runtime.md
+  - specs/07_workflows/workflow_runtime.md
+  - specs/08_policies/policy_system.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/10_security/threat_model.md
+  - specs/12_testing/test_strategy.md
+  - specs/13_docs/documentation_platform.md
+  - contracts/openapi/governed-chat-api.yaml
+  - docs/generated/api-reference.md
+  - packages/sdk-generated/index.ts
+allowed_files:
+  - services/governed-chat.mjs
+  - services/governed-chat.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0008-CLOSURE-002.yaml
+  - docs/handoffs/RECOVERY-TASK-0008-CLOSURE-002.md
+prohibited_files:
+  - tasks/recovery/RECOVERY-TASK-0008-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0008-CLOSURE-001.md
+  - docs/reviews/RECOVERY-TASK-0008-CLOSURE-001-QA.md
+  - contracts/**
+  - docs/generated/**
+  - packages/**
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - specs/**
+  - .github/**
+  - accepted TASK-0001-TASK-0007 files and evidence
+  - TASK-0009+
+  - TASK-0112-TASK-0123
+acceptance_criteria:
+  - A missing, malformed, hostile, control-bearing, or oversized policyVersion fails construction before any sensitive or external dependency can run.
+  - The bounded safe configured policyVersion is held as immutable private instance state.
+  - Every metadata-only audit attempt and outcome contains the exact configured policy_version.
+  - Audits after a valid independent policy decision also bind its exact policy_id and policy_decision_version.
+  - Request, retrieval, model, policy dependency, and public-instance values cannot override configured policy provenance.
+  - Denial, validation failure, policy exception, retrieval/model timeout or outage, cancellation, supersession, replay, rate limit, refusal, success, and audit failure paths remain fail closed without sensitive leakage.
+  - All R1 authorization, tenant-isolation, citation, closed-shape, replay, rollback, and classification controls remain intact.
+required_tests:
+  - node --test --test-concurrency=1 services/governed-chat.test.mjs
+  - node --test --test-concurrency=1 services/governed-chat.test.mjs services/policy-workflow.test.mjs scripts/task-0099-ai-context-safety.test.mjs
+  - npm test -- --test-concurrency=1
+  - npm run contracts:check
+  - npm run generated:check
+  - npm run static:check
+  - npm run policy:check
+  - npm run prompt:check
+  - npm run format:check
+  - npm run lint
+  - npm run queue:check
+  - npm run traceability:check
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+security_requirements:
+  - Policy provenance is trusted constructor configuration, never request or dependency output.
+  - Every audit remains metadata-only and correlation-bound; no prompt, record, answer, evidence identifier, amount, currency, tenant/environment identifier, credential, or provider/customer payload may leak.
+  - Scope remains server-derived and cross-tenant or cross-environment retrieval remains atomically denied.
+  - Mandatory audit failure prevents response release and replay persistence.
+classification_limit: Proven reference implementation only; all identity, retrieval, policy, model, and audit dependencies remain synthetic injected boundaries.
+rollback: Preserve the R1 candidate and rejection. Revert this bounded correction before integration or correct forward after integration; never remove policy provenance, weaken audit release, or relax R1 controls.
+handoff: docs/handoffs/RECOVERY-TASK-0008-CLOSURE-002.md

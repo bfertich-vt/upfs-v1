@@ -220,14 +220,14 @@ Undescribed operation.
 - Responses: `200, 401, 403, 404, 503`
 - Example: synthetic only
 
-## UPFS Governed Read-only Chat API (v1.1.0)
+## UPFS Governed Read-only Chat API (v1.2.0)
 
-### POST /chat
+### POST /v1/chat
 
-Answer a tenant-scoped question from approved cited records.
+Answer from authorized records with exact evidence citations.
 - Operation: `governedReadOnlyChat`
 - Permission: `chat.read`
-- Responses: `200, 400, 401, 403, 429, 500, 502, 503, 504`
+- Responses: `200, 400, 401, 403, 409, 429, 500, 502, 503, 504`
 - Example: synthetic only
 
 ## UPFS Projection Search API (v1.0.0)
