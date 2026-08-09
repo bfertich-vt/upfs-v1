@@ -28,6 +28,6 @@ export const readWorkflows = { method: "GET", path: "/admin/v1/workflows" } as c
 export const readPolicies = { method: "GET", path: "/admin/v1/policies" } as const;
 export const readCompliance = { method: "GET", path: "/admin/v1/compliance" } as const;
 export const readManagedIntegrations = { method: "GET", path: "/admin/v1/managed-integrations" } as const;
-export const governedReadOnlyChat = { method: "POST", path: "/chat" } as const;
+export const governedReadOnlyChat = { method: "POST", path: "/v1/chat" } as const;
 export const searchTransactionsProjection = { method: "POST", path: "/transactions/search" } as const;
 export const searchTransactions = { method: "POST", path: "/transactions/search" } as const;
