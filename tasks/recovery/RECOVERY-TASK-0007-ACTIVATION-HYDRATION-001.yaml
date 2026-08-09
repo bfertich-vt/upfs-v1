@@ -1,0 +1,69 @@
+task_id: RECOVERY-TASK-0007-ACTIVATION-HYDRATION-001
+title: Hydrate exact TASK-0007 independent QA object in hosted clones
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0007
+base_commit: 198ad373a08c00ec7710c97842f5e5915199dc01
+dependencies: [RECOVERY-TASK-0007-ACTIVATION-001-QA]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - scripts/fixtures/historical-provenance-v3.json
+  - scripts/fixtures/historical-provenance-v3.bundle
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - docs/governance/task-closures/TASK-0007.json
+  - docs/reviews/RECOVERY-TASK-0007-CLOSURE-001-R3-QA.md
+authorized_files:
+  - scripts/fixtures/historical-provenance-v3.bundle
+  - scripts/fixtures/historical-provenance-v3.json
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - .github/workflows/validate.yml
+  - tasks/recovery/RECOVERY-TASK-0007-ACTIVATION-HYDRATION-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0007-ACTIVATION-HYDRATION-001.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/**
+  - docs/reviews/**
+  - services/**
+  - apps/**
+  - contracts/**
+  - specs/**
+  - package files and security workflow
+  - TASK-0008 and later historical task files
+  - TASK-0112 through TASK-0123 files
+acceptance:
+  - Preserve PR 34 hosted validation failure run 31266024459 job 93124155948 and security success run 31266024450 as immutable failure evidence.
+  - Add exact commit ed83b582d161c3d9d2a13fc7098e56e776bb0f3e as QA review evidence derived only from docs/reviews/RECOVERY-TASK-0007-CLOSURE-001-R3-QA.md and SHA-256 597357d694eb8b047e3401f62db8d58dc9f0e88b5c891d827f6092edb3dcf02f.
+  - Preserve every existing manifest tuple exactly and bind the new commit object's Git bytes, SHA-256, deterministic ref, bundle digest, purpose, per-kind counts, and total count.
+  - A genuinely fresh clone or isolated object database with no alternates or local-object fallback hydrates all manifest objects and validates current TASK-0007 closure evidence.
+  - No validator exception, unavailable-source bypass, wildcard, semantic suppression, older-check reuse, or replacement QA identity is introduced.
+security:
+  - Omission, substitution, object or digest tampering, stale counts or digest, extra object or ref, wrong kind or derivation, corrupt bundle, local-history leakage, alternates, semantic/provenance bypass, and current TASK-0007 closure or handoff corruption fail closed.
+  - qa-review-evidence remains a closed kind and cannot satisfy handoff-candidate or erratum-source semantics.
+tests:
+  - node --test scripts/ci-gate-validator.test.mjs
+  - node --test scripts/historical-closure-validator.test.mjs after fresh hydration
+  - Fresh --no-local shallow-clone and isolated-object-database bundle verification
+  - All specified omission, substitution, tamper, count, corruption, leakage, bypass, and current-record negative cases
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run lint
+  - npm run queue:check
+  - npm run traceability:check
+  - npm test -- --test-concurrency=1
+  - npm audit --audit-level=high
+  - git bundle verify scripts/fixtures/historical-provenance-v3.bundle
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve the hosted failure and every prior evidence object; correct forward or reviewed revert only this additive hydration stream, never rewrite history or weaken validation.
+independent_review: Fresh QA/Security distinct from TASK-0007 authors, remediators, activation author, and prior reviewers reviews the exact committed candidate from an isolated worktree without implementation edits.

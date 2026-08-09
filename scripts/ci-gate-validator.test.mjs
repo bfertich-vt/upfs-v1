@@ -173,19 +173,19 @@ function v3ManifestErrors(worktree, manifest, requireObjects = false) {
   if (
     JSON.stringify(manifest.required_counts) !==
     JSON.stringify({
-      "handoff-candidate": 33,
+      "handoff-candidate": 34,
       "erratum-source": 2,
-      "qa-review-evidence": 1,
-      total: 36,
+      "qa-review-evidence": 2,
+      total: 38,
     })
   )
     errors.push("required counts do not match the immutable object set");
-  if (candidateCount !== 33)
-    errors.push("requires exactly 33 handoff candidates");
+  if (candidateCount !== 34)
+    errors.push("requires exactly 34 handoff candidates");
   if (erratumCount !== 2) errors.push("requires exactly two erratum sources");
-  if (qaReviewCount !== 1)
-    errors.push("requires exactly one TASK-0002 QA review evidence object");
-  if (refs.length !== 36) errors.push("requires exactly 36 immutable objects");
+  if (qaReviewCount !== 2)
+    errors.push("requires exactly two QA review evidence objects");
+  if (refs.length !== 38) errors.push("requires exactly 38 immutable objects");
   for (const entry of refs) {
     if (!/^[a-f0-9]{40}$/.test(entry.commit ?? ""))
       errors.push("immutable commit is malformed");
@@ -217,25 +217,47 @@ function v3ManifestErrors(worktree, manifest, requireObjects = false) {
     if (expected && !expected.test(body))
       errors.push(`derivation does not bind ${entry.commit}`);
     if (entry.kind === "qa-review-evidence") {
+      const qaBindings = new Map([
+        [
+          "64782c157a50e02146cdad45049b8333033979c6",
+          {
+            task: "TASK-0002",
+            review: "docs/reviews/RECOVERY-TASK-0002-CLOSURE-002-QA.md",
+            digest:
+              "1f5c249334fd8638084da8790168f422e24ab4009351bcdd2921e90bbbebc00e",
+          },
+        ],
+        [
+          "ed83b582d161c3d9d2a13fc7098e56e776bb0f3e",
+          {
+            task: "TASK-0007",
+            review: "docs/reviews/RECOVERY-TASK-0007-CLOSURE-001-R3-QA.md",
+            digest:
+              "597357d694eb8b047e3401f62db8d58dc9f0e88b5c891d827f6092edb3dcf02f",
+          },
+        ],
+      ]);
+      const binding = qaBindings.get(entry.commit);
       const closure = JSON.parse(
         fs.readFileSync(
-          path.join(worktree, "docs/governance/task-closures/TASK-0002.json"),
+          path.join(
+            worktree,
+            `docs/governance/task-closures/${binding?.task ?? "UNKNOWN"}.json`,
+          ),
           "utf8",
         ),
       );
       if (
-        entry.commit !== "64782c157a50e02146cdad45049b8333033979c6" ||
-        entry.derivation_handoff !==
-          "docs/reviews/RECOVERY-TASK-0002-CLOSURE-002-QA.md" ||
-        entry.derivation_handoff_sha256 !==
-          "1f5c249334fd8638084da8790168f422e24ab4009351bcdd2921e90bbbebc00e" ||
+        !binding ||
+        entry.derivation_handoff !== binding.review ||
+        entry.derivation_handoff_sha256 !== binding.digest ||
         closure.independent_qa?.review !== entry.derivation_handoff ||
         closure.independent_qa?.review_sha256 !==
           entry.derivation_handoff_sha256 ||
         closure.independent_qa?.review_commit !== entry.commit
       )
         errors.push(
-          `TASK-0002 closure does not bind QA review evidence ${entry.commit}`,
+          `${binding?.task ?? "unknown task"} closure does not bind QA review evidence ${entry.commit}`,
         );
     } else if (!expected)
       errors.push(`unsupported immutable object kind ${entry.kind}`);
@@ -439,8 +461,11 @@ test("v3 provenance bundle is complete, immutable, and fails closed under transp
       "scripts/fixtures/historical-provenance-v3.bundle",
       "scripts/fixtures/historical-provenance-v3.json",
       "docs/handoffs/RECOVERY-CODEOWNERS-ROUTING-035.md",
+      "docs/handoffs/RECOVERY-TASK-0007-ACTIVATION-HYDRATION-001.md",
       "docs/governance/task-closures/TASK-0002.json",
       "docs/reviews/RECOVERY-TASK-0002-CLOSURE-002-QA.md",
+      "docs/governance/task-closures/TASK-0007.json",
+      "docs/reviews/RECOVERY-TASK-0007-CLOSURE-001-R3-QA.md",
     ]) {
       fs.mkdirSync(path.dirname(path.join(candidate, relative)), {
         recursive: true,
@@ -454,8 +479,11 @@ test("v3 provenance bundle is complete, immutable, and fails closed under transp
       "scripts/fixtures/historical-provenance-v3.bundle",
       "scripts/fixtures/historical-provenance-v3.json",
       "docs/handoffs/RECOVERY-CODEOWNERS-ROUTING-035.md",
+      "docs/handoffs/RECOVERY-TASK-0007-ACTIVATION-HYDRATION-001.md",
       "docs/governance/task-closures/TASK-0002.json",
       "docs/reviews/RECOVERY-TASK-0002-CLOSURE-002-QA.md",
+      "docs/governance/task-closures/TASK-0007.json",
+      "docs/reviews/RECOVERY-TASK-0007-CLOSURE-001-R3-QA.md",
     ]);
     git(candidate, ["commit", "-m", "stage immutable v3 provenance fixture"]);
     git(authoritative, ["init", "--bare"]);
@@ -535,6 +563,36 @@ test("v3 provenance bundle is complete, immutable, and fails closed under transp
       0,
       "the TASK-0002 QA review object must not leak from local history before hydration",
     );
+    assert.notEqual(
+      spawnSync(
+        "git",
+        [
+          "-C",
+          fixture,
+          "cat-file",
+          "-e",
+          "ed83b582d161c3d9d2a13fc7098e56e776bb0f3e^{commit}",
+        ],
+        { encoding: "utf8" },
+      ).status,
+      0,
+      "the TASK-0007 QA review object must not leak from local history before hydration",
+    );
+    assert.notEqual(
+      spawnSync(
+        "git",
+        [
+          "-C",
+          fixture,
+          "cat-file",
+          "-e",
+          "336706811e68f8225db0bbacd54008f4e9f6a1bd^{commit}",
+        ],
+        { encoding: "utf8" },
+      ).status,
+      0,
+      "the TASK-0007 hydration candidate must not leak from local history before hydration",
+    );
 
     git(fixture, [
       "fetch",
@@ -576,6 +634,36 @@ test("v3 provenance bundle is complete, immutable, and fails closed under transp
       ).status,
       0,
       "hydration must make the exact TASK-0002 QA review object available",
+    );
+    assert.equal(
+      spawnSync(
+        "git",
+        [
+          "-C",
+          fixture,
+          "cat-file",
+          "-e",
+          "ed83b582d161c3d9d2a13fc7098e56e776bb0f3e^{commit}",
+        ],
+        { encoding: "utf8" },
+      ).status,
+      0,
+      "hydration must make the exact TASK-0007 QA review object available",
+    );
+    assert.equal(
+      spawnSync(
+        "git",
+        [
+          "-C",
+          fixture,
+          "cat-file",
+          "-e",
+          "336706811e68f8225db0bbacd54008f4e9f6a1bd^{commit}",
+        ],
+        { encoding: "utf8" },
+      ).status,
+      0,
+      "hydration must make the exact TASK-0007 hydration candidate available",
     );
     assert.deepEqual(validateRepositoryHandoffSpecificationDigests(fixture), {
       status: "passed",
@@ -656,16 +744,16 @@ test("v3 provenance bundle is complete, immutable, and fails closed under transp
     );
     assert.ok(
       v3ManifestErrors(fixture, omitted).some((error) =>
-        error.includes("requires exactly 33 handoff candidates"),
+        error.includes("requires exactly 34 handoff candidates"),
       ),
       "the CODEOWNERS candidate object is mandatory",
     );
     const staleCounts = structuredClone(manifest);
     staleCounts.required_counts = {
-      "handoff-candidate": 32,
+      "handoff-candidate": 33,
       "erratum-source": 2,
-      "qa-review-evidence": 1,
-      total: 35,
+      "qa-review-evidence": 2,
+      total: 37,
     };
     assert.ok(
       v3ManifestErrors(fixture, staleCounts).some((error) =>
@@ -673,14 +761,40 @@ test("v3 provenance bundle is complete, immutable, and fails closed under transp
       ),
       "a stale manifest count cannot represent the current immutable set",
     );
-    const qaOmitted = structuredClone(manifest);
-    qaOmitted.refs = qaOmitted.refs.filter(
-      ({ kind }) => kind !== "qa-review-evidence",
+    const hydrationCandidateOmitted = structuredClone(manifest);
+    hydrationCandidateOmitted.refs = hydrationCandidateOmitted.refs.filter(
+      ({ commit }) => commit !== "336706811e68f8225db0bbacd54008f4e9f6a1bd",
     );
     assert.ok(
-      v3ManifestErrors(fixture, qaOmitted).some((error) =>
-        error.includes("exactly one TASK-0002 QA review evidence"),
+      v3ManifestErrors(fixture, hydrationCandidateOmitted).some((error) =>
+        error.includes("requires exactly 34 handoff candidates"),
       ),
+      "the exact TASK-0007 hydration candidate object is mandatory",
+    );
+    const hydrationCandidateSubstituted = structuredClone(manifest);
+    hydrationCandidateSubstituted.refs.find(
+      ({ commit }) => commit === "336706811e68f8225db0bbacd54008f4e9f6a1bd",
+    ).commit = "287b3894147080cb067ad2254869a2cabf998fce";
+    assert.ok(
+      v3ManifestErrors(fixture, hydrationCandidateSubstituted).length > 0,
+    );
+    const hydrationCandidateDigestAltered = structuredClone(manifest);
+    hydrationCandidateDigestAltered.refs.find(
+      ({ commit }) => commit === "336706811e68f8225db0bbacd54008f4e9f6a1bd",
+    ).object_sha256 = "0".repeat(64);
+    assert.ok(
+      v3ManifestErrors(fixture, hydrationCandidateDigestAltered, true).length >
+        0,
+    );
+    const task7QaOmitted = structuredClone(manifest);
+    task7QaOmitted.refs = task7QaOmitted.refs.filter(
+      ({ commit }) => commit !== "ed83b582d161c3d9d2a13fc7098e56e776bb0f3e",
+    );
+    assert.ok(
+      v3ManifestErrors(fixture, task7QaOmitted).some((error) =>
+        error.includes("exactly two QA review evidence"),
+      ),
+      "the TASK-0007 QA review object is mandatory",
     );
     const qaWrongKind = structuredClone(manifest);
     qaWrongKind.refs.find(
@@ -692,6 +806,16 @@ test("v3 provenance bundle is complete, immutable, and fails closed under transp
       ({ commit }) => commit === "64782c157a50e02146cdad45049b8333033979c6",
     ).derivation_handoff = "docs/handoffs/RECOVERY-CODEOWNERS-ROUTING-035.md";
     assert.ok(v3ManifestErrors(fixture, qaWrongDerivation).length > 0);
+    const task7QaSubstituted = structuredClone(manifest);
+    task7QaSubstituted.refs.find(
+      ({ commit }) => commit === "ed83b582d161c3d9d2a13fc7098e56e776bb0f3e",
+    ).commit = "64782c157a50e02146cdad45049b8333033979c6";
+    assert.ok(v3ManifestErrors(fixture, task7QaSubstituted).length > 0);
+    const task7QaDigestAltered = structuredClone(manifest);
+    task7QaDigestAltered.refs.find(
+      ({ commit }) => commit === "ed83b582d161c3d9d2a13fc7098e56e776bb0f3e",
+    ).object_sha256 = "0".repeat(64);
+    assert.ok(v3ManifestErrors(fixture, task7QaDigestAltered, true).length > 0);
     const task2Closure = path.join(
       fixture,
       "docs/governance/task-closures/TASK-0002.json",
@@ -705,6 +829,35 @@ test("v3 provenance bundle is complete, immutable, and fails closed under transp
     );
     assert.ok(v3ManifestErrors(fixture, manifest).length > 0);
     fs.writeFileSync(task2Closure, pristineTask2Closure);
+    const task7Closure = path.join(
+      fixture,
+      "docs/governance/task-closures/TASK-0007.json",
+    );
+    const pristineTask7Closure = fs.readFileSync(task7Closure, "utf8");
+    const corruptedTask7 = JSON.parse(pristineTask7Closure);
+    corruptedTask7.independent_qa.review_commit = "0".repeat(40);
+    fs.writeFileSync(
+      task7Closure,
+      `${JSON.stringify(corruptedTask7, null, 2)}\n`,
+    );
+    assert.ok(v3ManifestErrors(fixture, manifest).length > 0);
+    fs.writeFileSync(task7Closure, pristineTask7Closure);
+    const task7Review = path.join(
+      fixture,
+      "docs/reviews/RECOVERY-TASK-0007-CLOSURE-001-R3-QA.md",
+    );
+    const pristineTask7Review = fs.readFileSync(task7Review, "utf8");
+    fs.writeFileSync(
+      task7Review,
+      pristineTask7Review.replace("**ACCEPT.**", "**REJECT.**"),
+    );
+    assert.ok(
+      v3ManifestErrors(fixture, manifest).some((error) =>
+        error.includes("derivation handoff digest mismatches"),
+      ),
+      "current TASK-0007 review tampering must fail closed",
+    );
+    fs.writeFileSync(task7Review, pristineTask7Review);
     const unexpected = structuredClone(manifest);
     unexpected.refs.push({ ...unexpected.refs[0], commit: "f".repeat(40) });
     assert.ok(

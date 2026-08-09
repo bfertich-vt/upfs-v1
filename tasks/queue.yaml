@@ -110,7 +110,7 @@ tasks:
       evidence_excerpt: "# TASK-0006 handoff"
   - id: TASK-0007
     title: Implement customer console transaction search workbench
-    status: blocked
+    status: complete
     dependencies: [TASK-0006]
     inputs:
       - AGENTS.md

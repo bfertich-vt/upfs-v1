@@ -1,0 +1,71 @@
+task_id: RECOVERY-TASK-0007-ACTIVATION-HYDRATION-002
+title: Hydrate exact TASK-0007 hydration implementation object in hosted clones
+status: candidate
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0007
+base_commit: 49baf590a390d92569b35ad6faa0c6d181a7c2a8
+dependencies: [RECOVERY-TASK-0007-ACTIVATION-HYDRATION-001-QA]
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - tasks/recovery/RECOVERY-TASK-0007-ACTIVATION-HYDRATION-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0007-ACTIVATION-HYDRATION-001.md
+  - docs/reviews/RECOVERY-TASK-0007-ACTIVATION-HYDRATION-001-QA.md
+  - scripts/fixtures/historical-provenance-v3.json
+  - scripts/fixtures/historical-provenance-v3.bundle
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - .github/workflows/validate.yml
+authorized_files:
+  - scripts/fixtures/historical-provenance-v3.bundle
+  - scripts/fixtures/historical-provenance-v3.json
+  - scripts/ci-gate-validator.mjs
+  - scripts/ci-gate-validator.test.mjs
+  - .github/workflows/validate.yml
+  - tasks/recovery/RECOVERY-TASK-0007-ACTIVATION-HYDRATION-002.yaml
+  - docs/handoffs/RECOVERY-TASK-0007-ACTIVATION-HYDRATION-002.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/**
+  - docs/reviews/**
+  - services/**
+  - apps/**
+  - contracts/**
+  - specs/**
+  - package files and security workflow
+  - existing evidence files
+  - TASK-0008 and later historical task files
+  - TASK-0112 through TASK-0123 files
+acceptance:
+  - Preserve hosted validation failures 31266024459/93124155948 and 31273431055/93143088130 and their successful security companions as immutable evidence.
+  - Add exact implementation commit 336706811e68f8225db0bbacd54008f4e9f6a1bd, derived only from the existing hydration handoff, without changing its candidate identity.
+  - Preserve every existing manifest tuple and bind the new commit Git bytes, SHA-256, deterministic ref, bundle digest, purpose, per-kind counts, and total count.
+  - A genuine fresh shallow clone with no alternates or local fallback proves the object absent before hydration, present after bundle-only hydration, and passes repository traceability and queue validation.
+  - No validator exception, wildcard, unavailable-source bypass, current-handoff exemption, semantic suppression, or older-check reuse is introduced.
+security:
+  - Omission, substitution, altered object digest, stale counts, corrupt bundle, unexpected extra object, local-history leakage, alternates, semantic/provenance bypass, and current TASK-0007 handoff corruption fail closed.
+  - Existing closed object kinds remain unchanged and cannot satisfy one another's semantics.
+tests:
+  - node --test scripts/ci-gate-validator.test.mjs
+  - Fresh --no-local shallow-clone and isolated-object-database bundle verification
+  - npm run queue:check
+  - npm run traceability:check
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run lint
+  - npm test -- --test-concurrency=1
+  - npm audit --audit-level=high
+  - git bundle verify scripts/fixtures/historical-provenance-v3.bundle
+  - git fsck --full --strict
+  - git diff --check
+rollback: Preserve both hosted failures and every earlier object; correct forward or reviewed revert only this additive hydration stream, never rewrite evidence or weaken validation.
+independent_review: Fresh QA/Security distinct from all TASK-0007 authors, remediators, activation authors, hydration author, and prior reviewers reviews the exact committed candidate from an isolated worktree without implementation edits.
+handoff: docs/handoffs/RECOVERY-TASK-0007-ACTIVATION-HYDRATION-002.md
