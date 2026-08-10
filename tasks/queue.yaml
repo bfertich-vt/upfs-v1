@@ -127,7 +127,7 @@ tasks:
       evidence_excerpt: "# TASK-0007 handoff"
   - id: TASK-0008
     title: Implement governed context and cited read-only chat
-    status: blocked
+    status: complete
     dependencies: [TASK-0006]
     inputs:
       - AGENTS.md

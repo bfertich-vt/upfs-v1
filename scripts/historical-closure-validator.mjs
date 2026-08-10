@@ -531,6 +531,98 @@ const TASK_0007_PROTECTED_EVIDENCE = Object.freeze({
     pull_request: 33,
   },
 });
+const TASK_0008_PROTECTED_EVIDENCE = Object.freeze({
+  remediation: {
+    task: "tasks/recovery/RECOVERY-TASK-0008-CLOSURE-002.yaml",
+    task_sha256:
+      "598867166126de5e794298779babe0ff1f355bd401f470e66ea7d3b4b19b6d9b",
+    handoff: "docs/handoffs/RECOVERY-TASK-0008-CLOSURE-002.md",
+    handoff_sha256:
+      "20f6e34b7b5d49e219197c6caab47cc521d5a90c0e369bea96bda71ec5ac2cde",
+    implementation_commit: "50d28fee68c7ce9dbb9bccaec356c0daad2c87e8",
+    candidate_commit: "facbafdf422033bd2dfbd9b2086fdd9bba12eb0c",
+  },
+  independent_qa: {
+    review: "docs/reviews/RECOVERY-TASK-0008-CLOSURE-002-QA.md",
+    review_sha256:
+      "6d6722220170e7679dec03fa6c4a9b67c523bd4069035a6edff078d5e02ab3ca",
+    review_commit: "0c66fa7006f9cc44053ef3eb8f8d06a941360c43",
+    reviewed_candidate: "facbafdf422033bd2dfbd9b2086fdd9bba12eb0c",
+  },
+  rejected_reviews: [
+    {
+      candidate_commit: "a296fe5fed7114566e9e5c6419d03828ece10dba",
+      review: "docs/reviews/RECOVERY-TASK-0008-CLOSURE-001-QA.md",
+      review_sha256:
+        "a98133b334518dd637c5aa8bc1a151c6461bd5598eb87de81440324ef9486722",
+      review_commit: "44d7f5c769477b78be582831cb4bca0cb757a64c",
+      preservation_commit: "275863078ee8829bd984e0d6be9af827934dfcf9",
+    },
+  ],
+  protected_review: {
+    mechanism: "independent-codex-qa-protected-flow",
+    candidate_commit: "facbafdf422033bd2dfbd9b2086fdd9bba12eb0c",
+    review_commit: "0c66fa7006f9cc44053ef3eb8f8d06a941360c43",
+    pr_head: "ef046e56dd1f90c33456209498d798edc4cf47db",
+    tree: "487cb28e88cbe92c78d7d0f658580da20401cb58",
+  },
+  hosted: {
+    evidence_boundary:
+      "immutable inspected snapshot; GitHub API facts are not revalidated offline",
+    repository: "bfertich-vt/upfs-v1",
+    pull_request: 35,
+    base_sha: "a9996e0496683f6297bee1833e527f004a3e64d6",
+    head_sha: "ef046e56dd1f90c33456209498d798edc4cf47db",
+    checks: [
+      {
+        name: "repository-validation",
+        run_id: 31334852303,
+        job_id: 93298914297,
+        head_sha: "ef046e56dd1f90c33456209498d798edc4cf47db",
+        conclusion: "success",
+      },
+      {
+        name: "repository-security",
+        run_id: 31334852304,
+        job_id: 93298914302,
+        head_sha: "ef046e56dd1f90c33456209498d798edc4cf47db",
+        conclusion: "success",
+      },
+    ],
+    validation_artifact: {
+      artifact_id: 9044065807,
+      name: "validation-evidence",
+      archive_digest:
+        "sha256:6f768bc14a628e311d9a31d9b35666081ba66937d3bca92fc3639c3d540dd5d7",
+      content_sha256:
+        "79790e2e887f0a4250dbd0cd1b14f26979981ae16645e05a0ac83e71461e8a8a",
+      content_status: "passed",
+    },
+    post_merge_checks: [
+      {
+        name: "repository-validation",
+        run_id: 31335101488,
+        job_id: 93299554736,
+        head_sha: "7df6605a996bb993806b74980af35c0ca0558797",
+        conclusion: "success",
+      },
+      {
+        name: "repository-security",
+        run_id: 31335101527,
+        job_id: 93299554773,
+        head_sha: "7df6605a996bb993806b74980af35c0ca0558797",
+        conclusion: "success",
+      },
+    ],
+  },
+  protected_merge: {
+    commit: "7df6605a996bb993806b74980af35c0ca0558797",
+    base_parent: "a9996e0496683f6297bee1833e527f004a3e64d6",
+    head_tree: "487cb28e88cbe92c78d7d0f658580da20401cb58",
+    merged_at: "2026-08-09T20:46:15Z",
+    pull_request: 35,
+  },
+});
 const PROTECTED_EVIDENCE = Object.freeze({
   "TASK-0002": TASK_0002_PROTECTED_EVIDENCE,
   "TASK-0003": TASK_0003_PROTECTED_EVIDENCE,
@@ -538,6 +630,7 @@ const PROTECTED_EVIDENCE = Object.freeze({
   "TASK-0005": TASK_0005_PROTECTED_EVIDENCE,
   "TASK-0006": TASK_0006_PROTECTED_EVIDENCE,
   "TASK-0007": TASK_0007_PROTECTED_EVIDENCE,
+  "TASK-0008": TASK_0008_PROTECTED_EVIDENCE,
 });
 const DISPOSITION_SOURCE_COMMIT = "420403fc09962d35d19af0cd735b056cb2a9a1ba";
 const DISPOSITION_SOURCE_SHA256 =
@@ -975,7 +1068,7 @@ function validateAccepted(root, task, tasks, row, errors) {
         "independent_qa",
         ...(["TASK-0003", "TASK-0004"].includes(task.id)
           ? ["rejected_candidates"]
-          : ["TASK-0006", "TASK-0007"].includes(task.id)
+          : ["TASK-0006", "TASK-0007", "TASK-0008"].includes(task.id)
             ? ["rejected_reviews"]
             : []),
         protectedReviewMode ? "protected_review" : "stage_a",
@@ -1129,7 +1222,7 @@ function validateAccepted(root, task, tasks, row, errors) {
       for (const key of [
         ...(["TASK-0003", "TASK-0004"].includes(task.id)
           ? ["rejected_candidates"]
-          : ["TASK-0006", "TASK-0007"].includes(task.id)
+          : ["TASK-0006", "TASK-0007", "TASK-0008"].includes(task.id)
             ? ["rejected_reviews"]
             : []),
         "remediation",
@@ -1154,12 +1247,20 @@ function validateAccepted(root, task, tasks, row, errors) {
           `${rel}.rejected candidate ${rejected} ancestry`,
           errors,
         );
-    if (["TASK-0006", "TASK-0007"].includes(task.id))
+    if (["TASK-0006", "TASK-0007", "TASK-0008"].includes(task.id))
       for (const rejected of record.rejected_reviews || []) {
         if (
           !exact(
             rejected,
-            ["candidate_commit", "review", "review_sha256", "review_commit"],
+            [
+              "candidate_commit",
+              "review",
+              "review_sha256",
+              "review_commit",
+              ...(Object.hasOwn(rejected, "preservation_commit")
+                ? ["preservation_commit"]
+                : []),
+            ],
             `${rel}.rejected_reviews`,
             errors,
           )
@@ -1173,6 +1274,15 @@ function validateAccepted(root, task, tasks, row, errors) {
           `${rel}.rejected review`,
           errors,
         );
+        if (rejected.preservation_commit)
+          immutableBytes(
+            root,
+            rejected.review,
+            rejected.preservation_commit,
+            rejected.review_sha256,
+            `${rel}.preserved rejected review`,
+            errors,
+          );
         ancestor(
           root,
           rejected.candidate_commit,
@@ -1182,7 +1292,7 @@ function validateAccepted(root, task, tasks, row, errors) {
         );
         ancestor(
           root,
-          rejected.review_commit,
+          rejected.preservation_commit || rejected.review_commit,
           remediation?.candidate_commit,
           `${rel}.rejected review preservation`,
           errors,
@@ -1670,6 +1780,7 @@ function validateAccepted(root, task, tasks, row, errors) {
       "TASK-0005",
       "TASK-0006",
       "TASK-0007",
+      "TASK-0008",
     ].includes(task.id)
   ) {
     const limitations = (record.limitations || []).join(" ").toLowerCase();

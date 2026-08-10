@@ -1,16 +1,23 @@
 {
   "schema_version": 2,
-  "purpose": "Complete immutable Git-object transport for 34 accepted handoff candidates, two exact Git-bound erratum sources, and two independently accepted QA review evidence commits for TASK-0002 and TASK-0007. The original 37 refs are retained exactly; the TASK-0007 activation-hydration implementation candidate is additionally required for a fresh hosted clone to validate its current handoff without local-history reliance. This transport is not a validation exception, source-availability bypass, current-task exemption, or production claim.",
+  "purpose": "Complete immutable Git-object transport for 34 accepted handoff candidates, two exact Git-bound erratum sources, and four exact QA review evidence commits for TASK-0002, TASK-0007, and TASK-0008. The original 38 refs are retained exactly; TASK-0008 adds its accepted QA review commit and preserved rejected-QA source commit because both are outside the protected activation ancestry and are required for a fresh hosted clone to validate the current closure without local-history reliance. This transport is not a validation exception, source-availability bypass, current-task exemption, or production claim.",
   "bundle": "scripts/fixtures/historical-provenance-v3.bundle",
-  "sha256": "c6ef8842be337c915e7520331e582d2ea5bad15f006adbafb0c0bc41a9bf4c10",
+  "sha256": "8751dbbf6ebe7708acd6eb6e385fb948e2b91777b0efa625d4ad23cd7ea924e9",
   "ref_prefix": "refs/bundle-build/traceability-v3/",
   "required_counts": {
     "handoff-candidate": 34,
     "erratum-source": 2,
-    "qa-review-evidence": 2,
-    "total": 38
+    "qa-review-evidence": 4,
+    "total": 40
   },
   "refs": [
+    {
+      "commit": "0c66fa7006f9cc44053ef3eb8f8d06a941360c43",
+      "kind": "qa-review-evidence",
+      "object_sha256": "564d91b62a25a3237f410ce7b882e11995e0c672fb23f3a3366cc90875e9b990",
+      "derivation_handoff": "docs/reviews/RECOVERY-TASK-0008-CLOSURE-002-QA.md",
+      "derivation_handoff_sha256": "6d6722220170e7679dec03fa6c4a9b67c523bd4069035a6edff078d5e02ab3ca"
+    },
     {
       "commit": "4ae7e95f0af88e21dde526be44443846a8d8d9a6",
       "kind": "erratum-source",
@@ -115,6 +122,13 @@
       "object_sha256": "20a6d34c0bac20d1be06b0c24b99a849f144ae377ebe66f54cfcd7bae900a560",
       "derivation_handoff": "docs/handoffs/RECOVERY-TRACEABILITY-BUNDLE-TOPOLOGY-031.md",
       "derivation_handoff_sha256": "9ed8f14d0d05d048ce07ef6e4a8c089e0ff8e2db3ac566b0272a948034e10f83"
+    },
+    {
+      "commit": "44d7f5c769477b78be582831cb4bca0cb757a64c",
+      "kind": "qa-review-evidence",
+      "object_sha256": "612aa58105396ab1f5e824b9296d9c58f5f9984ec42dc8d06f62998a1ec7d38e",
+      "derivation_handoff": "docs/reviews/RECOVERY-TASK-0008-CLOSURE-001-QA.md",
+      "derivation_handoff_sha256": "a98133b334518dd637c5aa8bc1a151c6461bd5598eb87de81440324ef9486722"
     },
     {
       "commit": "4ca3494dd2b19050646061ca5ce44f28e2cfca15",
