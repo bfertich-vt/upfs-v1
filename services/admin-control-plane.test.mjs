@@ -95,9 +95,51 @@ test('stale or malformed health and partial projection data fail closed', () => 
   assert.equal(make({ projection: { 'tenant-a': { status: 'healthy', watermark: 1, indexed_count: 2, private_data: 'x' } } }).tenantRead({ actor: admin, tenantId: 'tenant-a' }).body.code, 'projection_dependency_unavailable');
 });
 
-test('pre and post shaping cancellation releases no data', () => {
-  const signal = { aborted: true }; const service = make(); const response = service.tenantRead({ actor: admin, tenantId: 'tenant-a', signal });
+test('primitive cancellation snapshot releases no data', () => {
+  const service = make(); const response = service.tenantRead({ actor: admin, tenantId: 'tenant-a', signal: true });
   assert.equal(response.body.code, 'request_cancelled'); assert.equal('tenant' in response.body, false);
+});
+
+test('hostile cancellation values fail closed across every read without executing nested code or dependencies', () => {
+  const reads = [
+    ['healthRead', (signal) => ({ actor: admin, signal })],
+    ['tenantList', (signal) => ({ actor: admin, signal })],
+    ['tenantRead', (signal) => ({ actor: supportActor, tenantId: 'tenant-a', environmentId: 'env-a', supportSession: supportToken, signal })],
+  ];
+  const hostileValues = () => {
+    let getterCalls = 0; const accessor = {}; Object.defineProperty(accessor, 'aborted', { enumerable: true, get() { getterCalls += 1; throw new Error('getter-private'); } });
+    let proxyCalls = 0; const proxy = new Proxy({}, { get() { proxyCalls += 1; throw new Error('proxy-private'); }, getPrototypeOf() { proxyCalls += 1; throw new Error('proxy-private'); }, ownKeys() { proxyCalls += 1; throw new Error('proxy-private'); } });
+    const symbol = { aborted: false, [Symbol('private')]: true };
+    const extra = { aborted: false, extra: true };
+    const circular = { aborted: false }; circular.self = circular;
+    const oversized = { aborted: false, private: 'x'.repeat(100000) };
+    return { values: [accessor, proxy, symbol, extra, circular, oversized, Symbol('cancel')], calls: () => ({ getterCalls, proxyCalls }) };
+  };
+  for (const [method, request] of reads) {
+    for (const signal of hostileValues().values) {
+      let supportCalls = 0;
+      const service = make({ resolveSupportSession: () => { supportCalls += 1; throw new Error('must-not-run'); } });
+      const response = service[method](request(signal));
+      assert.deepEqual([response.status, response.body.code], [400, 'invalid_cancellation']);
+      assert.equal(supportCalls, 0); assert.equal('data' in response.body, false); assert.equal('tenant' in response.body, false);
+      assert.doesNotMatch(JSON.stringify(response), /getter-private|proxy-private|must-not-run|private/);
+      assert.deepEqual(service.audit().map((event) => [event.decision, event.reason, event.metadata_only]), [['deny', 'invalid_cancellation', true]]);
+    }
+    const tracked = hostileValues(); const service = make();
+    for (const signal of tracked.values) service[method](request(signal));
+    assert.deepEqual(tracked.calls(), { getterCalls: 0, proxyCalls: 0 });
+  }
+});
+
+test('a corrected cancellation retry succeeds with independent atomic audit state', () => {
+  let supportCalls = 0;
+  const service = make({ resolveSupportSession: (reference) => { supportCalls += 1; return reference === supportToken ? support : null; } });
+  const hostile = {}; Object.defineProperty(hostile, 'aborted', { enumerable: true, get() { throw new Error('must-not-run'); } });
+  assert.equal(service.tenantRead({ actor: supportActor, tenantId: 'tenant-a', environmentId: 'env-a', supportSession: supportToken, signal: hostile }).body.code, 'invalid_cancellation');
+  assert.equal(supportCalls, 0);
+  const corrected = service.tenantRead({ actor: supportActor, tenantId: 'tenant-a', environmentId: 'env-a', supportSession: supportToken, signal: false });
+  assert.equal(corrected.status, 200); assert.equal(supportCalls, 1);
+  assert.deepEqual(service.audit().map((event) => [event.decision, event.reason]), [['deny', 'invalid_cancellation'], ['allow', 'authorized']]);
 });
 
 test('mandatory audit failure prevents success and denial release', () => {

@@ -52,6 +52,11 @@ const normalizeActor = (value) => {
 };
 const normalizeTenant = (value) => { const tenant = safeRecord(value, TENANT_KEYS, 'tenant'); return Object.freeze({ id: safeString(tenant.id, 'tenant'), name: safeString(tenant.name, 'tenant_name', { pattern: /^[^\u0000-\u001f\u007f]{1,256}$/ }), organization_id: safeString(tenant.organization_id, 'organization'), status: safeString(tenant.status ?? 'active', 'tenant_status') }); };
 const normalizeEnvironment = (value) => { const environment = safeRecord(value, ENV_KEYS, 'environment'); return Object.freeze({ id: safeString(environment.id, 'environment'), tenant_id: safeString(environment.tenant_id, 'tenant'), name: safeString(environment.name, 'environment_name', { pattern: /^[^\u0000-\u001f\u007f]{1,256}$/ }), status: safeString(environment.status ?? 'active', 'environment_status') }); };
+const normalizeCancellation = (value) => {
+  if (value === undefined || value === false) return false;
+  if (value === true) return true;
+  throw new TypeError('invalid_cancellation');
+};
 
 /** Read-only admin control-plane reference. Production adapters must sit behind a private control-plane boundary. */
 export class AdminControlPlaneService {
@@ -89,18 +94,19 @@ export class AdminControlPlaneService {
   }
   healthRead(request = {}) {
     let input; try { input = safeRecord(request, new Set(['actor', 'signal']), 'health_request'); } catch { return this.#begin(undefined, 'admin.health.read').failure; } const { actor, signal } = input;
+    let cancelled; try { cancelled = normalizeCancellation(signal); } catch { const rejected = this.#begin(actor, 'admin.health.read'); return rejected.failure ?? this.#deny(rejected.context, 400, 'invalid_cancellation'); }
     const begun = this.#begin(actor, 'admin.health.read'); if (begun.failure) return begun.failure; const { context } = begun;
-    if (signal?.aborted === true) return this.#deny(context, 499, 'request_cancelled');
+    if (cancelled) return this.#deny(context, 499, 'request_cancelled');
     let components;
     try { components = Object.fromEntries(Object.entries(safeRecord(this.health, new Set(Object.keys(this.health)), 'health')).map(([name, value]) => { safeString(name, 'component'); const component = safeRecord(value, new Set(['status', 'observed_at']), 'health_component'); const status = STATUS.has(component.status) ? component.status : 'unknown'; const observed = component.observed_at ?? this.now().toISOString(); const observedMs = RFC3339.test(observed) ? Date.parse(observed) : NaN; if (!Number.isFinite(observedMs) || this.now().getTime() - observedMs > this.maxSnapshotAgeMs) throw new TypeError('stale_health'); return [name, { status, observed_at: observed, data_classification: 'operational_metadata' }]; })); } catch { return this.#deny(context, 503, 'health_dependency_unavailable'); }
-    if (signal?.aborted === true) return this.#deny(context, 499, 'request_cancelled');
     const degraded = Object.values(components).some((value) => value.status !== 'healthy');
     return this.#allow(context, { status: 200, body: { request_id: context.requestId, status: degraded ? 'degraded' : 'healthy', components } });
   }
   tenantList(request = {}) {
     let input; try { input = safeRecord(request, new Set(['actor', 'limit', 'cursor', 'signal']), 'tenant_list_request'); } catch { return this.#begin(undefined, 'admin.tenants.list').failure; } const { actor, limit = 25, cursor = null, signal } = input;
+    let cancelled; try { cancelled = normalizeCancellation(signal); } catch { const rejected = this.#begin(actor, 'admin.tenants.list'); return rejected.failure ?? this.#deny(rejected.context, 400, 'invalid_cancellation'); }
     const begun = this.#begin(actor, 'admin.tenants.list'); if (begun.failure) return begun.failure; const { context } = begun;
-    if (signal?.aborted === true) return this.#deny(context, 499, 'request_cancelled');
+    if (cancelled) return this.#deny(context, 499, 'request_cancelled');
     if (!Number.isInteger(limit) || limit < 1 || limit > 100) return this.#deny(context, 400, 'invalid_limit');
     const visible = this.tenants.filter((tenant) => context.actor.tenantIds.has(tenant.id)).sort((a, b) => a.id.localeCompare(b.id));
     const scope = crypto.createHash('sha256').update([...context.actor.tenantIds].sort().join('\n')).digest('hex'); const snapshot = crypto.createHash('sha256').update(visible.map((tenant) => tenant.id).join('\n')).digest('hex');
@@ -108,19 +114,20 @@ export class AdminControlPlaneService {
     if (offset === null || offset > visible.length) return this.#deny(context, 400, 'invalid_cursor');
     const data = visible.slice(offset, offset + limit).map((tenant) => ({ id: tenant.id, name: tenant.name, status: tenant.status, organization_id: tenant.organization_id, data_classification: 'tenant_metadata' }));
     const result = { status: 200, body: { request_id: context.requestId, data, page: { limit, next_cursor: offset + data.length < visible.length ? this.#cursor('admin.tenants.list', offset + data.length, scope, snapshot) : null } } };
-    return signal?.aborted === true ? this.#deny(context, 499, 'request_cancelled') : this.#allow(context, result);
+    return this.#allow(context, result);
   }
   tenantRead(request = {}) {
     let input; try { input = safeRecord(request, new Set(['actor', 'tenantId', 'environmentId', 'supportSession', 'signal']), 'tenant_read_request'); } catch { return this.#begin(undefined, 'admin.tenant.read').failure; } const { actor, tenantId, environmentId, supportSession, signal } = input;
+    let cancelled; try { cancelled = normalizeCancellation(signal); } catch { const rejected = this.#begin(actor, 'admin.tenant.read'); return rejected.failure ?? this.#deny(rejected.context, 400, 'invalid_cancellation'); }
     const begun = this.#begin(actor, 'admin.tenant.read', tenantId, environmentId, supportSession); if (begun.failure) return begun.failure; const { context } = begun;
-    if (signal?.aborted === true) return this.#deny(context, 499, 'request_cancelled');
+    if (cancelled) return this.#deny(context, 499, 'request_cancelled');
     const tenant = this.tenants.find((value) => value.id === context.tenantId); if (!tenant) return this.#deny(context, 404, 'resource_not_found');
     const allowedEnvironmentIds = context.support ? new Set(context.support.environmentIds) : context.actor.environmentIds;
     const envs = this.environments.filter((environment) => environment.tenant_id === tenant.id && (!context.environmentId || environment.id === context.environmentId) && allowedEnvironmentIds.has(environment.id)).map((environment) => ({ id: environment.id, name: environment.name, status: environment.status, tenant_id: tenant.id, data_classification: 'tenant_metadata' }));
     if (context.environmentId && envs.length === 0) return this.#deny(context, 404, 'resource_not_found');
     let projection; try { const raw = this.projection[tenant.id] ?? {}; const p = safeRecord(raw, new Set(['status', 'watermark', 'indexed_count']), 'projection'); if ((p.watermark !== undefined && (!Number.isSafeInteger(p.watermark) || p.watermark < 0)) || (p.indexed_count !== undefined && (!Number.isSafeInteger(p.indexed_count) || p.indexed_count < 0))) throw new TypeError('invalid_projection'); projection = { status: STATUS.has(p.status) ? p.status : 'unknown', watermark: p.watermark ?? 0, indexed_count: p.indexed_count ?? 0, data_classification: 'operational_metadata' }; } catch { return this.#deny(context, 503, 'projection_dependency_unavailable'); }
     const result = { status: 200, body: { request_id: context.requestId, tenant: { id: tenant.id, name: tenant.name, status: tenant.status, organization_id: tenant.organization_id, data_classification: 'tenant_metadata' }, environments: envs, projection } };
-    return signal?.aborted === true ? this.#deny(context, 499, 'request_cancelled') : this.#allow(context, result);
+    return this.#allow(context, result);
   }
   #writeBegin(actor, tenantId, environmentId, action) {
     const request_id = this.requestId();
