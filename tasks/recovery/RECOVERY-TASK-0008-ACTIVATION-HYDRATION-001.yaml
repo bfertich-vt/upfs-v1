@@ -1,0 +1,75 @@
+task_id: RECOVERY-TASK-0008-ACTIVATION-HYDRATION-001
+title: Hydrate exact TASK-0008 activation review objects in hosted validation
+status: in_progress
+role: Backend
+role_file: agents/BACKEND.md
+historical_task: TASK-0008
+base_commit: 8999e7d6ac32747697f56c03e2860eea6f896e9e
+hosted_failure:
+  run_id: 31384789499
+  job_id: 93442681091
+  head_sha: 8999e7d6ac32747697f56c03e2860eea6f896e9e
+  missing_objects:
+    - 0c66fa7006f9cc44053ef3eb8f8d06a941360c43
+    - 44d7f5c769477b78be582831cb4bca0cb757a64c
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - scripts/fixtures/historical-provenance-v3.json
+  - scripts/fixtures/historical-provenance-v3.bundle
+  - scripts/ci-gate-validator.test.mjs
+  - .github/workflows/validate.yml
+  - docs/governance/task-closures/TASK-0008.json
+  - docs/handoffs/RECOVERY-TASK-0008-ACTIVATION-001.md
+  - docs/reviews/RECOVERY-TASK-0008-ACTIVATION-001-QA.md
+allowed_files:
+  - scripts/fixtures/historical-provenance-v3.json
+  - scripts/fixtures/historical-provenance-v3.bundle
+  - scripts/ci-gate-validator.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0008-ACTIVATION-HYDRATION-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0008-ACTIVATION-HYDRATION-001.md
+prohibited_files:
+  - scripts/ci-gate-validator.mjs
+  - scripts/historical-closure-validator.mjs
+  - .github/**
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/**
+  - docs/reviews/**
+  - services/**
+  - apps/**
+  - contracts/**
+  - specs/**
+  - TASK-0009+
+  - TASK-0112 through TASK-0123
+acceptance:
+  - The deterministic v3 bundle transports the exact accepted and rejected TASK-0008 QA commit objects derived from committed closure evidence.
+  - A fresh isolated checkout proves both objects absent before hydration and present only after verified bundle hydration.
+  - Manifest kind, count, reference, raw commit SHA-256, derivation path, and derivation digest are exact and closed.
+  - Omission, substitution, digest alteration, stale count, corrupted bundle, unexpected extra object, local-history leakage, and semantic/provenance bypass fail closed.
+  - The unchanged historical closure validator succeeds after hydration without exceptions, wildcards, or current-record exemptions.
+security:
+  - Preserve exact review independence, accepted/rejected topology, current-record validation, and fail-closed Git-object verification.
+  - Add no tenant, customer, financial, credential, provider, production, or runtime data.
+tests:
+  - node --test --test-concurrency=1 --test-name-pattern="v3 provenance bundle" scripts/ci-gate-validator.test.mjs
+  - node --test --test-concurrency=1 scripts/ci-gate-validator.test.mjs
+  - npm test -- --test-concurrency=1
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm run format:check
+  - npm run lint
+  - npm run queue:check
+  - npm run traceability:check
+  - npm audit --audit-level=high
+  - git bundle verify scripts/fixtures/historical-provenance-v3.bundle
+  - git fsck --full --strict
+  - git diff --check
+rollback: Revert only the bounded manifest, bundle, test, task, and handoff commits; preserve hosted failure 31384789499 and correct forward through fresh independent review without weakening validation.
+independent_review: A distinct QA/Security agent must review the exact committed candidate read-only in a fresh isolated worktree and author only its review artifact.
+handoff: docs/handoffs/RECOVERY-TASK-0008-ACTIVATION-HYDRATION-001.md
