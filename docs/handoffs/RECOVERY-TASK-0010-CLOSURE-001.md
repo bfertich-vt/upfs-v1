@@ -4,8 +4,8 @@
 - Agent role: Backend, exclusively bound to `agents/BACKEND.md`; SHA-256 `171397b8a57a3b8e561e106b277e6eeb761e4a736641d5430af4759225d8c784`.
 - Agent thread: `/root/backend_task_0010_closure_r1`. The runtime provided no native UPFS custom-role field; the initial assignment bound this documented role and required pre-edit role/input digest evidence.
 - Worktree, branch, and base: `C:\source\upfs-backend-task-0010-closure-r1`; `recovery/task-0010-closure-r1`; exact last fully proven protected base `572b6d6f31ab10f41c6077bcf1fe7b12a159070a`.
-- Structured-task commit: `88879bb4ab49989627c98a57513d7ca3b58fbf3b`.
-- Implementation commit: `6649f0771671064944f28a40e7c1d42d713f4d0b`. This handoff is a separate descendant; the final candidate SHA is recorded after its commit.
+- Structured-task commit: `88879bb852fe91612f431eaaaede80d5820c1f30`.
+- Implementation commit: `6649f077a087e00bb86f27292c103c54626362aa`. This handoff is a separate descendant; the exact QA candidate is the committed handoff lineage reported to the reviewer.
 - Files changed by the implementation lineage: `services/admin-control-plane.mjs`; `services/admin-control-plane.test.mjs`; `contracts/openapi/admin-api.yaml`; generator-produced `docs/generated/api-reference.md`; `tasks/recovery/RECOVERY-TASK-0010-CLOSURE-001.yaml`; and this handoff only. `packages/sdk-generated/index.ts` was authorized and regenerated but its bytes did not change.
 - Contracts/migrations: the admin OpenAPI now documents bounded tenant/environment and opaque support-session inputs, actor-scope/snapshot-bound cursors, cancellation and dependency/audit failure envelopes, and closed read-response schemas. The public API reference was regenerated deterministically. No database, index, cache, event, or deployment migration exists.
 
