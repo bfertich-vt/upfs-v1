@@ -339,10 +339,10 @@ test("TASK-0002 protected-review activation is exact and fails closed", (t) => {
     /TASK-0002 has a closure record but is not complete/,
   );
   const later = queue.replace(
-    /(id: TASK-0009[\s\S]*?status:) blocked/,
+    /(id: TASK-0010[\s\S]*?status:) blocked/,
     "$1 complete",
   );
-  expectInvalid(root, later, /TASK-0009\.json cannot be resolved/);
+  expectInvalid(root, later, /TASK-0010\.json cannot be resolved/);
 });
 
 test("TASK-0003 protected-review activation binds exact accepted and rejection evidence", (t) => {
@@ -434,10 +434,10 @@ test("TASK-0003 protected-review activation binds exact accepted and rejection e
     /TASK-0003 has a closure record but is not complete/,
   );
   const later = queue.replace(
-    /(id: TASK-0009[\s\S]*?status:) blocked/,
+    /(id: TASK-0010[\s\S]*?status:) blocked/,
     "$1 complete",
   );
-  expectInvalid(root, later, /TASK-0009\.json cannot be resolved/);
+  expectInvalid(root, later, /TASK-0010\.json cannot be resolved/);
 });
 
 test("TASK-0004 activation binds exact evidence, status, limitations, rejections, and later-task freeze", (t) => {
@@ -524,8 +524,8 @@ test("TASK-0004 activation binds exact evidence, status, limitations, rejections
   );
   expectInvalid(
     root,
-    queue.replace(/(id: TASK-0009[\s\S]*?status:) blocked/, "$1 complete"),
-    /TASK-0009\.json cannot be resolved/,
+    queue.replace(/(id: TASK-0010[\s\S]*?status:) blocked/, "$1 complete"),
+    /TASK-0010\.json cannot be resolved/,
   );
 });
 
@@ -617,8 +617,8 @@ test("TASK-0005 activation binds exact protected evidence and fails closed", (t)
   );
   expectInvalid(
     root,
-    queue.replace(/(id: TASK-0009[\s\S]*?status:) blocked/, "$1 complete"),
-    /TASK-0009\.json cannot be resolved/,
+    queue.replace(/(id: TASK-0010[\s\S]*?status:) blocked/, "$1 complete"),
+    /TASK-0010\.json cannot be resolved/,
   );
   fs.rmSync(closurePath);
   expectInvalid(root, queue, /TASK-0005\.json cannot be resolved/);
@@ -764,8 +764,8 @@ test("TASK-0006 activation binds accepted, rejected, hosted, and limitation evid
   );
   expectInvalid(
     root,
-    queue.replace(/(id: TASK-0009[\s\S]*?status:) blocked/, "$1 complete"),
-    /TASK-0009\.json cannot be resolved/,
+    queue.replace(/(id: TASK-0010[\s\S]*?status:) blocked/, "$1 complete"),
+    /TASK-0010\.json cannot be resolved/,
   );
   fs.rmSync(closurePath);
   expectInvalid(root, queue, /TASK-0006\.json cannot be resolved/);
@@ -915,8 +915,8 @@ test("TASK-0007 activation fails closed on evidence, status, classification, and
   );
   expectInvalid(
     root,
-    queue.replace(/(id: TASK-0009[\s\S]*?status:) blocked/, "$1 complete"),
-    /TASK-0009\.json cannot be resolved/,
+    queue.replace(/(id: TASK-0010[\s\S]*?status:) blocked/, "$1 complete"),
+    /TASK-0010\.json cannot be resolved/,
   );
   fs.rmSync(closurePath);
   expectInvalid(root, queue, /TASK-0007\.json cannot be resolved/);
@@ -1067,8 +1067,8 @@ test("TASK-0008 activation fails closed on evidence, status, classification, and
   );
   expectInvalid(
     root,
-    queue.replace(/(id: TASK-0009[\s\S]*?status:) blocked/, "$1 complete"),
-    /TASK-0009\.json cannot be resolved/,
+    queue.replace(/(id: TASK-0010[\s\S]*?status:) blocked/, "$1 complete"),
+    /TASK-0010\.json cannot be resolved/,
   );
   fs.rmSync(closurePath);
   expectInvalid(root, queue, /TASK-0008\.json cannot be resolved/);
@@ -1310,6 +1310,7 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
           "| TASK-0006 |",
           "| TASK-0007 |",
           "| TASK-0008 |",
+          "| TASK-0009 |",
         ].some((prefix) => line.startsWith(prefix))
       )
         return line;
