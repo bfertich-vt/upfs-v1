@@ -99,6 +99,22 @@ const keysAre = (value, allowed) =>
   !Array.isArray(value) &&
   Object.keys(value).every((key) => allowed.includes(key));
 
+const keysExactly = (value, required, optional = []) =>
+  keysAre(value, [...required, ...optional]) &&
+  required.every((key) => Object.hasOwn(value, key));
+
+const validTimestamp = (value) =>
+  typeof value === "string" &&
+  !Number.isNaN(Date.parse(value)) &&
+  new Date(value).toISOString() === value;
+
+const nullableIdentifier = (value) => value === null || IDENTIFIER.test(value);
+
+const validStringArray = (value, maxItems = 32, maxLength = 512) =>
+  Array.isArray(value) &&
+  value.length <= maxItems &&
+  value.every((item) => boundedText(item, maxLength, true));
+
 const boundedText = (value, max = 2_048, required = false) =>
   typeof value === "string" &&
   value.length <= max &&
@@ -296,7 +312,8 @@ export class PolicyWorkflowService {
   }
 
   #policyValid(policy) {
-    if (!keysAre(policy, ["id", "version", "rules", "release"])) return false;
+    if (!keysExactly(policy, ["id", "version", "rules", "release"]))
+      return false;
     if (
       !IDENTIFIER.test(policy.id ?? "") ||
       !IDENTIFIER.test(policy.version ?? "")
@@ -311,13 +328,11 @@ export class PolicyWorkflowService {
     if (
       !policy.rules.every(
         (rule) =>
-          keysAre(rule, [
-            "action",
-            "effect",
-            "resource_type",
-            "when",
-            "obligations",
-          ]) &&
+          keysExactly(
+            rule,
+            ["action", "effect"],
+            ["resource_type", "when", "obligations"],
+          ) &&
           IDENTIFIER.test(rule.action ?? "") &&
           ["allow", "deny"].includes(rule.effect) &&
           (rule.resource_type === undefined ||
@@ -338,7 +353,7 @@ export class PolicyWorkflowService {
     }
     const release = policy.release;
     if (
-      !keysAre(release, [
+      !keysExactly(release, [
         "tests_passed",
         "impact_analysis",
         "approval",
@@ -355,7 +370,7 @@ export class PolicyWorkflowService {
     )
       return false;
     if (
-      !keysAre(release.approval, ["actor", "reason", "evidence"]) ||
+      !keysExactly(release.approval, ["actor", "reason", "evidence"]) ||
       !validActor(release.approval.actor) ||
       !release.approval.actor.roles.includes("policy_approver") ||
       !boundedText(release.approval.reason, 2_048, true) ||
@@ -367,7 +382,7 @@ export class PolicyWorkflowService {
       return false;
     }
     if (
-      !keysAre(release.shadow, ["evaluations", "deny_delta_bps"]) ||
+      !keysExactly(release.shadow, ["evaluations", "deny_delta_bps"]) ||
       !Number.isSafeInteger(release.shadow.evaluations) ||
       release.shadow.evaluations < 1 ||
       !Number.isSafeInteger(release.shadow.deny_delta_bps) ||
@@ -376,7 +391,7 @@ export class PolicyWorkflowService {
       return false;
     }
     if (
-      !keysAre(release.rollout, ["percentage"]) ||
+      !keysExactly(release.rollout, ["percentage"]) ||
       !Number.isSafeInteger(release.rollout.percentage) ||
       release.rollout.percentage < 0 ||
       release.rollout.percentage > 100
@@ -384,7 +399,7 @@ export class PolicyWorkflowService {
       return false;
     }
     return (
-      keysAre(release.rollback, ["to_policy_version"]) &&
+      keysExactly(release.rollback, ["to_policy_version"]) &&
       (release.rollback.to_policy_version === null ||
         IDENTIFIER.test(release.rollback.to_policy_version))
     );
@@ -670,7 +685,7 @@ export class PolicyWorkflowService {
 
   #workflowValid(workflow) {
     if (
-      !keysAre(workflow, [
+      !keysExactly(workflow, [
         "id",
         "definition_version",
         "tenant_id",
@@ -691,7 +706,7 @@ export class PolicyWorkflowService {
       return false;
     }
     if (
-      !keysAre(workflow.approval, ["required", "roles"]) ||
+      !keysExactly(workflow.approval, ["required", "roles"]) ||
       !Number.isSafeInteger(workflow.approval.required) ||
       workflow.approval.required < 1 ||
       workflow.approval.required > 16 ||
@@ -704,24 +719,18 @@ export class PolicyWorkflowService {
     }
     return workflow.steps.every((step) => {
       if (
-        !keysAre(step, [
-          "id",
-          "type",
-          "classification",
-          "timeout_ms",
-          "retry",
-          "timer",
-          "action_request",
-          "postcondition",
-          "compensation",
-        ]) ||
+        !keysExactly(
+          step,
+          ["id", "type", "classification", "timeout_ms", "retry"],
+          ["timer", "action_request", "postcondition", "compensation"],
+        ) ||
         !IDENTIFIER.test(step.id ?? "") ||
         !STEP_TYPES.has(step.type) ||
         !CLASSIFICATIONS.has(step.classification) ||
         !Number.isSafeInteger(step.timeout_ms) ||
         step.timeout_ms < 1 ||
         step.timeout_ms > 86_400_000 ||
-        !keysAre(step.retry, ["max_attempts", "backoff_ms"]) ||
+        !keysExactly(step.retry, ["max_attempts", "backoff_ms"]) ||
         !Number.isSafeInteger(step.retry.max_attempts) ||
         step.retry.max_attempts < 0 ||
         step.retry.max_attempts > 10 ||
@@ -733,7 +742,7 @@ export class PolicyWorkflowService {
       }
       if (
         step.type === "timer" &&
-        (!keysAre(step.timer, ["delay_ms"]) ||
+        (!keysExactly(step.timer, ["delay_ms"]) ||
           !Number.isSafeInteger(step.timer.delay_ms) ||
           step.timer.delay_ms < 1 ||
           step.timer.delay_ms > 31_536_000_000)
@@ -743,7 +752,7 @@ export class PolicyWorkflowService {
       if (step.type !== "timer" && step.timer !== undefined) return false;
       if (step.classification === "irreversible") {
         if (
-          !keysAre(step.action_request, ["adapter", "action"]) ||
+          !keysExactly(step.action_request, ["adapter", "action"]) ||
           !IDENTIFIER.test(step.action_request.adapter ?? "") ||
           !IDENTIFIER.test(step.action_request.action ?? "") ||
           !boundedText(step.postcondition, 512, true) ||
@@ -754,7 +763,7 @@ export class PolicyWorkflowService {
       }
       if (
         step.classification === "compensatable" &&
-        (!keysAre(step.compensation, ["adapter", "action"]) ||
+        (!keysExactly(step.compensation, ["adapter", "action"]) ||
           !IDENTIFIER.test(step.compensation.adapter ?? "") ||
           !IDENTIFIER.test(step.compensation.action ?? ""))
       ) {
@@ -1569,15 +1578,15 @@ export class PolicyWorkflowService {
       maxNodes: 20_000,
       maxBytes: 2 * 1024 * 1024,
     });
-    if (!keysAre(bundle, ["schema_version", "scope", "data", "sha256"])) {
+    if (!keysExactly(bundle, ["schema_version", "scope", "data", "sha256"])) {
       throw new TypeError("invalid_recovery_state");
     }
     if (
       bundle.schema_version !== "upfs.policy-workflow.reference-state.v1" ||
-      !keysAre(bundle.scope, ["tenant_id", "environment_id"]) ||
+      !keysExactly(bundle.scope, ["tenant_id", "environment_id"]) ||
       !IDENTIFIER.test(bundle.scope.tenant_id ?? "") ||
       !IDENTIFIER.test(bundle.scope.environment_id ?? "") ||
-      !keysAre(bundle.data, [
+      !keysExactly(bundle.data, [
         "policies",
         "workflows",
         "idempotency",
@@ -1598,7 +1607,7 @@ export class PolicyWorkflowService {
       throw new TypeError("invalid_recovery_digest");
     const { tenant_id: tenantId, environment_id: environmentId } = bundle.scope;
     const validPolicyRecord = (item) =>
-      keysAre(item, [
+      keysExactly(item, [
         "id",
         "declared_version",
         "rules",
@@ -1622,10 +1631,61 @@ export class PolicyWorkflowService {
       item.policy_version ===
         `${item.id}:${item.declared_version}.${item.number}` &&
       ["shadow", "rolling_out", "active"].includes(item.status) &&
-      !Number.isNaN(Date.parse(item.published_at)) &&
+      validTimestamp(item.published_at) &&
       boundedText(item.published_by, 512, true);
+    const validDecision = (item) =>
+      keysExactly(item, [
+        "actor",
+        "roles",
+        "decision",
+        "reason",
+        "evidence",
+        "policy_version",
+        "at",
+      ]) &&
+      boundedText(item.actor, 512, true) &&
+      validStringArray(item.roles, 32, 200) &&
+      ["approve", "deny"].includes(item.decision) &&
+      boundedText(item.reason, 2_048, true) &&
+      validStringArray(item.evidence) &&
+      IDENTIFIER.test(item.policy_version ?? "") &&
+      validTimestamp(item.at);
+    const checkpointKeys = [
+      "step_id",
+      "status",
+      "attempts",
+      "action_request_id",
+      "postcondition_verified",
+    ];
+    const validCheckpoint = (checkpoint) =>
+      keysExactly(checkpoint, checkpointKeys, [
+        "failure_code",
+        "retry_after",
+        "compensation_evidence",
+      ]) &&
+      IDENTIFIER.test(checkpoint.step_id ?? "") &&
+      [
+        "pending",
+        "retrying",
+        "succeeded",
+        "failed",
+        "timed_out",
+        "compensation_required",
+        "compensated",
+      ].includes(checkpoint.status) &&
+      Number.isSafeInteger(checkpoint.attempts) &&
+      checkpoint.attempts >= 0 &&
+      checkpoint.attempts <= 1_000 &&
+      nullableIdentifier(checkpoint.action_request_id) &&
+      typeof checkpoint.postcondition_verified === "boolean" &&
+      (checkpoint.failure_code === undefined ||
+        nullableIdentifier(checkpoint.failure_code)) &&
+      (checkpoint.retry_after === undefined ||
+        validTimestamp(checkpoint.retry_after)) &&
+      (checkpoint.compensation_evidence === undefined ||
+        boundedText(checkpoint.compensation_evidence, 512, true));
     const validWorkflowRecord = (item) =>
-      keysAre(item, [
+      keysExactly(item, [
         "key",
         "id",
         "tenant_id",
@@ -1645,7 +1705,7 @@ export class PolicyWorkflowService {
       item.definition_version === item.definition.definition_version &&
       IDENTIFIER.test(item.policy_version ?? "") &&
       boundedText(item.created_by, 512, true) &&
-      !Number.isNaN(Date.parse(item.created_at)) &&
+      validTimestamp(item.created_at) &&
       (TERMINAL.has(item.status) ||
         [
           "pending_approval",
@@ -1656,27 +1716,175 @@ export class PolicyWorkflowService {
         ].includes(item.status)) &&
       Number.isSafeInteger(item.version) &&
       item.version > 0 &&
-      keysAre(item.approval, ["required", "roles", "decisions"]) &&
+      keysExactly(item.approval, ["required", "roles", "decisions"]) &&
+      Number.isSafeInteger(item.approval.required) &&
+      item.approval.required >= 1 &&
+      item.approval.required <= 16 &&
+      validStringArray(item.approval.roles, 16, 200) &&
       Array.isArray(item.approval.decisions) &&
+      item.approval.decisions.length <= 16 &&
+      item.approval.decisions.every(validDecision) &&
       Array.isArray(item.checkpoints) &&
       item.checkpoints.length === item.definition.steps.length &&
       item.checkpoints.every(
         (checkpoint, index) =>
-          keysAre(checkpoint, [
-            "step_id",
-            "status",
-            "attempts",
-            "action_request_id",
-            "postcondition_verified",
-            "failure_code",
-            "retry_after",
-            "compensation_evidence",
-          ]) &&
+          validCheckpoint(checkpoint) &&
           checkpoint.step_id === item.definition.steps[index].id &&
-          Number.isSafeInteger(checkpoint.attempts) &&
-          checkpoint.attempts >= 0 &&
-          typeof checkpoint.postcondition_verified === "boolean",
+          checkpoint.attempts <=
+            item.definition.steps[index].retry.max_attempts + 1,
       );
+    const auditSchemas = {
+      "policy.publish": [
+        "resource_id",
+        "policy_version",
+        "approved_by",
+        "rollout_percentage",
+      ],
+      "policy.evaluate": [
+        "decision",
+        "policy_id",
+        "policy_version",
+        "reason_code",
+        "obligations",
+        "evaluated_attributes",
+        "correlation_id",
+      ],
+      "workflow.create.denied": [
+        "resource_id",
+        "policy_version",
+        "reason_code",
+      ],
+      "workflow.create": [
+        "resource_id",
+        "definition_version",
+        "policy_version",
+        "status",
+      ],
+      "workflow.approve": [
+        "resource_id",
+        "decision",
+        "policy_version",
+        "status",
+      ],
+      "workflow.transition": ["resource_id", "policy_version", "status"],
+      "workflow.step": [
+        "resource_id",
+        "step_id",
+        "classification",
+        "policy_version",
+        "checkpoint_status",
+        "workflow_status",
+      ],
+      "workflow.compensate": ["resource_id", "step_id", "status"],
+    };
+    const auditBase = [
+      "action",
+      "actor",
+      "tenant_id",
+      "environment_id",
+      "request_id",
+      "at",
+    ];
+    const validAudit = (item) => {
+      const extra = auditSchemas[item?.action];
+      if (!extra || !keysExactly(item, [...auditBase, ...extra])) return false;
+      if (
+        !(item.actor === null || boundedText(item.actor, 512, true)) ||
+        !nullableIdentifier(item.tenant_id) ||
+        !nullableIdentifier(item.environment_id) ||
+        !IDENTIFIER.test(item.request_id ?? "") ||
+        !validTimestamp(item.at)
+      ) {
+        return false;
+      }
+      if (item.action === "policy.evaluate") {
+        return (
+          ["allow", "deny"].includes(item.decision) &&
+          nullableIdentifier(item.policy_id) &&
+          nullableIdentifier(item.policy_version) &&
+          IDENTIFIER.test(item.reason_code ?? "") &&
+          validStringArray(item.obligations) &&
+          keysAre(
+            item.evaluated_attributes,
+            Object.keys(item.evaluated_attributes),
+          ) &&
+          Object.keys(item.evaluated_attributes).length <= 32 &&
+          Object.values(item.evaluated_attributes).every((value) =>
+            ["string", "number", "boolean"].includes(typeof value),
+          ) &&
+          IDENTIFIER.test(item.correlation_id ?? "")
+        );
+      }
+      return extra.every((key) => {
+        const value = item[key];
+        if (key === "rollout_percentage")
+          return Number.isFinite(value) && value >= 0 && value <= 100;
+        if (key === "policy_version") return nullableIdentifier(value);
+        if (key === "approved_by") return boundedText(value, 512, true);
+        return IDENTIFIER.test(value ?? "");
+      });
+    };
+    const historySchemas = {
+      created: ["status", "version"],
+      approval: ["decision", "status", "version"],
+      transition: ["status", "version"],
+      checkpoint: [
+        "step_id",
+        "checkpoint_status",
+        "workflow_status",
+        "version",
+      ],
+      compensation: ["step_id", "status", "version"],
+    };
+    const historyBase = [
+      "sequence",
+      "workflow_key",
+      "tenant_id",
+      "environment_id",
+      "workflow_id",
+      "at",
+      "type",
+    ];
+    const validHistory = (item) => {
+      const extra = historySchemas[item?.type];
+      return (
+        extra &&
+        keysExactly(item, [...historyBase, ...extra]) &&
+        Number.isSafeInteger(item.sequence) &&
+        item.sequence > 0 &&
+        boundedText(item.workflow_key, 610, true) &&
+        IDENTIFIER.test(item.tenant_id ?? "") &&
+        IDENTIFIER.test(item.environment_id ?? "") &&
+        IDENTIFIER.test(item.workflow_id ?? "") &&
+        validTimestamp(item.at) &&
+        Number.isSafeInteger(item.version) &&
+        item.version > 0 &&
+        (item.decision === undefined ||
+          ["approve", "deny"].includes(item.decision)) &&
+        (item.step_id === undefined || IDENTIFIER.test(item.step_id)) &&
+        (item.status === undefined || IDENTIFIER.test(item.status)) &&
+        (item.checkpoint_status === undefined ||
+          IDENTIFIER.test(item.checkpoint_status)) &&
+        (item.workflow_status === undefined ||
+          IDENTIFIER.test(item.workflow_status))
+      );
+    };
+    const validResult = (result) => {
+      if (
+        !keysExactly(result, ["status", "body", "headers"]) ||
+        ![200, 201].includes(result.status) ||
+        !keysExactly(result.headers, ["etag"]) ||
+        !/^"[1-9][0-9]*"$/u.test(result.headers.etag ?? "") ||
+        !result.body ||
+        typeof result.body !== "object" ||
+        !IDENTIFIER.test(result.body.request_id ?? "")
+      ) {
+        return false;
+      }
+      const body = { ...result.body };
+      delete body.request_id;
+      return validPolicyRecord(body) || validWorkflowRecord(body);
+    };
     if (
       bundle.data.policies.some(
         (item) =>
@@ -1694,15 +1902,20 @@ export class PolicyWorkflowService {
       ) ||
       bundle.data.audit.some(
         (item) =>
-          item.tenant_id !== tenantId || item.environment_id !== environmentId,
+          !validAudit(item) ||
+          (item.tenant_id !== null && item.tenant_id !== tenantId) ||
+          (item.environment_id !== null &&
+            item.environment_id !== environmentId),
       ) ||
       bundle.data.history.some(
         (item) =>
-          item.tenant_id !== tenantId || item.environment_id !== environmentId,
+          !validHistory(item) ||
+          item.tenant_id !== tenantId ||
+          item.environment_id !== environmentId,
       ) ||
       bundle.data.outbox.some(
         (item) =>
-          !keysAre(item, [
+          !keysExactly(item, [
             "event_id",
             "type",
             "tenant_id",
@@ -1716,7 +1929,12 @@ export class PolicyWorkflowService {
           !Number.isSafeInteger(item.sequence) ||
           item.sequence < 1 ||
           item.tenant_id !== tenantId ||
-          item.environment_id !== environmentId,
+          item.environment_id !== environmentId ||
+          !validHistory(item.payload) ||
+          item.payload.sequence !== item.sequence ||
+          item.payload.tenant_id !== tenantId ||
+          item.payload.environment_id !== environmentId ||
+          item.payload.workflow_id !== item.workflow_id,
       )
     ) {
       throw new TypeError("recovery_scope_mismatch");
@@ -1730,9 +1948,10 @@ export class PolicyWorkflowService {
       !unique(bundle.data.outbox, (item) => item.event_id) ||
       bundle.data.idempotency.some((item) => {
         if (
-          !keysAre(item, ["key", "request_hash", "result"]) ||
+          !keysExactly(item, ["key", "request_hash", "result"]) ||
           !/^[a-f0-9]{64}$/u.test(item.request_hash ?? "") ||
-          !boundedText(item.key, 1_024, true)
+          !boundedText(item.key, 1_024, true) ||
+          !validResult(item.result)
         ) {
           return true;
         }
@@ -1747,6 +1966,22 @@ export class PolicyWorkflowService {
         (item) =>
           !bundle.data.workflows.some(
             (workflow) => workflow.key === item.workflow_key,
+          ),
+      ) ||
+      bundle.data.history.some(
+        (item, index, all) =>
+          all
+            .filter((candidate) => candidate.workflow_key === item.workflow_key)
+            .filter((candidate) => candidate.sequence <= item.sequence)
+            .length !== item.sequence,
+      ) ||
+      bundle.data.outbox.some(
+        (item) =>
+          !bundle.data.history.some(
+            (history) =>
+              history.workflow_id === item.workflow_id &&
+              history.sequence === item.sequence &&
+              canonical(history) === canonical(item.payload),
           ),
       )
     ) {

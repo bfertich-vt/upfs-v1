@@ -686,6 +686,197 @@ test("integrity-bound scoped recovery preserves state and rejects corruption, su
   assert.throws(() => makeService({ state: accessor }), /unsafe_input/u);
 });
 
+test("recovery closes every nested record and atomically rejects re-signed hostile state", () => {
+  const service = makeService();
+  publish(service);
+  create(service);
+  approve(service);
+  const exported = service.exportState({
+    actor: publisher,
+    tenantId: "tenant-1",
+    environmentId: "environment-1",
+  }).body;
+  const baseline = structuredClone(exported);
+  const assertResignedRejected = (mutate) => {
+    const hostile = structuredClone(exported);
+    mutate(hostile);
+    resign(hostile);
+    let error;
+    try {
+      makeService({ state: hostile });
+    } catch (caught) {
+      error = caught;
+    }
+    assert.ok(error instanceof TypeError);
+    assert.equal(String(error).includes("customer-financial-data"), false);
+    assert.deepEqual(
+      service.exportState({
+        actor: publisher,
+        tenantId: "tenant-1",
+        environmentId: "environment-1",
+      }).body,
+      baseline,
+    );
+  };
+
+  const hostileMutations = [
+    (bundle) => {
+      bundle.secret = "customer-financial-data";
+    },
+    (bundle) => {
+      bundle.scope.secret = "customer-financial-data";
+    },
+    (bundle) => {
+      bundle.data.secret = [];
+    },
+    (bundle) => {
+      delete bundle.data.audit;
+    },
+    (bundle) => {
+      bundle.data.policies[0].secret = "customer-financial-data";
+    },
+    (bundle) => {
+      bundle.data.policies[0].rules[0].secret = "customer-financial-data";
+    },
+    (bundle) => {
+      bundle.data.policies[0].release.approval.secret =
+        "customer-financial-data";
+    },
+    (bundle) => {
+      delete bundle.data.policies[0].published_by;
+    },
+    (bundle) => {
+      bundle.data.workflows[0].secret = "customer-financial-data";
+    },
+    (bundle) => {
+      bundle.data.workflows[0].definition.steps[0].retry.secret =
+        "customer-financial-data";
+    },
+    (bundle) => {
+      bundle.data.workflows[0].approval.secret = "customer-financial-data";
+    },
+    (bundle) => {
+      bundle.data.workflows[0].approval.decisions[0].secret =
+        "customer-financial-data";
+    },
+    (bundle) => {
+      delete bundle.data.workflows[0].approval.decisions[0].policy_version;
+    },
+    (bundle) => {
+      bundle.data.workflows[0].checkpoints[0].secret =
+        "customer-financial-data";
+    },
+    (bundle) => {
+      bundle.data.workflows[0].checkpoints[0].attempts = "zero";
+    },
+    (bundle) => {
+      bundle.data.idempotency[0].secret = "customer-financial-data";
+    },
+    (bundle) => {
+      delete bundle.data.idempotency[0].result;
+    },
+    (bundle) => {
+      bundle.data.idempotency[0].result.secret = "customer-financial-data";
+    },
+    (bundle) => {
+      bundle.data.idempotency[0].result.body.secret = "customer-financial-data";
+    },
+    (bundle) => {
+      delete bundle.data.idempotency[0].result.headers.etag;
+    },
+    (bundle) => {
+      bundle.data.audit[0].secret = "customer-financial-data";
+    },
+    (bundle) => {
+      delete bundle.data.audit[0].request_id;
+    },
+    (bundle) => {
+      bundle.data.history[0].secret = "customer-financial-data";
+    },
+    (bundle) => {
+      bundle.data.history[0].sequence = 2;
+    },
+    (bundle) => {
+      bundle.data.outbox[0].secret = "customer-financial-data";
+    },
+    (bundle) => {
+      bundle.data.outbox[0].payload.secret = "customer-financial-data";
+    },
+    (bundle) => {
+      bundle.data.outbox[0].payload.status = "substituted";
+    },
+    (bundle) => {
+      bundle.data.history.push(structuredClone(bundle.data.history[0]));
+    },
+    (bundle) => {
+      bundle.data.outbox.push(structuredClone(bundle.data.outbox[0]));
+    },
+  ];
+  hostileMutations.forEach(assertResignedRejected);
+
+  const unsafeValues = [
+    (() => {
+      const bundle = structuredClone(exported);
+      Object.defineProperty(bundle.data.audit[0], "secret", {
+        enumerable: true,
+        get() {
+          throw new Error("customer-financial-data");
+        },
+      });
+      return bundle;
+    })(),
+    (() => {
+      const bundle = structuredClone(exported);
+      bundle.data.audit[0] = new Proxy(bundle.data.audit[0], {
+        ownKeys() {
+          throw new Error("customer-financial-data");
+        },
+      });
+      return bundle;
+    })(),
+    (() => {
+      const bundle = structuredClone(exported);
+      bundle.data.audit[0][Symbol("secret")] = "customer-financial-data";
+      return bundle;
+    })(),
+    (() => {
+      const bundle = structuredClone(exported);
+      bundle.data.history = new Array(2);
+      bundle.data.history[0] = structuredClone(exported.data.history[0]);
+      return bundle;
+    })(),
+    (() => {
+      const bundle = structuredClone(exported);
+      bundle.data.audit[0].cycle = bundle;
+      return bundle;
+    })(),
+    (() => {
+      const bundle = structuredClone(exported);
+      bundle.data.audit[0].action = "x".repeat(8_193);
+      return bundle;
+    })(),
+  ];
+  for (const hostile of unsafeValues) {
+    assert.throws(
+      () => makeService({ state: hostile }),
+      (error) =>
+        error instanceof TypeError &&
+        !String(error).includes("customer-financial-data"),
+    );
+  }
+
+  const corrected = makeService({ state: baseline });
+  assert.equal(
+    corrected.getWorkflow({
+      actor: publisher,
+      tenantId: "tenant-1",
+      environmentId: "environment-1",
+      workflowId: "workflow-1",
+    }).body.status,
+    "approved",
+  );
+});
+
 test("audit and outbox are metadata-only, ordered, policy-bound, and omit supplied reason/evidence payloads", () => {
   const service = makeService();
   publish(service);
