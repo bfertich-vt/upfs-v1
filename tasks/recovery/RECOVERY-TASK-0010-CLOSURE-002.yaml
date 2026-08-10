@@ -1,0 +1,82 @@
+task_id: RECOVERY-TASK-0010-CLOSURE-002
+title: Fail closed on hostile admin read cancellation inputs
+type: historical-capability-closure-corrective-forward
+status: in_progress
+assigned_role: Backend
+historical_task: TASK-0010
+dependencies:
+  - RECOVERY-TASK-0010-CLOSURE-001
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/queue.yaml
+  - docs/handoffs/TASK-0010.md
+  - tasks/recovery/RECOVERY-TASK-0010-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0010-CLOSURE-001.md
+  - docs/reviews/RECOVERY-TASK-0010-CLOSURE-001-QA.md
+  - specs/02_ui/console_experience.md
+  - specs/02_ui/page_template.md
+  - specs/03_architecture/system_architecture.md
+  - specs/04_schema/identity_tenant_model.md
+  - specs/05_apis/api_standards.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/10_security/threat_model.md
+  - specs/12_testing/test_strategy.md
+  - specs/13_docs/documentation_platform.md
+  - specs/14_admin_control_plane/admin_control_plane.md
+  - services/admin-control-plane.mjs
+  - services/admin-control-plane.test.mjs
+allowed_files:
+  - services/admin-control-plane.mjs
+  - services/admin-control-plane.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0010-CLOSURE-002.yaml
+  - docs/handoffs/RECOVERY-TASK-0010-CLOSURE-002.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - specs/**
+  - contracts/**
+  - docs/generated/**
+  - packages/**
+  - scripts/**
+  - .github/**
+  - prior TASK-0010 evidence and rejection
+  - TASK-0009 files and evidence
+  - TASK-0011+
+  - TASK-0112-TASK-0123
+acceptance_criteria:
+  - Preserve the accepted read API and in-memory reference-only classification while correcting QA-0010-001.
+  - Cancellation is an explicit primitive snapshot and no nested cancellation object property, accessor, Proxy trap, symbol, iterable, or coercion hook is invoked.
+  - Health, tenant-list, and tenant-detail reads reject malformed cancellation input with a bounded generic envelope before protected data release or dependency work.
+  - A valid cancelled snapshot releases no protected data; a corrected retry is independent and succeeds without poisoned or partially mutated service state.
+  - Hostile getter, Proxy, symbol, extra-field, circular, and oversized cancellation objects fail closed across all three reads.
+  - Mandatory audit remains atomic and metadata-only; malformed cancellation performs no protected adapter work and leaks no hostile value or exception.
+  - Existing authorization, tenant isolation, cursor, support-access, redaction, contract, and reference-only behavior remains unchanged.
+required_tests:
+  - node --test --test-concurrency=1 services/admin-control-plane.test.mjs
+  - node --test --test-concurrency=1 services/admin-control-plane.test.mjs services/identity-organization-tenant-and-environment-foundation.test.mjs services/policy-workflow.test.mjs
+  - npm test -- --test-concurrency=1
+  - npm run contracts:check
+  - npm run generated:check
+  - npm run static:check
+  - npm run format:check
+  - npm run lint
+  - npm run queue:check
+  - npm run traceability:check
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+security_requirements:
+  - Never dereference, enumerate, clone, stringify, coerce, or otherwise reflect an untrusted cancellation object.
+  - Malformed cancellation must fail closed before health/projection/support dependency work and before protected response release.
+  - Cancellation failures and audit records contain only bounded generic metadata and never hostile exception text, object content, customer data, financial data, credentials, or secrets.
+  - Preserve deny-default authorization, server-derived tenant/environment scope, mandatory audit-before-release, and non-disclosing resource behavior.
+classification_limit: Proven reference implementation only; no production identity, persistence, route, infrastructure, provider, deployment, or operational claim.
+rollback: Preserve the R1 candidate and rejection. Before integration abandon this isolated branch; after integration use a reviewed revert or bounded corrective-forward change without restoring object dereference or weakening authorization, tenant isolation, audit, redaction, or closed-shape controls.
+handoff: docs/handoffs/RECOVERY-TASK-0010-CLOSURE-002.md
