@@ -1,0 +1,76 @@
+task_id: RECOVERY-TASK-0009-CLOSURE-002
+title: Close hostile nested policy-workflow recovery validation
+type: historical-capability-corrective-forward
+status: in_progress
+assigned_role: Backend
+historical_task: TASK-0009
+dependencies:
+  - RECOVERY-TASK-0009-CLOSURE-001
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/handoffs/TASK-0009.md
+  - tasks/recovery/RECOVERY-TASK-0009-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0009-CLOSURE-001.md
+  - docs/reviews/RECOVERY-TASK-0009-CLOSURE-001-QA.md
+  - specs/03_architecture/system_architecture.md
+  - specs/05_apis/api_standards.md
+  - specs/07_workflows/workflow_runtime.md
+  - specs/08_policies/policy_system.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/10_security/threat_model.md
+  - specs/12_testing/test_strategy.md
+  - specs/13_docs/documentation_platform.md
+  - contracts/openapi/public-api.yaml
+  - contracts/openapi/admin-api.yaml
+  - contracts/asyncapi/platform-events.yaml
+  - services/policy-workflow.mjs
+  - services/policy-workflow.test.mjs
+allowed_files:
+  - services/policy-workflow.mjs
+  - services/policy-workflow.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0009-CLOSURE-002.yaml
+  - docs/handoffs/RECOVERY-TASK-0009-CLOSURE-002.md
+prohibited_files:
+  - scripts/validate.ps1
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/handoffs/TASK-0009.md
+  - specs/**
+  - contracts/**
+  - .github/**
+  - prior candidate and rejection evidence
+  - TASK-0010+
+  - TASK-0112-TASK-0123
+acceptance_criteria:
+  - Re-signed recovery bundles reject unknown, missing, type-invalid, cross-linked, duplicate, oversized, accessor, proxy, symbol, sparse, and circular data before state assignment.
+  - Exact closed validation covers policies, workflows, approval decisions, checkpoints, idempotency stored requests/results, audit records, history records, outbox envelopes and payloads, root objects, maps, and arrays.
+  - Recovery failures are atomic, reveal no supplied sensitive value through errors or audit, and a corrected bundle remains recoverable afterward.
+  - Valid deterministic export and recovery semantics remain unchanged.
+  - Evidence remains explicitly limited to a local in-memory reference implementation.
+required_tests:
+  - node --test --test-concurrency=1 services/policy-workflow.test.mjs
+  - npm test -- --test-concurrency=1
+  - npm run format:check
+  - npm run lint
+  - npm run static:check
+  - npm run queue:check
+  - npm run traceability:check
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+security_requirements:
+  - Fail closed before mutation on every hostile recovered nested shape.
+  - Preserve server-derived tenant/environment isolation and uniform non-disclosure.
+  - Permit only bounded metadata schemas in audit, history, idempotency, and outbox records.
+  - Do not include attacker-supplied content in recovery errors or generated audit output.
+classification_limit: Proven reference implementation only; no production persistence, identity, host wiring, managed infrastructure, or deployment claim.
+rollback: Preserve the R1 candidate and QA rejection. Before integration abandon this branch; after integration use a separately reviewed corrective-forward commit or revert without weakening recovery validation.
+handoff: docs/handoffs/RECOVERY-TASK-0009-CLOSURE-002.md

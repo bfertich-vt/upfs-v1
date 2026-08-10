@@ -1,0 +1,88 @@
+task_id: RECOVERY-TASK-0009-CLOSURE-001
+title: Revalidate policy, workflow, and approval reference foundations
+type: historical-capability-closure
+status: in_progress
+assigned_role: Backend
+historical_task: TASK-0009
+dependencies:
+  - TASK-0002
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/handoffs/TASK-0009.md
+  - specs/03_architecture/system_architecture.md
+  - specs/05_apis/api_standards.md
+  - specs/07_workflows/workflow_runtime.md
+  - specs/08_policies/policy_system.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/10_security/threat_model.md
+  - specs/12_testing/test_strategy.md
+  - specs/13_docs/documentation_platform.md
+  - contracts/openapi/public-api.yaml
+  - contracts/openapi/admin-api.yaml
+  - contracts/asyncapi/platform-events.yaml
+  - services/policy-workflow.mjs
+  - services/policy-workflow.test.mjs
+allowed_files:
+  - services/policy-workflow.mjs
+  - services/policy-workflow.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0009-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0009-CLOSURE-001.md
+prohibited_files:
+  - scripts/validate.ps1
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/handoffs/TASK-0009.md
+  - specs/**
+  - contracts/**
+  - .github/**
+  - unrelated accepted task implementation and evidence
+  - TASK-0010+
+  - TASK-0112-TASK-0123
+implementation_plan:
+  - Replace unsafe mutable input and recovery handling with bounded closed-shape validation and deterministic integrity-checked snapshots.
+  - Make policy publication immutable and versioned, with independent approval, tests, impact evidence, shadow evidence, measured rollout, optimistic concurrency, and rollback controls.
+  - Bind workflow instances to immutable definitions and policy versions, and enforce scoped quorum approval, typed step controls, action requests, postconditions, retry/timeout/cancellation, compensation, and terminal-state rules.
+  - Apply each state, history, audit, outbox, and idempotency mutation through one injected atomic reference commit boundary.
+threat_and_tenant_notes:
+  - Authorization derives tenant and environment scope from a verified actor boundary and denies on absence, mismatch, malformed output, or dependency failure.
+  - Closed-shape validation rejects accessors, hostile proxies, circular graphs, oversized values, and unknown security-bearing fields before authorization or persistence side effects.
+  - Reads use tenant/environment composite keys and return uniform not-found results without cross-scope disclosure.
+  - Creator self-approval, missing role scope, stale ETags, duplicate approvals, replay conflicts, invalid transitions, unverified postconditions, and unsafe irreversible actions fail closed.
+  - The in-memory export/recovery seam is a deterministic reference only; PostgreSQL transactions and a durable outbox remain required for production.
+acceptance_criteria:
+  - Policy decisions deny by default and include exact policy/version, reason, obligations, bounded evaluated attributes, and correlation provenance.
+  - Policy publication requires passing tests, impact analysis, independent authorized approval, shadow evidence, measured rollout, versioning, optimistic concurrency, and an explicit rollback target.
+  - Workflow definitions are immutable versions with typed steps, policy checks, approvals, timers, retries, timeouts, action requests, postconditions, compensation, and terminal states where applicable.
+  - Workflow instances persist deterministic checkpoints, immutable history, atomic audit/outbox records, policy provenance, and operation-scoped idempotency results.
+  - Approval enforces creator separation, authorized role scope, quorum, reason/evidence bounds, stale-write protection, and replay conflict detection.
+  - Retry, timeout, cancellation, failure, compensation, irreversible-action, and postcondition paths fail closed and preserve atomic rollback semantics.
+  - Export/recovery detects malformed, substituted, corrupt, cross-scope, duplicate, or oversized state without leaking or partially loading data.
+  - Evidence is explicitly classified as a local in-memory reference implementation, never production durability or deployment.
+required_tests:
+  - node --test --test-concurrency=1 services/policy-workflow.test.mjs
+  - npm test -- --test-concurrency=1
+  - npm run format:check
+  - npm run lint
+  - npm run queue:check
+  - npm run traceability:check
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+security_requirements:
+  - Server-derived verified tenant and environment scope with deny-by-default authorization.
+  - Cross-tenant and cross-environment non-disclosure on reads and writes.
+  - Operation-scoped idempotency, exact replay, replay-conflict denial, and optimistic concurrency.
+  - Atomic state/history/audit/outbox commit with failure-injection rollback.
+  - Immutable policy, approval, decision, workflow, checkpoint, and recovery provenance.
+  - Closed hostile shapes and metadata-only audit records with no credentials or financial/customer payloads.
+classification_limit: Proven reference implementation only; PostgreSQL durability, production identity, API-host wiring, workers, managed infrastructure, and deployment remain unimplemented.
+rollback: Before integration, preserve and abandon the candidate or use a reviewed revert. After integration, use a separate corrective-forward change; never delete history or weaken policy, approval, tenant, audit, or recovery controls.
+handoff: docs/handoffs/RECOVERY-TASK-0009-CLOSURE-001.md
