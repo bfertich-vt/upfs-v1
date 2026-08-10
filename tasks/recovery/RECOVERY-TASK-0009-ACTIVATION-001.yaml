@@ -1,0 +1,74 @@
+task_id: RECOVERY-TASK-0009-ACTIVATION-001
+title: Activate independently accepted TASK-0009 reference closure
+type: historical-capability-activation
+status: in_progress
+assigned_role: Backend
+historical_task: TASK-0009
+dependencies:
+  - RECOVERY-TASK-0009-CLOSURE-002
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/05_apis/api_standards.md
+  - specs/07_workflows/workflow_runtime.md
+  - specs/08_policies/policy_system.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - docs/MASTER_PLAN.md
+  - docs/REPOSITORY_GOVERNANCE.md
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/recovery/RECOVERY-TASK-0009-CLOSURE-001.yaml
+  - tasks/recovery/RECOVERY-TASK-0009-CLOSURE-002.yaml
+  - docs/handoffs/RECOVERY-TASK-0009-CLOSURE-001.md
+  - docs/handoffs/RECOVERY-TASK-0009-CLOSURE-002.md
+  - docs/reviews/RECOVERY-TASK-0009-CLOSURE-001-QA.md
+  - docs/reviews/RECOVERY-TASK-0009-CLOSURE-002-QA.md
+  - docs/governance/task-closures/TASK-0008.json
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+allowed_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0009.json
+  - tasks/recovery/RECOVERY-TASK-0009-ACTIVATION-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0009-ACTIVATION-001.md
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+prohibited_files:
+  - services/**
+  - apps/**
+  - contracts/**
+  - specs/**
+  - .github/**
+  - provenance bundle or manifest
+  - prior implementation, handoff, rejection, and review evidence
+  - TASK-0010+
+  - TASK-0112-TASK-0123
+acceptance_criteria:
+  - Bind exact R1 rejection, R2 implementation/candidate, independent QA, PR 37 exact-head checks, retained artifact, exact local merge topology, and the GitHub API metadata inconsistency.
+  - Mark only TASK-0009 complete and ACCEPTED at the Proven reference implementation ceiling; TASK-0010 remains unchanged.
+  - Fail closed on every identity, digest, status, classification, dependency, hosted metadata, topology, and current closure substitution.
+  - Require the new activation protected flow to supply exact-head hosted checks, retained-artifact inspection, protected merge, and post-merge verification before operational finality.
+security_requirements:
+  - Preserve independent review, immutable evidence, exact commit topology, and fail-closed provenance.
+  - Preserve the absence of production persistence, identity, deployment, provider, customer, financial, or credential evidence.
+  - Never represent PR 37 as API-merged or as having post-merge checks.
+required_tests:
+  - node --test --test-concurrency=1 --test-name-pattern="TASK-0009 activation fails closed" scripts/historical-closure-validator.test.mjs
+  - node --test --test-concurrency=1 scripts/historical-closure-validator.test.mjs
+  - npm test -- --test-concurrency=1
+  - npm run format:check
+  - npm run lint
+  - npm run static:check
+  - npm run queue:check
+  - npm run traceability:check
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+rollback: Preserve PR 37 and all accepted/rejected evidence. Before integration, abandon this branch; after integration, use a separately implemented and independently reviewed corrective-forward change or reviewed revert without weakening exact evidence validation.
+handoff: docs/handoffs/RECOVERY-TASK-0009-ACTIVATION-001.md

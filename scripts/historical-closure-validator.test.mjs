@@ -1074,6 +1074,156 @@ test("TASK-0008 activation fails closed on evidence, status, classification, and
   expectInvalid(root, queue, /TASK-0008\.json cannot be resolved/);
 });
 
+test("TASK-0009 activation fails closed on evidence, hosted inconsistency, status, classification, and dependency drift", (t) => {
+  const source = process.cwd();
+  const root = fs.mkdtempSync(
+    path.join(os.tmpdir(), "upfs-task-0009-activation-"),
+  );
+  execFileSync("git", ["clone", "--shared", source, root], { stdio: "ignore" });
+  execFileSync("git", ["checkout", "--detach", "HEAD"], {
+    cwd: root,
+    stdio: "ignore",
+  });
+  for (const relative of [
+    "tasks/queue.yaml",
+    "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md",
+    "docs/governance/task-closures/TASK-0002.json",
+    "docs/governance/task-closures/TASK-0003.json",
+    "docs/governance/task-closures/TASK-0004.json",
+    "docs/governance/task-closures/TASK-0005.json",
+    "docs/governance/task-closures/TASK-0006.json",
+    "docs/governance/task-closures/TASK-0007.json",
+    "docs/governance/task-closures/TASK-0008.json",
+    "docs/governance/task-closures/TASK-0009.json",
+  ]) {
+    fs.mkdirSync(path.dirname(path.join(root, relative)), { recursive: true });
+    fs.copyFileSync(path.join(source, relative), path.join(root, relative));
+  }
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const queuePath = path.join(root, "tasks/queue.yaml");
+  const matrixPath = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
+  const closurePath = path.join(
+    root,
+    "docs/governance/task-closures/TASK-0009.json",
+  );
+  const queue = fs.readFileSync(queuePath, "utf8");
+  const matrix = fs.readFileSync(matrixPath, "utf8");
+  const closure = JSON.parse(fs.readFileSync(closurePath, "utf8"));
+  assert.doesNotThrow(() => validateQueueDocument(queue, root));
+  let mutations = 0;
+  const mutate = (change, pattern = /exact TASK-0009 protected evidence/) => {
+    const candidate = structuredClone(closure);
+    change(candidate);
+    fs.writeFileSync(closurePath, `${JSON.stringify(candidate, null, 2)}\n`);
+    expectInvalid(root, queue, pattern);
+    fs.writeFileSync(closurePath, `${JSON.stringify(closure, null, 2)}\n`);
+    mutations += 1;
+  };
+  const substitutions = [
+    (r) => (r.remediation.task = "tasks/recovery/forged.yaml"),
+    (r) => (r.remediation.task_sha256 = "a".repeat(64)),
+    (r) => (r.remediation.handoff = "docs/handoffs/forged.md"),
+    (r) => (r.remediation.handoff_sha256 = "a".repeat(64)),
+    (r) => (r.remediation.implementation_commit = "a".repeat(40)),
+    (r) => (r.remediation.candidate_commit = "a".repeat(40)),
+    (r) => (r.independent_qa.review = "docs/reviews/forged.md"),
+    (r) => (r.independent_qa.review_sha256 = "a".repeat(64)),
+    (r) => (r.independent_qa.review_commit = "a".repeat(40)),
+    (r) => (r.independent_qa.reviewed_candidate = "a".repeat(40)),
+    (r) => (r.rejected_reviews[0].candidate_commit = "a".repeat(40)),
+    (r) => (r.rejected_reviews[0].review = "docs/reviews/forged.md"),
+    (r) => (r.rejected_reviews[0].review_sha256 = "a".repeat(64)),
+    (r) => (r.rejected_reviews[0].review_commit = "a".repeat(40)),
+    (r) => r.rejected_reviews.pop(),
+    (r) => r.rejected_reviews.push(structuredClone(r.rejected_reviews[0])),
+    (r) => (r.protected_review.mechanism = "emergency-bypass"),
+    (r) => (r.protected_review.candidate_commit = "a".repeat(40)),
+    (r) => (r.protected_review.review_commit = "a".repeat(40)),
+    (r) => (r.protected_review.pr_head = "a".repeat(40)),
+    (r) => (r.protected_review.tree = "a".repeat(40)),
+    (r) => (r.hosted.evidence_boundary = "live API assertion"),
+    (r) => (r.hosted.repository = "forged/repository"),
+    (r) => (r.hosted.pull_request = 1),
+    (r) => (r.hosted.base_sha = "a".repeat(40)),
+    (r) => (r.hosted.head_sha = "a".repeat(40)),
+    (r) => (r.hosted.checks[0].name = "forged-validation"),
+    (r) => (r.hosted.checks[0].run_id = 1),
+    (r) => (r.hosted.checks[0].job_id = 1),
+    (r) => (r.hosted.checks[0].head_sha = "a".repeat(40)),
+    (r) => (r.hosted.checks[0].conclusion = "failure"),
+    (r) => (r.hosted.checks[1].name = "forged-security"),
+    (r) => (r.hosted.checks[1].run_id = 1),
+    (r) => (r.hosted.checks[1].job_id = 1),
+    (r) => (r.hosted.checks[1].head_sha = "a".repeat(40)),
+    (r) => (r.hosted.checks[1].conclusion = "failure"),
+    (r) => r.hosted.checks.pop(),
+    (r) => (r.hosted.validation_artifact.artifact_id = 1),
+    (r) => (r.hosted.validation_artifact.name = "forged-evidence"),
+    (r) =>
+      (r.hosted.validation_artifact.archive_digest = `sha256:${"a".repeat(64)}`),
+    (r) => (r.hosted.validation_artifact.content_sha256 = "a".repeat(64)),
+    (r) => (r.hosted.validation_artifact.content_status = "failed"),
+    (r) => (r.hosted_metadata_exception.api_state = "MERGED"),
+    (r) => (r.hosted_metadata_exception.api_merge_commit = "a".repeat(40)),
+    (r) => (r.hosted_metadata_exception.local_merge_commit = "a".repeat(40)),
+    (r) => (r.hosted_metadata_exception.reason = "normal merge"),
+    (r) => (r.hosted_metadata_exception.corrective_requirement = "none"),
+    (r) => (r.protected_merge.commit = "a".repeat(40)),
+    (r) => (r.protected_merge.base_parent = "a".repeat(40)),
+    (r) => (r.protected_merge.head_tree = "a".repeat(40)),
+    (r) => (r.protected_merge.merged_at = "2026-08-10T14:53:25-04:00"),
+    (r) => (r.protected_merge.pull_request = 1),
+  ];
+  for (const substitution of substitutions) mutate(substitution);
+  assert.equal(mutations, 52);
+  mutate(
+    (r) => delete r.hosted_metadata_exception,
+    /must contain exactly:.*hosted_metadata_exception/,
+  );
+  assert.equal(mutations, 53);
+
+  mutate(
+    (r) => r.limitations.splice(0),
+    /limitations must disclose|unimplemented durable/,
+  );
+  mutate(
+    (r) => (r.dependencies = []),
+    /dependencies must exactly match the queue/,
+  );
+  fs.writeFileSync(
+    matrixPath,
+    matrix
+      .split(/\r?\n/)
+      .map((line) =>
+        line.startsWith("| TASK-0009 |")
+          ? line.replace(
+              /\|\s*Proven reference implementation\s*\|\s*ACCEPTED\s*\|/,
+              "| Proven production implementation | ACCEPTED |",
+            )
+          : line,
+      )
+      .join("\n"),
+  );
+  expectInvalid(
+    root,
+    queue,
+    /classification must remain Proven reference implementation/,
+  );
+  fs.writeFileSync(matrixPath, matrix);
+  expectInvalid(
+    root,
+    queue.replace(/(id: TASK-0009[\s\S]*?status:) complete/, "$1 blocked"),
+    /TASK-0009 has a closure record but is not complete/,
+  );
+  expectInvalid(
+    root,
+    queue.replace(/(id: TASK-0010[\s\S]*?status:) blocked/, "$1 complete"),
+    /TASK-0010\.json cannot be resolved/,
+  );
+  fs.rmSync(closurePath);
+  expectInvalid(root, queue, /TASK-0009\.json cannot be resolved/);
+});
+
 test("TASK-0001 accepted closure passes and all evidence substitutions fail closed", (t) => {
   const source = process.cwd();
   const root = fs.mkdtempSync(
