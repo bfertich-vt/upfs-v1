@@ -9,7 +9,7 @@
 Undescribed operation.
 - Operation: `readPlatformHealth`
 - Permission: `admin:read`
-- Responses: `200, 401, 403`
+- Responses: `200, 401, 403, 499, 503`
 - Example: synthetic only
 
 ### GET /admin/v1/tenants/{tenant_id}
@@ -17,7 +17,7 @@ Undescribed operation.
 Undescribed operation.
 - Operation: `readTenantEnvironmentStatus`
 - Permission: `admin:read`
-- Responses: `200, 401, 403, 404`
+- Responses: `200, 401, 403, 404, 499, 503`
 - Example: synthetic only
 
 ### POST /admin/v1/organizations
@@ -33,7 +33,7 @@ Undescribed operation.
 Undescribed operation.
 - Operation: `listTenants`
 - Permission: `admin:read`
-- Responses: `200, 400, 401, 403`
+- Responses: `200, 400, 401, 403, 499, 503`
 - Example: synthetic only
 
 ### POST /admin/v1/tenants
