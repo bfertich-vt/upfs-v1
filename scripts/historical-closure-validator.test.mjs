@@ -217,6 +217,7 @@ test("TASK-0002 protected-review activation is exact and fails closed", (t) => {
     "docs/governance/task-closures/TASK-0004.json",
     "docs/governance/task-closures/TASK-0005.json",
     "docs/governance/task-closures/TASK-0006.json",
+    "docs/governance/task-closures/TASK-0010.json",
   ]) {
     fs.mkdirSync(path.dirname(path.join(root, relative)), { recursive: true });
     fs.copyFileSync(path.join(source, relative), path.join(root, relative));
@@ -339,10 +340,10 @@ test("TASK-0002 protected-review activation is exact and fails closed", (t) => {
     /TASK-0002 has a closure record but is not complete/,
   );
   const later = queue.replace(
-    /(id: TASK-0010[\s\S]*?status:) blocked/,
+    /(id: TASK-0011[\s\S]*?status:) blocked/,
     "$1 complete",
   );
-  expectInvalid(root, later, /TASK-0010\.json cannot be resolved/);
+  expectInvalid(root, later, /TASK-0011\.json cannot be resolved/);
 });
 
 test("TASK-0003 protected-review activation binds exact accepted and rejection evidence", (t) => {
@@ -363,6 +364,7 @@ test("TASK-0003 protected-review activation binds exact accepted and rejection e
     "docs/governance/task-closures/TASK-0004.json",
     "docs/governance/task-closures/TASK-0005.json",
     "docs/governance/task-closures/TASK-0006.json",
+    "docs/governance/task-closures/TASK-0010.json",
   ]) {
     fs.mkdirSync(path.dirname(path.join(root, relative)), { recursive: true });
     fs.copyFileSync(path.join(source, relative), path.join(root, relative));
@@ -434,10 +436,10 @@ test("TASK-0003 protected-review activation binds exact accepted and rejection e
     /TASK-0003 has a closure record but is not complete/,
   );
   const later = queue.replace(
-    /(id: TASK-0010[\s\S]*?status:) blocked/,
+    /(id: TASK-0011[\s\S]*?status:) blocked/,
     "$1 complete",
   );
-  expectInvalid(root, later, /TASK-0010\.json cannot be resolved/);
+  expectInvalid(root, later, /TASK-0011\.json cannot be resolved/);
 });
 
 test("TASK-0004 activation binds exact evidence, status, limitations, rejections, and later-task freeze", (t) => {
@@ -458,6 +460,7 @@ test("TASK-0004 activation binds exact evidence, status, limitations, rejections
     "docs/governance/task-closures/TASK-0004.json",
     "docs/governance/task-closures/TASK-0005.json",
     "docs/governance/task-closures/TASK-0006.json",
+    "docs/governance/task-closures/TASK-0010.json",
   ]) {
     fs.mkdirSync(path.dirname(path.join(root, relative)), { recursive: true });
     fs.copyFileSync(path.join(source, relative), path.join(root, relative));
@@ -524,8 +527,8 @@ test("TASK-0004 activation binds exact evidence, status, limitations, rejections
   );
   expectInvalid(
     root,
-    queue.replace(/(id: TASK-0010[\s\S]*?status:) blocked/, "$1 complete"),
-    /TASK-0010\.json cannot be resolved/,
+    queue.replace(/(id: TASK-0011[\s\S]*?status:) blocked/, "$1 complete"),
+    /TASK-0011\.json cannot be resolved/,
   );
 });
 
@@ -547,6 +550,7 @@ test("TASK-0005 activation binds exact protected evidence and fails closed", (t)
     "docs/governance/task-closures/TASK-0004.json",
     "docs/governance/task-closures/TASK-0005.json",
     "docs/governance/task-closures/TASK-0006.json",
+    "docs/governance/task-closures/TASK-0010.json",
   ]) {
     fs.mkdirSync(path.dirname(path.join(root, relative)), { recursive: true });
     fs.copyFileSync(path.join(source, relative), path.join(root, relative));
@@ -617,8 +621,8 @@ test("TASK-0005 activation binds exact protected evidence and fails closed", (t)
   );
   expectInvalid(
     root,
-    queue.replace(/(id: TASK-0010[\s\S]*?status:) blocked/, "$1 complete"),
-    /TASK-0010\.json cannot be resolved/,
+    queue.replace(/(id: TASK-0011[\s\S]*?status:) blocked/, "$1 complete"),
+    /TASK-0011\.json cannot be resolved/,
   );
   fs.rmSync(closurePath);
   expectInvalid(root, queue, /TASK-0005\.json cannot be resolved/);
@@ -642,6 +646,7 @@ test("TASK-0006 activation binds accepted, rejected, hosted, and limitation evid
     "docs/governance/task-closures/TASK-0004.json",
     "docs/governance/task-closures/TASK-0005.json",
     "docs/governance/task-closures/TASK-0006.json",
+    "docs/governance/task-closures/TASK-0010.json",
   ]) {
     fs.mkdirSync(path.dirname(path.join(root, relative)), { recursive: true });
     fs.copyFileSync(path.join(source, relative), path.join(root, relative));
@@ -764,8 +769,8 @@ test("TASK-0006 activation binds accepted, rejected, hosted, and limitation evid
   );
   expectInvalid(
     root,
-    queue.replace(/(id: TASK-0010[\s\S]*?status:) blocked/, "$1 complete"),
-    /TASK-0010\.json cannot be resolved/,
+    queue.replace(/(id: TASK-0011[\s\S]*?status:) blocked/, "$1 complete"),
+    /TASK-0011\.json cannot be resolved/,
   );
   fs.rmSync(closurePath);
   expectInvalid(root, queue, /TASK-0006\.json cannot be resolved/);
@@ -791,6 +796,7 @@ test("TASK-0007 activation fails closed on evidence, status, classification, and
     "docs/governance/task-closures/TASK-0006.json",
     "docs/governance/task-closures/TASK-0007.json",
     "docs/governance/task-closures/TASK-0008.json",
+    "docs/governance/task-closures/TASK-0010.json",
   ]) {
     fs.mkdirSync(path.dirname(path.join(root, relative)), { recursive: true });
     fs.copyFileSync(path.join(source, relative), path.join(root, relative));
@@ -915,8 +921,8 @@ test("TASK-0007 activation fails closed on evidence, status, classification, and
   );
   expectInvalid(
     root,
-    queue.replace(/(id: TASK-0010[\s\S]*?status:) blocked/, "$1 complete"),
-    /TASK-0010\.json cannot be resolved/,
+    queue.replace(/(id: TASK-0011[\s\S]*?status:) blocked/, "$1 complete"),
+    /TASK-0011\.json cannot be resolved/,
   );
   fs.rmSync(closurePath);
   expectInvalid(root, queue, /TASK-0007\.json cannot be resolved/);
@@ -942,6 +948,7 @@ test("TASK-0008 activation fails closed on evidence, status, classification, and
     "docs/governance/task-closures/TASK-0006.json",
     "docs/governance/task-closures/TASK-0007.json",
     "docs/governance/task-closures/TASK-0008.json",
+    "docs/governance/task-closures/TASK-0010.json",
   ]) {
     fs.mkdirSync(path.dirname(path.join(root, relative)), { recursive: true });
     fs.copyFileSync(path.join(source, relative), path.join(root, relative));
@@ -1067,8 +1074,8 @@ test("TASK-0008 activation fails closed on evidence, status, classification, and
   );
   expectInvalid(
     root,
-    queue.replace(/(id: TASK-0010[\s\S]*?status:) blocked/, "$1 complete"),
-    /TASK-0010\.json cannot be resolved/,
+    queue.replace(/(id: TASK-0011[\s\S]*?status:) blocked/, "$1 complete"),
+    /TASK-0011\.json cannot be resolved/,
   );
   fs.rmSync(closurePath);
   expectInvalid(root, queue, /TASK-0008\.json cannot be resolved/);
@@ -1095,6 +1102,7 @@ test("TASK-0009 activation fails closed on evidence, hosted inconsistency, statu
     "docs/governance/task-closures/TASK-0007.json",
     "docs/governance/task-closures/TASK-0008.json",
     "docs/governance/task-closures/TASK-0009.json",
+    "docs/governance/task-closures/TASK-0010.json",
   ]) {
     fs.mkdirSync(path.dirname(path.join(root, relative)), { recursive: true });
     fs.copyFileSync(path.join(source, relative), path.join(root, relative));
@@ -1217,11 +1225,131 @@ test("TASK-0009 activation fails closed on evidence, hosted inconsistency, statu
   );
   expectInvalid(
     root,
-    queue.replace(/(id: TASK-0010[\s\S]*?status:) blocked/, "$1 complete"),
-    /TASK-0010\.json cannot be resolved/,
+    queue.replace(/(id: TASK-0011[\s\S]*?status:) blocked/, "$1 complete"),
+    /TASK-0011\.json cannot be resolved/,
   );
   fs.rmSync(closurePath);
   expectInvalid(root, queue, /TASK-0009\.json cannot be resolved/);
+});
+
+test("TASK-0010 activation fails closed on evidence, status, classification, dependency, and freeze drift", (t) => {
+  const source = process.cwd();
+  const root = fs.mkdtempSync(
+    path.join(os.tmpdir(), "upfs-task-0010-activation-"),
+  );
+  execFileSync("git", ["clone", "--shared", source, root], { stdio: "ignore" });
+  execFileSync("git", ["checkout", "--detach", "HEAD"], {
+    cwd: root,
+    stdio: "ignore",
+  });
+  for (const relative of [
+    "tasks/queue.yaml",
+    "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md",
+    ...Array.from(
+      { length: 9 },
+      (_, index) =>
+        `docs/governance/task-closures/TASK-${String(index + 2).padStart(4, "0")}.json`,
+    ),
+  ]) {
+    fs.mkdirSync(path.dirname(path.join(root, relative)), { recursive: true });
+    fs.copyFileSync(path.join(source, relative), path.join(root, relative));
+  }
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const queuePath = path.join(root, "tasks/queue.yaml");
+  const matrixPath = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
+  const closurePath = path.join(
+    root,
+    "docs/governance/task-closures/TASK-0010.json",
+  );
+  const queue = fs.readFileSync(queuePath, "utf8");
+  const matrix = fs.readFileSync(matrixPath, "utf8");
+  const closure = JSON.parse(fs.readFileSync(closurePath, "utf8"));
+  assert.doesNotThrow(() => validateQueueDocument(queue, root));
+  let mutations = 0;
+  const mutate = (change, pattern = /exact TASK-0010 protected evidence/) => {
+    const candidate = structuredClone(closure);
+    change(candidate);
+    fs.writeFileSync(closurePath, `${JSON.stringify(candidate, null, 2)}\n`);
+    expectInvalid(root, queue, pattern);
+    fs.writeFileSync(closurePath, `${JSON.stringify(closure, null, 2)}\n`);
+    mutations += 1;
+  };
+  const substitutions = [
+    (r) => (r.remediation.task_sha256 = "a".repeat(64)),
+    (r) => (r.remediation.implementation_commit = "a".repeat(40)),
+    (r) => (r.remediation.candidate_commit = "a".repeat(40)),
+    (r) => (r.independent_qa.review_sha256 = "a".repeat(64)),
+    (r) => (r.independent_qa.review_commit = "a".repeat(40)),
+    (r) => (r.rejected_reviews[0].candidate_commit = "a".repeat(40)),
+    (r) => (r.rejected_reviews[0].review_commit = "a".repeat(40)),
+    (r) => r.rejected_reviews.pop(),
+    (r) => (r.protected_review.mechanism = "emergency-bypass"),
+    (r) => (r.protected_review.candidate_commit = "a".repeat(40)),
+    (r) => (r.protected_review.review_commit = "a".repeat(40)),
+    (r) => (r.protected_review.pr_head = "a".repeat(40)),
+    (r) => (r.protected_review.tree = "a".repeat(40)),
+    (r) => (r.hosted.repository = "forged/repository"),
+    (r) => (r.hosted.pull_request = 1),
+    (r) => (r.hosted.base_sha = "a".repeat(40)),
+    (r) => (r.hosted.head_sha = "a".repeat(40)),
+    (r) => (r.hosted.checks[0].run_id = 1),
+    (r) => (r.hosted.checks[0].job_id = 1),
+    (r) => (r.hosted.checks[0].conclusion = "failure"),
+    (r) => (r.hosted.validation_artifact.artifact_id = 1),
+    (r) =>
+      (r.hosted.validation_artifact.archive_digest = `sha256:${"a".repeat(64)}`),
+    (r) => (r.hosted.validation_artifact.content_sha256 = "a".repeat(64)),
+    (r) => (r.hosted.post_merge_checks[0].run_id = 1),
+    (r) => (r.hosted.post_merge_checks[0].job_id = 1),
+    (r) => (r.hosted.post_merge_checks[0].head_sha = "a".repeat(40)),
+    (r) => r.hosted.post_merge_checks.pop(),
+    (r) => (r.protected_merge.commit = "a".repeat(40)),
+    (r) => (r.protected_merge.base_parent = "a".repeat(40)),
+    (r) => (r.protected_merge.head_tree = "a".repeat(40)),
+    (r) => (r.protected_merge.pull_request = 1),
+  ];
+  for (const substitution of substitutions) mutate(substitution);
+  assert.equal(mutations, substitutions.length);
+  mutate(
+    (r) => r.limitations.splice(0),
+    /limitations must disclose|unimplemented durable/,
+  );
+  mutate(
+    (r) => (r.dependencies = []),
+    /dependencies must exactly match the queue/,
+  );
+  fs.writeFileSync(
+    matrixPath,
+    matrix
+      .split(/\r?\n/)
+      .map((line) =>
+        line.startsWith("| TASK-0010 |")
+          ? line.replace(
+              /\|\s*Proven reference implementation\s*\|\s*ACCEPTED\s*\|/,
+              "| Proven production implementation | ACCEPTED |",
+            )
+          : line,
+      )
+      .join("\n"),
+  );
+  expectInvalid(
+    root,
+    queue,
+    /classification must remain Proven reference implementation/,
+  );
+  fs.writeFileSync(matrixPath, matrix);
+  expectInvalid(
+    root,
+    queue.replace(/(id: TASK-0010[\s\S]*?status:) complete/, "$1 blocked"),
+    /TASK-0010 has a closure record but is not complete/,
+  );
+  expectInvalid(
+    root,
+    queue.replace(/(id: TASK-0011[\s\S]*?status:) blocked/, "$1 complete"),
+    /TASK-0011\.json cannot be resolved/,
+  );
+  fs.rmSync(closurePath);
+  expectInvalid(root, queue, /TASK-0010\.json cannot be resolved/);
 });
 
 test("TASK-0001 accepted closure passes and all evidence substitutions fail closed", (t) => {
@@ -1311,6 +1439,7 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
           "| TASK-0007 |",
           "| TASK-0008 |",
           "| TASK-0009 |",
+          "| TASK-0010 |",
         ].some((prefix) => line.startsWith(prefix))
       )
         return line;
@@ -1458,7 +1587,8 @@ test("TASK-0001 accepted closure passes and all evidence substitutions fail clos
   const matrixPath = path.join(root, "docs/HISTORICAL_TASK_CLOSURE_MATRIX.md");
   const originalQueue = fs
     .readFileSync(queuePath, "utf8")
-    .replace(/(  - id: TASK-0001[\s\S]*?\n    status:) blocked/, "$1 complete");
+    .replace(/(  - id: TASK-0001[\s\S]*?\n    status:) blocked/, "$1 complete")
+    .replace(/(  - id: TASK-0010[\s\S]*?\n    status:) complete/, "$1 blocked");
   fs.writeFileSync(queuePath, originalQueue);
   const originalMatrix = fs
     .readFileSync(matrixPath, "utf8")

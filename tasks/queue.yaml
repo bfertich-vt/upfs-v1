@@ -161,7 +161,7 @@ tasks:
       evidence_excerpt: "# TASK-0009 handoff"
   - id: TASK-0010
     title: Implement read-only admin health and tenant explorer
-    status: blocked
+    status: complete
     dependencies: [TASK-0002, TASK-0006]
     inputs:
       - AGENTS.md
