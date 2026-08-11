@@ -1,0 +1,78 @@
+task_id: RECOVERY-TASK-0011-CLOSURE-001
+title: Revalidate and harden the production-readiness reference boundary
+type: historical-capability-closure
+status: in_progress
+assigned_role: Backend
+historical_task: TASK-0011
+dependencies:
+  - TASK-0010
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/queue.yaml
+  - docs/handoffs/TASK-0011.md
+  - specs/03_architecture/system_architecture.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/10_security/threat_model.md
+  - specs/12_testing/test_strategy.md
+  - services/production-boundaries.mjs
+  - services/production-runtime.mjs
+  - services/production-boundaries.test.mjs
+  - scripts/production-composition-check.mjs
+  - scripts/release-rehearsal.mjs
+  - scripts/release-rehearsal.test.mjs
+allowed_files:
+  - services/production-boundaries.mjs
+  - services/production-runtime.mjs
+  - services/production-boundaries.test.mjs
+  - scripts/production-composition-check.mjs
+  - scripts/release-rehearsal.mjs
+  - scripts/release-rehearsal.test.mjs
+  - tasks/recovery/RECOVERY-TASK-0011-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0011-CLOSURE-001.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - specs/**
+  - contracts/**
+  - packages/**
+  - .github/**
+  - prior TASK-0011 evidence
+  - TASK-0012+
+  - TASK-0112-TASK-0123
+acceptance_criteria:
+  - Preserve the explicit reference-only production-readiness ceiling and make no deployment or production-operation claim.
+  - Durable adapter and service composition accepts only closed, explicitly registered capabilities and rejects malformed or hostile values without invoking accessors, Proxy traps, coercion, iteration, or serialization hooks.
+  - PostgreSQL remains authoritative; outbox and checkpoint seams remain explicit, independently injected, and non-substitutable.
+  - Production mode cannot be disabled by request-like input or an unrecognized mode, and reference rehearsal remains an explicit synthetic-only path.
+  - Rehearsal evidence is closed, bounded, deterministic, synthetic-only, and fails closed on missing security, recovery, migration, configuration, or rollback evidence.
+  - Negative authorization, cross-tenant, recovery, idempotency, audit/evidence, rollback, failure, and hostile-object behavior is tested where applicable.
+required_tests:
+  - node --test --test-concurrency=1 services/production-boundaries.test.mjs scripts/release-rehearsal.test.mjs
+  - node scripts/production-composition-check.mjs
+  - node scripts/release-rehearsal.mjs
+  - npm test -- --test-concurrency=1
+  - npm run contracts:check
+  - npm run generated:check
+  - npm run static:check
+  - npm run format:check
+  - npm run lint
+  - npm run queue:check
+  - npm run traceability:check
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+security_requirements:
+  - Reject unregistered adapter, service, options, and mode objects without dereferencing, enumerating, cloning, stringifying, coercing, or iterating them.
+  - Keep tenant isolation deny-default and ensure synthetic BOLA evidence cannot be mistaken for production authorization evidence.
+  - Emit only bounded non-sensitive rehearsal evidence; no customer, financial, credential, provider, or production data.
+  - Preserve immutable historical evidence and require independent QA/Security before protected promotion.
+classification_limit: Proven reference implementation only; no production persistence, workload identity, secret provider, infrastructure, deployment, release authorization, or operational claim.
+rollback: Before integration abandon this isolated branch; after integration use reviewed revert or bounded corrective-forward remediation without restoring unregistered capability dereference or weakening tenant, recovery, evidence, or fail-closed controls.
+handoff: docs/handoffs/RECOVERY-TASK-0011-CLOSURE-001.md
