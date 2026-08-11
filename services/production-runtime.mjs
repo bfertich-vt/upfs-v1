@@ -15,6 +15,8 @@ function fail(message) {
 }
 
 export function createProductionService(repository) {
+  if (arguments.length !== 1)
+    fail("production service requires exactly 1 repository");
   const service = Object.freeze(Object.create(null));
   registeredServices.set(service, repository);
   return service;
@@ -26,6 +28,8 @@ export function createProductionServiceSet(
   projection,
   workflow,
 ) {
+  if (arguments.length !== 4)
+    fail("production service set requires exactly 4 services");
   const values = Object.freeze([evidence, transactions, projection, workflow]);
   const serviceSet = Object.freeze(
     Object.assign(
@@ -44,6 +48,8 @@ export function createProductionRuntimeConfig(
   serviceSet,
   mode = "production",
 ) {
+  if (arguments.length !== 2 && arguments.length !== 3)
+    fail("production runtime configuration requires exactly 2 or 3 values");
   if (mode !== "production" && mode !== "reference-test")
     fail("production runtime mode is invalid");
   const config = Object.freeze(Object.create(null));
@@ -55,6 +61,8 @@ export function createProductionRuntimeConfig(
 }
 
 export function createProductionRuntime(config) {
+  if (arguments.length !== 1)
+    fail("production runtime requires exactly 1 registered configuration");
   const values = registeredRuntimeConfigs.get(config);
   if (!values) fail("registered production runtime configuration is required");
   const boundaries = createProductionBoundaries(values.boundarySet);

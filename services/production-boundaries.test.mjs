@@ -117,6 +117,63 @@ test("hostile unregistered objects fail closed without invoking traps or accesso
   assert.equal(traps, 0);
 });
 
+test("closed factories reject wrong arity before touching hostile extra values", () => {
+  let traps = 0;
+  const hostile = new Proxy(Object.create(null), {
+    get() {
+      traps += 1;
+      throw new Error("secret");
+    },
+    ownKeys() {
+      traps += 1;
+      throw new Error("secret");
+    },
+    getPrototypeOf() {
+      traps += 1;
+      throw new Error("secret");
+    },
+  });
+  const oversized = "x".repeat(1024 * 1024);
+  const circular = Object.create(null);
+  circular.self = circular;
+  const accessor = Object.create(null, {
+    secret: {
+      get() {
+        traps += 1;
+        throw new Error("secret");
+      },
+    },
+  });
+  const { postgres, boundarySet } = durable();
+  const services = serviceSet(postgres);
+  const config = createProductionRuntimeConfig(boundarySet, services);
+  const cases = [
+    [() => createProductionAdapter(), /unknown/],
+    [() => createProductionAdapter("postgres", fn), /exactly 2/],
+    [() => createProductionAdapter("postgres", fn, fn, hostile), /exactly 2/],
+    [() => createProductionAdapter("checkpoint", fn, fn, accessor), /exactly 2/],
+    [() => createProductionBoundarySet(), /exactly 3/],
+    [() => createProductionBoundarySet(postgres, null, null, hostile), /exactly 3/],
+    [() => createProductionService(), /exactly 1/],
+    [() => createProductionService(postgres, hostile), /exactly 1/],
+    [() => createProductionServiceSet(), /exactly 4/],
+    [() => createProductionServiceSet(...Array(4).fill(null), hostile), /exactly 4/],
+    [() => createProductionRuntimeConfig(), /exactly 2 or 3/],
+    [() => createProductionRuntimeConfig(boundarySet, services, "production", hostile), /exactly 2 or 3/],
+    [() => createProductionBoundaries(), /exactly 1/],
+    [() => createProductionBoundaries(boundarySet, Symbol("extra")), /exactly 1/],
+    [() => createProductionRuntime(), /exactly 1/],
+    [() => createProductionRuntime(config, circular), /exactly 1/],
+    [() => createProductionRuntime(config, oversized), /exactly 1/],
+  ];
+  for (const [invoke, pattern] of cases)
+    assert.throws(invoke, pattern, "wrong arity rejects generically");
+  assert.equal(traps, 0);
+
+  assert.equal(createProductionBoundaries(boundarySet).postgres, postgres);
+  assert.equal(createProductionRuntime(config).mode, "production");
+});
+
 test("capability tokens are immutable, closed, and non-substitutable", () => {
   const { postgres, boundarySet } = durable();
   assert.equal(Object.getPrototypeOf(postgres), null);

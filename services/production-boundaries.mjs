@@ -39,6 +39,8 @@ export function createProductionAdapter(kind, ...implementations) {
 }
 
 export function createProductionBoundarySet(postgres, outbox, checkpoint) {
+  if (arguments.length !== 3)
+    fail("production boundary set requires exactly 3 capabilities");
   const boundarySet = Object.freeze(
     Object.assign(Object.create(null), { postgres, outbox, checkpoint }),
   );
@@ -50,6 +52,8 @@ export function createProductionBoundarySet(postgres, outbox, checkpoint) {
 }
 
 export function createProductionBoundaries(boundarySet) {
+  if (arguments.length !== 1)
+    fail("production boundaries require exactly 1 registered boundary set");
   const values = registeredBoundarySets.get(boundarySet);
   if (!values) fail("registered production boundary set is required");
   for (const kind of ["postgres", "outbox", "checkpoint"]) {
