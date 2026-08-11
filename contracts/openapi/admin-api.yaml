@@ -9,18 +9,23 @@ paths:
         '200': {description: Redacted platform operational health, content: {application/json: {schema: {$ref: '#/components/schemas/HealthResponse'}}}}
         '401': {$ref: '#/components/responses/AuthenticationRequired'}
         '403': {$ref: '#/components/responses/Forbidden'}
+        '499': {$ref: '#/components/responses/Cancelled'}
+        '503': {$ref: '#/components/responses/DependencyUnavailable'}
   /admin/v1/tenants/{tenant_id}:
     get:
       operationId: readTenantEnvironmentStatus
       security: [{oauth2: [admin:read]}]
       parameters:
-        - {in: path, name: tenant_id, required: true, schema: {type: string}}
-        - {in: header, name: X-Support-Session, required: false, schema: {type: string}, description: Case-bound expiring support session reference; never grants financial data access}
+        - {in: path, name: tenant_id, required: true, schema: {type: string, minLength: 1, maxLength: 256}}
+        - {in: query, name: environment_id, required: false, schema: {type: string, minLength: 1, maxLength: 256}, description: Requested environment; authorization remains derived from verified identity or brokered support scope}
+        - {in: header, name: X-Support-Session, required: false, schema: {type: string, minLength: 16, maxLength: 512}, description: Opaque reference resolved by the case-bound expiring support broker; request content is not authorization evidence and never grants financial-data access}
       responses:
         '200': {description: Redacted tenant and environment operational metadata, content: {application/json: {schema: {$ref: '#/components/schemas/TenantDetailResponse'}}}}
         '401': {$ref: '#/components/responses/AuthenticationRequired'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
+        '499': {$ref: '#/components/responses/Cancelled'}
+        '503': {$ref: '#/components/responses/DependencyUnavailable'}
   /admin/v1/organizations:
     post:
       operationId: createOrganization
@@ -35,12 +40,14 @@ paths:
       security: [{oauth2: [admin:read]}]
       parameters:
         - {in: query, name: limit, schema: {type: integer, minimum: 1, maximum: 100, default: 25}}
-        - {in: query, name: cursor, schema: {type: string}}
+        - {in: query, name: cursor, schema: {type: string, minLength: 16, maxLength: 2048}, description: Opaque endpoint-, actor-scope-, and snapshot-bound cursor}
       responses:
         '200': {description: Bounded redacted tenant metadata, content: {application/json: {schema: {$ref: '#/components/schemas/TenantListResponse'}}}}
         '400': {$ref: '#/components/responses/BadRequest'}
         '401': {$ref: '#/components/responses/AuthenticationRequired'}
         '403': {$ref: '#/components/responses/Forbidden'}
+        '499': {$ref: '#/components/responses/Cancelled'}
+        '503': {$ref: '#/components/responses/DependencyUnavailable'}
     post:
       operationId: createTenant
       security: [{oauth2: [tenants.write]}]
@@ -150,9 +157,12 @@ components:
     AuthenticationRequired: {description: Authentication required, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}
     Forbidden: {description: Forbidden or invalid support session, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}
     NotFound: {description: Resource not found, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}
+    Cancelled: {description: Request cancelled before audited response release, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}
+    DependencyUnavailable: {description: Required dependency or mandatory audit unavailable; no protected data released, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}
   schemas:
     ErrorResponse:
       type: object
+      additionalProperties: false
       required: [request_id, code, details, retryable, docs]
       properties:
         request_id: {type: string, minLength: 1}
@@ -162,12 +172,14 @@ components:
         docs: {type: string, format: uri}
     Page:
       type: object
+      additionalProperties: false
       required: [limit, next_cursor]
       properties:
         limit: {type: integer, minimum: 1, maximum: 100}
         next_cursor: {type: [string, 'null'], description: Opaque endpoint-bound cursor}
     HealthResponse:
       type: object
+      additionalProperties: false
       required: [request_id, status, components]
       properties:
         request_id: {type: string}
@@ -175,6 +187,7 @@ components:
         components: {type: object, additionalProperties: {$ref: '#/components/schemas/HealthComponent'}}
     HealthComponent:
       type: object
+      additionalProperties: false
       required: [status, observed_at, data_classification]
       properties:
         status: {type: string, enum: [healthy, degraded, unavailable, unknown]}
@@ -182,6 +195,7 @@ components:
         data_classification: {type: string, const: operational_metadata}
     TenantMetadata:
       type: object
+      additionalProperties: false
       required: [id, name, status, organization_id, data_classification]
       properties:
         id: {type: string}
@@ -191,6 +205,7 @@ components:
         data_classification: {type: string, const: tenant_metadata}
     TenantListResponse:
       type: object
+      additionalProperties: false
       required: [request_id, data, page]
       properties:
         request_id: {type: string}
@@ -198,12 +213,32 @@ components:
         page: {$ref: '#/components/schemas/Page'}
     TenantDetailResponse:
       type: object
+      additionalProperties: false
       required: [request_id, tenant, environments, projection]
       properties:
         request_id: {type: string}
         tenant: {$ref: '#/components/schemas/TenantMetadata'}
-        environments: {type: array, items: {type: object, required: [id, name, status, tenant_id, data_classification]}}
-        projection: {type: object, required: [status, watermark, indexed_count, data_classification]}
+        environments: {type: array, maxItems: 5000, items: {$ref: '#/components/schemas/EnvironmentMetadata'}}
+        projection: {$ref: '#/components/schemas/ProjectionMetadata'}
+    EnvironmentMetadata:
+      type: object
+      additionalProperties: false
+      required: [id, name, status, tenant_id, data_classification]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 256}
+        name: {type: string, minLength: 1, maxLength: 256}
+        status: {type: string, minLength: 1, maxLength: 256}
+        tenant_id: {type: string, minLength: 1, maxLength: 256}
+        data_classification: {type: string, const: tenant_metadata}
+    ProjectionMetadata:
+      type: object
+      additionalProperties: false
+      required: [status, watermark, indexed_count, data_classification]
+      properties:
+        status: {type: string, enum: [healthy, degraded, unavailable, unknown]}
+        watermark: {type: integer, minimum: 0}
+        indexed_count: {type: integer, minimum: 0}
+        data_classification: {type: string, const: operational_metadata}
     OperationalMetadataResponse:
       type: object
       required: [data_classification]

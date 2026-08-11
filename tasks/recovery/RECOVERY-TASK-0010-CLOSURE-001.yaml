@@ -1,0 +1,84 @@
+task_id: RECOVERY-TASK-0010-CLOSURE-001
+title: Revalidate read-only admin health and tenant explorer
+type: historical-capability-closure
+status: in_progress
+assigned_role: Backend
+historical_task: TASK-0010
+dependencies:
+  - TASK-0002
+  - TASK-0006
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - docs/MASTER_PLAN.md
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/queue.yaml
+  - docs/handoffs/TASK-0010.md
+  - specs/02_ui/console_experience.md
+  - specs/02_ui/page_template.md
+  - specs/03_architecture/system_architecture.md
+  - specs/04_schema/identity_tenant_model.md
+  - specs/05_apis/api_standards.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/10_security/threat_model.md
+  - specs/12_testing/test_strategy.md
+  - specs/13_docs/documentation_platform.md
+  - specs/14_admin_control_plane/admin_control_plane.md
+  - services/admin-control-plane.mjs
+  - services/admin-control-plane.test.mjs
+  - contracts/openapi/admin-api.yaml
+allowed_files:
+  - services/admin-control-plane.mjs
+  - services/admin-control-plane.test.mjs
+  - contracts/openapi/admin-api.yaml
+  - docs/generated/api-reference.md
+  - packages/sdk-generated/index.ts
+  - tasks/recovery/RECOVERY-TASK-0010-CLOSURE-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0010-CLOSURE-001.md
+prohibited_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/handoffs/TASK-0010.md
+  - specs/**
+  - scripts/**
+  - .github/**
+  - TASK-0009 files and evidence
+  - TASK-0011+
+  - TASK-0112-TASK-0123
+acceptance_criteria:
+  - Verified server identity derives actor, tenant, and environment scope; request-provided scope cannot grant access.
+  - Read authorization is deny-default and cross-tenant, cross-environment, unknown-resource, and enumeration responses disclose no resource existence.
+  - Health and tenant explorer return only bounded, closed, explicitly classified and redacted operational or tenant metadata.
+  - Support access is case-bound, reason-bound, independently approved, step-up authenticated, tenant/environment scoped, expiring, non-transferable, and immutably audited.
+  - Query limits and endpoint/query/scope-bound cursors are validated without coercion and reject tampering, replay across scope, stale snapshots, and oversized input.
+  - Adapter outage, timeout, cancellation, malformed/partial data, concurrent mutation, response shaping, and audit failure fail closed without data release or sensitive leakage.
+  - Audit acceptance is atomic before response release and records metadata-only actor/scope/request/decision/support provenance.
+  - OpenAPI request, response, error, metadata, pagination, and support-access shapes are closed and remain synchronized with tests.
+  - The result is classified only as an in-memory reference implementation; no production identity, persistence, route, infrastructure, or deployment claim is made.
+required_tests:
+  - node --test --test-concurrency=1 services/admin-control-plane.test.mjs
+  - node --test --test-concurrency=1 services/admin-control-plane.test.mjs services/identity-organization-tenant-and-environment-foundation.test.mjs services/policy-workflow.test.mjs
+  - npm test -- --test-concurrency=1
+  - npm run contracts:check
+  - npm run generated:check
+  - npm run static:check
+  - npm run format:check
+  - npm run lint
+  - npm run queue:check
+  - npm run traceability:check
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+security_requirements:
+  - Never trust request tenant or environment identifiers as authorization evidence.
+  - No customer financial data, account/transaction/evidence identifiers, credentials, secrets, provider payloads, or private support reason may enter responses, errors, logs, or audits.
+  - Hostile objects, proxies, accessors, symbols, sparse arrays, circular graphs, oversize values, and mutation races fail closed before adapter or audit side effects.
+  - Mandatory audit failure prevents response release; denied and failed attempts remain metadata-only and auditable.
+  - Support sessions cannot be forged, replayed by another actor, widened, transferred, or used after expiry.
+classification_limit: Proven reference implementation only; identity, policy, support broker, data repositories, health adapters, audit sink, API host, and persistence are injected local boundaries.
+rollback: Preserve historical evidence and any rejected candidates. Before integration abandon this isolated branch; after integration use a reviewed revert or bounded corrective-forward change without weakening authorization, audit, redaction, or closed-shape controls.
+handoff: docs/handoffs/RECOVERY-TASK-0010-CLOSURE-001.md
