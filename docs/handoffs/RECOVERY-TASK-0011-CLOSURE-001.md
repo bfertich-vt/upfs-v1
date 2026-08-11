@@ -1,5 +1,29 @@
 # Handoff: RECOVERY-TASK-0011-CLOSURE-001
 
+## Corrective-forward R2
+
+- Verdict requested: fresh independent QA/Security review of exact R2 candidate. R1 rejection commit `63c2e750f2d32d4cba0093b348d103eee762b3bf`, rejected candidate `c90e593282963d2695071db69beb31268018bc72`, and rejection artifact remain immutable.
+- Role/thread: Backend, exclusively bound to `agents/BACKEND.md` SHA-256 `171397b8a57a3b8e561e106b277e6eeb761e4a736641d5430af4759225d8c784`; `/root/backend_task_0011_closure_r2`. No self-review, push, PR, merge, activation, or TASK-0012+ advancement was performed.
+- Worktree/branch: `C:\source\upfs-backend-task-0011-closure-r2`; `recovery/task-0011-closure-r2`. Corrective base: exact rejection commit `63c2e750f2d32d4cba0093b348d103eee762b3bf`.
+- Structured R2 task commit: `a377065`. Implementation commit: `ea6f0bfa09afb646032768958bbfc60d49b3d90f`. This handoff is a separate descendant.
+- Governance/input hashes are unchanged from R1 except the R2 task. Key bindings: `AGENTS.md` `9d8465020d6f658294fba5a20462e62fdf2d67cf6e7d74fd665f7d753f86bac1`; worktrees `f96d64f56121b250069da37cf1c93eb6b05d91622f5e09e1f907629a6d7d72d1`; handoff template `4768090523a85bc8528d6604c01cfc43ce4567bc361a7075551d6521e28a9de4`; constitution `e2225f3b041925d19dca4370cf0a8cdfaf677f0b18793ad31199be3b2e454f73`; R1 task `926da2aca5b7e1903e0769a03812eb61debb90cf4933b96f4e3aa8e21df2868c`; R1 handoff `7d7425089de24bbf963abd735a0e8c2359c6dc544b3bc0b2914e571a83a95027`; QA rejection `b6b298668b282d3dd1761b94d850d91d50f7e8fe9980ba29d1cb536ebb6be78d`.
+
+### Correction and security analysis
+
+All fixed-arity TASK-0011 public factories and registered consumers now reject wrong arity before they register a token or dereference any declared or extra value. `createProductionBoundarySet` accepts exactly three values; `createProductionServiceSet` exactly four; `createProductionRuntimeConfig` exactly two or three; service, boundary consumer, and runtime consumer exactly one. Adapter arity remains derived from its closed primitive kind and rejects under/over arity without touching extra values. Adversarial tests cover zero, under, and over arity with Proxy, accessor, Symbol, circular, and one-megabyte extra values; trap count remains zero. Corrected valid retries prove all factories still compose successfully. Existing identity registration, adapter non-substitutability, PostgreSQL authority, synthetic BOLA/tenant isolation, audit/evidence, recovery, idempotency, rollback, injected failure, and reference-only classification remain unchanged.
+
+Exact final implementation input hashes: production boundaries `beffd7a9f76ea12b10b1d13a8d3f2d8179e7a360e7fc27999dee44a5cf21c81c`; runtime `83aa93ce5abc4cde1200f4cef691f55ff3acd285ce3d457c70ef031a2e590554`; boundary tests `525ac1772736e3c9d2aaaf4d87de799f5d3a74d7b0d604c6cb57a0e8b1ef8190`; composition check `9d7617e3ad110f9ed94963c40ca5bd83d6d09616b1d66bee8fa74727be42e0ce`; rehearsal `acdf70125d94662dd45ec1dcaf98258e1705cd2ee67ef81b23eaba5873c7533e`; rehearsal tests `5b5094303cfc3843b2930efbba40ad46b59023c47be8252c371010f0529b7bf2`; R2 task `8f63434ccbedf9b3542a8bfbda1b86e08bcffd6013e39d82d4488adac5a76e5b`.
+
+### R2 gates
+
+- Focused suite: PASS 6/6, 0 failed/skipped; terminal TAP 292.3126 ms. Production composition check PASS. Release rehearsal PASS with 15 bounded synthetic gates.
+- First full invocation is preserved at `C:\source\upfs-task11-r2-full.out.log` as an environment-precondition failure: 939 pass / 7 fail / 1 skip, solely `ERR_MODULE_NOT_FOUND` for `yaml`, `prettier`, and `pg` in the fresh worktree. It is not acceptance evidence and no coverage was weakened. `npm ci` then installed 106 locked packages and reported zero vulnerabilities.
+- The single dependency-corrected persistent run at `C:\source\upfs-task11-r2-full-recovery.log` PASS: 1,045 total / 1,044 pass / 0 fail / 1 pre-existing opt-in PostgreSQL skip; terminal TAP 4,550,628.6616 ms; wrapper 4,551.5 seconds.
+- `contracts:check`, `generated:check`, `static:check`, pinned `format:check` (48 files), `lint`, `queue:check`, and `traceability:check`: PASS. `scripts/validate.ps1`: PASS, 391 Markdown / 65 JSON / 5 YAML. `npm audit --audit-level=high`: PASS, zero vulnerabilities. `git fsck --full --strict`: PASS with pre-existing dangling audit objects only. `git diff --check`, authorized-scope inspection, and clean implementation head: PASS.
+- Corrective diff is limited to the structured task plus `services/production-boundaries.mjs`, `services/production-runtime.mjs`, and `services/production-boundaries.test.mjs`. No queue, matrix, specification, contract, package, workflow, migration, prior evidence, TASK-0012+, or TASK-0111–0123 file changed.
+
+Classification remains **Proven reference implementation only**, pending fresh independent QA/Security and protected promotion. Rollback is branch abandonment before integration or reviewed revert/corrective-forward afterward; never restore undeclared-input acceptance or weaken fail-closed controls.
+
 - Task and scope: revalidate and harden the TASK-0011 production-readiness reference boundary. The change closes hostile capability and release-rehearsal inputs without claiming a production deployment, provider, persistence implementation, release authorization, or operational readiness.
 - Agent role: Backend, exclusively bound to `agents/BACKEND.md`; SHA-256 `171397b8a57a3b8e561e106b277e6eeb761e4a736641d5430af4759225d8c784`.
 - Agent thread: `/root/backend_task_0011_closure_r1`; resumed by `/root/task_0011_resume_r1`. The runtime supplied no native UPFS role field; both assignments explicitly preserved the Backend role and prohibited self-review, push, PR, or integration.
