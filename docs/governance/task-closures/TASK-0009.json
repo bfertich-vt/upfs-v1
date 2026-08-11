@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "task_id": "TASK-0009",
+  "disposition": "ACCEPTED",
+  "historical": {
+    "classification": "Unsupported completion claim",
+    "artifact": "docs/handoffs/TASK-0009.md",
+    "artifact_sha256": "1ffde24b5bb28e8424d421d5157b5def59a711597931858cc3eba27d82808319",
+    "artifact_commit": "d10124666bb3d448c7b9afc628c36ac37c5a2fae",
+    "evidence_excerpt": "# TASK-0009 handoff"
+  },
+  "remediation": {
+    "task": "tasks/recovery/RECOVERY-TASK-0009-CLOSURE-002.yaml",
+    "task_sha256": "66c1484d733d50a1643b80e36906a0d1aff039b1ea95191ed9b61a83e9004c25",
+    "handoff": "docs/handoffs/RECOVERY-TASK-0009-CLOSURE-002.md",
+    "handoff_sha256": "0146250fd098b7a7c8c9b438da5afdcfd8a0e02f3a81b199b7fbeba912d338c3",
+    "implementation_commit": "af3eeb73af2ec083fd7014dff2c72177dc0e700e",
+    "candidate_commit": "3af44b7ee48e5a60fa479693b72482ff3a1b805a"
+  },
+  "independent_qa": {
+    "review": "docs/reviews/RECOVERY-TASK-0009-CLOSURE-002-QA.md",
+    "review_sha256": "a1250b23eaa3ffc464e808a9138d41d4f5bf74a1741336f3ae182c82f29cf5c2",
+    "review_commit": "90ef572be4457d47d4c4d817ba46cda891613332",
+    "reviewed_candidate": "3af44b7ee48e5a60fa479693b72482ff3a1b805a"
+  },
+  "rejected_reviews": [
+    {
+      "candidate_commit": "08f98c88e331c6466c5ceba3a3fccabd035a9886",
+      "review": "docs/reviews/RECOVERY-TASK-0009-CLOSURE-001-QA.md",
+      "review_sha256": "102ce90a6b2310f13566f857620f5c3485e455178d7f66637661239a4eb02a70",
+      "review_commit": "5b56ff40e6c881600f840239c967b8f87bbcff37"
+    }
+  ],
+  "protected_review": {
+    "mechanism": "independent-codex-qa-protected-flow",
+    "candidate_commit": "3af44b7ee48e5a60fa479693b72482ff3a1b805a",
+    "review_commit": "90ef572be4457d47d4c4d817ba46cda891613332",
+    "pr_head": "90ef572be4457d47d4c4d817ba46cda891613332",
+    "tree": "4cb92c4c200fdc33d5f3ae89ea7a49d9ae2f3366"
+  },
+  "hosted": {
+    "evidence_boundary": "immutable inspected snapshot; GitHub API facts are not revalidated offline",
+    "repository": "bfertich-vt/upfs-v1",
+    "pull_request": 37,
+    "base_sha": "572b6d6f31ab10f41c6077bcf1fe7b12a159070a",
+    "head_sha": "90ef572be4457d47d4c4d817ba46cda891613332",
+    "checks": [
+      {
+        "name": "repository-validation",
+        "run_id": 31420758944,
+        "job_id": 93560631707,
+        "head_sha": "90ef572be4457d47d4c4d817ba46cda891613332",
+        "conclusion": "success"
+      },
+      {
+        "name": "repository-security",
+        "run_id": 31420759086,
+        "job_id": 93560632371,
+        "head_sha": "90ef572be4457d47d4c4d817ba46cda891613332",
+        "conclusion": "success"
+      }
+    ],
+    "validation_artifact": {
+      "artifact_id": 9075398527,
+      "name": "validation-evidence",
+      "archive_digest": "sha256:be102389407d119b4c190e7b2df1e0fc28285708027bd6f145822c5b194bffbb",
+      "content_sha256": "b05f4804c33b63971a40a2fc190945405c1cb44f97b2d9b24dd43930783d467e",
+      "content_status": "passed"
+    }
+  },
+  "hosted_metadata_exception": {
+    "api_state": "OPEN",
+    "api_merge_commit": null,
+    "local_merge_commit": "77e24476f2ee2ad7168200c9ab94e14d602d9032",
+    "reason": "GitHub created the exact two-parent PR #37 merge commit after an API GraphQL fault, but the PR API did not record merged state and no push workflows fired.",
+    "corrective_requirement": "This activation must pass exact-head protected validation and security, retained-artifact inspection, protected merge, and post-merge checks before TASK-0009 acceptance is operationally final."
+  },
+  "protected_merge": {
+    "commit": "77e24476f2ee2ad7168200c9ab94e14d602d9032",
+    "base_parent": "572b6d6f31ab10f41c6077bcf1fe7b12a159070a",
+    "head_tree": "4cb92c4c200fdc33d5f3ae89ea7a49d9ae2f3366",
+    "merged_at": "2026-08-10T18:53:25Z",
+    "pull_request": 37
+  },
+  "acceptance_mapping": [
+    {
+      "criterion": "Historical task requires independent revalidation before promotion",
+      "evidence": [
+        {
+          "artifact": "docs/reviews/RECOVERY-TASK-0009-CLOSURE-002-QA.md",
+          "artifact_sha256": "a1250b23eaa3ffc464e808a9138d41d4f5bf74a1741336f3ae182c82f29cf5c2",
+          "commit": "90ef572be4457d47d4c4d817ba46cda891613332",
+          "excerpt": "**ACCEPT** exact candidate `3af44b7ee48e5a60fa479693b72482ff3a1b805a` for supervisor promotion only when combined with this sole-file attestation commit and subsequently passing exact-head local and protected hosted validation/security gates."
+        }
+      ]
+    }
+  ],
+  "dependencies": ["TASK-0002"],
+  "limitations": [
+    "The accepted slice is an in-memory injected-persistence reference, not PostgreSQL durability, a durable worker, production OIDC identity, API-host wiring, managed runtime or infrastructure, deployment, or customer operation.",
+    "PR #37 exact-head validation and security passed and the retained artifact was inspected, but GitHub's PR API remains OPEN with no mergeCommit and no push-triggered post-merge workflows despite exact local two-parent merge commit 77e24476f2ee2ad7168200c9ab94e14d602d9032.",
+    "The separately reviewed activation protected flow must supply the missing normal hosted integration and post-merge proof; no normal PR #37 merge-state claim, production durability, release certification, or human review is made."
+  ]
+}

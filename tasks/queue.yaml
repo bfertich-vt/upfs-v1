@@ -144,7 +144,7 @@ tasks:
       evidence_excerpt: "# TASK-0008 handoff"
   - id: TASK-0009
     title: Implement policy, durable workflow, and approval foundations
-    status: blocked
+    status: complete
     dependencies: [TASK-0002]
     inputs:
       - AGENTS.md

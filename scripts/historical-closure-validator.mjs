@@ -623,6 +623,90 @@ const TASK_0008_PROTECTED_EVIDENCE = Object.freeze({
     pull_request: 35,
   },
 });
+const TASK_0009_PROTECTED_EVIDENCE = Object.freeze({
+  remediation: {
+    task: "tasks/recovery/RECOVERY-TASK-0009-CLOSURE-002.yaml",
+    task_sha256:
+      "66c1484d733d50a1643b80e36906a0d1aff039b1ea95191ed9b61a83e9004c25",
+    handoff: "docs/handoffs/RECOVERY-TASK-0009-CLOSURE-002.md",
+    handoff_sha256:
+      "0146250fd098b7a7c8c9b438da5afdcfd8a0e02f3a81b199b7fbeba912d338c3",
+    implementation_commit: "af3eeb73af2ec083fd7014dff2c72177dc0e700e",
+    candidate_commit: "3af44b7ee48e5a60fa479693b72482ff3a1b805a",
+  },
+  independent_qa: {
+    review: "docs/reviews/RECOVERY-TASK-0009-CLOSURE-002-QA.md",
+    review_sha256:
+      "a1250b23eaa3ffc464e808a9138d41d4f5bf74a1741336f3ae182c82f29cf5c2",
+    review_commit: "90ef572be4457d47d4c4d817ba46cda891613332",
+    reviewed_candidate: "3af44b7ee48e5a60fa479693b72482ff3a1b805a",
+  },
+  rejected_reviews: [
+    {
+      candidate_commit: "08f98c88e331c6466c5ceba3a3fccabd035a9886",
+      review: "docs/reviews/RECOVERY-TASK-0009-CLOSURE-001-QA.md",
+      review_sha256:
+        "102ce90a6b2310f13566f857620f5c3485e455178d7f66637661239a4eb02a70",
+      review_commit: "5b56ff40e6c881600f840239c967b8f87bbcff37",
+    },
+  ],
+  protected_review: {
+    mechanism: "independent-codex-qa-protected-flow",
+    candidate_commit: "3af44b7ee48e5a60fa479693b72482ff3a1b805a",
+    review_commit: "90ef572be4457d47d4c4d817ba46cda891613332",
+    pr_head: "90ef572be4457d47d4c4d817ba46cda891613332",
+    tree: "4cb92c4c200fdc33d5f3ae89ea7a49d9ae2f3366",
+  },
+  hosted: {
+    evidence_boundary:
+      "immutable inspected snapshot; GitHub API facts are not revalidated offline",
+    repository: "bfertich-vt/upfs-v1",
+    pull_request: 37,
+    base_sha: "572b6d6f31ab10f41c6077bcf1fe7b12a159070a",
+    head_sha: "90ef572be4457d47d4c4d817ba46cda891613332",
+    checks: [
+      {
+        name: "repository-validation",
+        run_id: 31420758944,
+        job_id: 93560631707,
+        head_sha: "90ef572be4457d47d4c4d817ba46cda891613332",
+        conclusion: "success",
+      },
+      {
+        name: "repository-security",
+        run_id: 31420759086,
+        job_id: 93560632371,
+        head_sha: "90ef572be4457d47d4c4d817ba46cda891613332",
+        conclusion: "success",
+      },
+    ],
+    validation_artifact: {
+      artifact_id: 9075398527,
+      name: "validation-evidence",
+      archive_digest:
+        "sha256:be102389407d119b4c190e7b2df1e0fc28285708027bd6f145822c5b194bffbb",
+      content_sha256:
+        "b05f4804c33b63971a40a2fc190945405c1cb44f97b2d9b24dd43930783d467e",
+      content_status: "passed",
+    },
+  },
+  hosted_metadata_exception: {
+    api_state: "OPEN",
+    api_merge_commit: null,
+    local_merge_commit: "77e24476f2ee2ad7168200c9ab94e14d602d9032",
+    reason:
+      "GitHub created the exact two-parent PR #37 merge commit after an API GraphQL fault, but the PR API did not record merged state and no push workflows fired.",
+    corrective_requirement:
+      "This activation must pass exact-head protected validation and security, retained-artifact inspection, protected merge, and post-merge checks before TASK-0009 acceptance is operationally final.",
+  },
+  protected_merge: {
+    commit: "77e24476f2ee2ad7168200c9ab94e14d602d9032",
+    base_parent: "572b6d6f31ab10f41c6077bcf1fe7b12a159070a",
+    head_tree: "4cb92c4c200fdc33d5f3ae89ea7a49d9ae2f3366",
+    merged_at: "2026-08-10T18:53:25Z",
+    pull_request: 37,
+  },
+});
 const PROTECTED_EVIDENCE = Object.freeze({
   "TASK-0002": TASK_0002_PROTECTED_EVIDENCE,
   "TASK-0003": TASK_0003_PROTECTED_EVIDENCE,
@@ -631,6 +715,7 @@ const PROTECTED_EVIDENCE = Object.freeze({
   "TASK-0006": TASK_0006_PROTECTED_EVIDENCE,
   "TASK-0007": TASK_0007_PROTECTED_EVIDENCE,
   "TASK-0008": TASK_0008_PROTECTED_EVIDENCE,
+  "TASK-0009": TASK_0009_PROTECTED_EVIDENCE,
 });
 const DISPOSITION_SOURCE_COMMIT = "420403fc09962d35d19af0cd735b056cb2a9a1ba";
 const DISPOSITION_SOURCE_SHA256 =
@@ -1068,11 +1153,14 @@ function validateAccepted(root, task, tasks, row, errors) {
         "independent_qa",
         ...(["TASK-0003", "TASK-0004"].includes(task.id)
           ? ["rejected_candidates"]
-          : ["TASK-0006", "TASK-0007", "TASK-0008"].includes(task.id)
+          : ["TASK-0006", "TASK-0007", "TASK-0008", "TASK-0009"].includes(
+                task.id,
+              )
             ? ["rejected_reviews"]
             : []),
         protectedReviewMode ? "protected_review" : "stage_a",
         "hosted",
+        ...(task.id === "TASK-0009" ? ["hosted_metadata_exception"] : []),
         "protected_merge",
         "acceptance_mapping",
         "dependencies",
@@ -1222,13 +1310,16 @@ function validateAccepted(root, task, tasks, row, errors) {
       for (const key of [
         ...(["TASK-0003", "TASK-0004"].includes(task.id)
           ? ["rejected_candidates"]
-          : ["TASK-0006", "TASK-0007", "TASK-0008"].includes(task.id)
+          : ["TASK-0006", "TASK-0007", "TASK-0008", "TASK-0009"].includes(
+                task.id,
+              )
             ? ["rejected_reviews"]
             : []),
         "remediation",
         "independent_qa",
         "protected_review",
         "hosted",
+        ...(task.id === "TASK-0009" ? ["hosted_metadata_exception"] : []),
         "protected_merge",
       ])
         if (
@@ -1247,7 +1338,7 @@ function validateAccepted(root, task, tasks, row, errors) {
           `${rel}.rejected candidate ${rejected} ancestry`,
           errors,
         );
-    if (["TASK-0006", "TASK-0007", "TASK-0008"].includes(task.id))
+    if (["TASK-0006", "TASK-0007", "TASK-0008", "TASK-0009"].includes(task.id))
       for (const rejected of record.rejected_reviews || []) {
         if (
           !exact(
@@ -1452,7 +1543,9 @@ function validateAccepted(root, task, tasks, row, errors) {
         "head_sha",
         "checks",
         "validation_artifact",
-        ...(protectedReviewMode ? ["post_merge_checks"] : []),
+        ...(protectedReviewMode && task.id !== "TASK-0009"
+          ? ["post_merge_checks"]
+          : []),
       ],
       `${rel}.hosted`,
       errors,
@@ -1564,7 +1657,7 @@ function validateAccepted(root, task, tasks, row, errors) {
           `${rel}.hosted.validation_artifact must bind an inspected passed artifact.`,
         );
     }
-    if (protectedReviewMode) {
+    if (protectedReviewMode && task.id !== "TASK-0009") {
       const post = hosted.post_merge_checks;
       if (!Array.isArray(post) || post.length !== 2)
         errors.push(
@@ -1781,6 +1874,7 @@ function validateAccepted(root, task, tasks, row, errors) {
       "TASK-0006",
       "TASK-0007",
       "TASK-0008",
+      "TASK-0009",
     ].includes(task.id)
   ) {
     const limitations = (record.limitations || []).join(" ").toLowerCase();
