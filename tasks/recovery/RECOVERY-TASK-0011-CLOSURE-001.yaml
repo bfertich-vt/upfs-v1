@@ -3,6 +3,14 @@ title: Revalidate and harden the production-readiness reference boundary
 type: historical-capability-closure
 status: in_progress
 assigned_role: Backend
+corrective_round: R2
+corrective_base: 63c2e750f2d32d4cba0093b348d103eee762b3bf
+rejected_candidate: c90e593282963d2695071db69beb31268018bc72
+rejection_evidence: docs/reviews/RECOVERY-TASK-0011-CLOSURE-001-QA.md
+corrective_scope:
+  - Reject wrong factory arity before touching any undeclared value.
+  - Add adversarial under-arity and over-arity coverage across every public TASK-0011 factory.
+  - Preserve all R1 identity, non-substitutability, tenant, recovery, audit, rollback, and reference-only controls.
 historical_task: TASK-0011
 dependencies:
   - TASK-0010
