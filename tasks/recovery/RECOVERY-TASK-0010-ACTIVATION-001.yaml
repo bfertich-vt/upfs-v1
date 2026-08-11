@@ -1,0 +1,75 @@
+task_id: RECOVERY-TASK-0010-ACTIVATION-001
+title: Activate independently accepted TASK-0010 reference closure
+type: historical-capability-activation
+status: in_progress
+assigned_role: Backend
+historical_task: TASK-0010
+dependencies:
+  - RECOVERY-TASK-0010-CLOSURE-002
+inputs:
+  - AGENTS.md
+  - agents/BACKEND.md
+  - agents/WORKTREES.md
+  - agents/HANDOFF_TEMPLATE.md
+  - specs/00_constitution/engineering_constitution.md
+  - specs/02_ui/console_experience.md
+  - specs/03_architecture/system_architecture.md
+  - specs/05_apis/api_standards.md
+  - specs/09_cicd/delivery_pipeline.md
+  - specs/10_security/security_baseline.md
+  - specs/12_testing/test_strategy.md
+  - specs/14_admin_control_plane/admin_control_plane.md
+  - docs/MASTER_PLAN.md
+  - docs/REPOSITORY_GOVERNANCE.md
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - tasks/recovery/RECOVERY-TASK-0010-CLOSURE-001.yaml
+  - tasks/recovery/RECOVERY-TASK-0010-CLOSURE-002.yaml
+  - docs/handoffs/RECOVERY-TASK-0010-CLOSURE-001.md
+  - docs/handoffs/RECOVERY-TASK-0010-CLOSURE-002.md
+  - docs/reviews/RECOVERY-TASK-0010-CLOSURE-001-QA.md
+  - docs/reviews/RECOVERY-TASK-0010-CLOSURE-002-QA.md
+  - docs/reviews/RECOVERY-TASK-0010-PROMOTION-001-QA.md
+  - docs/governance/task-closures/TASK-0009.json
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+allowed_files:
+  - tasks/queue.yaml
+  - docs/HISTORICAL_TASK_CLOSURE_MATRIX.md
+  - docs/governance/task-closures/TASK-0010.json
+  - tasks/recovery/RECOVERY-TASK-0010-ACTIVATION-001.yaml
+  - docs/handoffs/RECOVERY-TASK-0010-ACTIVATION-001.md
+  - scripts/historical-closure-validator.mjs
+  - scripts/historical-closure-validator.test.mjs
+prohibited_files:
+  - services/**
+  - apps/**
+  - contracts/**
+  - specs/**
+  - .github/**
+  - provenance bundle or manifest
+  - prior implementation, handoff, rejection, and review evidence
+  - TASK-0011+
+  - TASK-0112-TASK-0123
+acceptance_criteria:
+  - Bind exact R1 rejection, R2 accepted implementation and QA, promotion QA, PR 39 exact-head checks, retained artifact, protected merge, and post-merge checks.
+  - Mark only TASK-0010 complete and ACCEPTED at the Proven reference implementation ceiling; TASK-0011 remains unchanged.
+  - Fail closed on every identity, digest, status, classification, dependency, hosted, topology, and current closure substitution.
+  - Preserve TASK-0011 and TASK-0112 through TASK-0123 as frozen and unavailable.
+security_requirements:
+  - Preserve independent review, immutable evidence, exact commit topology, deny-default authorization, tenant isolation, redaction, audit-before-release, and fail-closed provenance.
+  - Preserve the absence of production OIDC, persistence, API-host, managed runtime, deployment, customer, financial, provider, or credential evidence.
+required_tests:
+  - node --test --test-concurrency=1 --test-name-pattern="TASK-0010 activation fails closed" scripts/historical-closure-validator.test.mjs
+  - node --test --test-concurrency=1 scripts/historical-closure-validator.test.mjs
+  - npm test -- --test-concurrency=1
+  - npm run format:check
+  - npm run lint
+  - npm run static:check
+  - npm run queue:check
+  - npm run traceability:check
+  - powershell -ExecutionPolicy Bypass -File scripts/validate.ps1
+  - npm audit --audit-level=high
+  - git fsck --full --strict
+rollback: Preserve PR 39 and every accepted/rejected object. Before integration abandon this branch; after integration use a separately implemented and independently reviewed corrective-forward change or reviewed revert without weakening evidence or security controls.
+handoff: docs/handoffs/RECOVERY-TASK-0010-ACTIVATION-001.md
